@@ -1,0 +1,234 @@
+/* ==========================================================================
+   BudgetIQ — "Crystal Clear" design system
+   Signature: faceted glass cards with a clipped corner and a prism-gradient
+   edge that only fully resolves on hover — money you can see straight through.
+   ========================================================================== */
+
+:root {
+  /* ---- Light mode (default): sunlit ice / cut-glass on frost ---- */
+  --bg: #F3F8FE;
+  --bg-radial: radial-gradient(circle at 15% 0%, #E9F5FF 0%, #F3F8FE 38%, #F6F3FE 100%);
+  --surface: rgba(255, 255, 255, 0.62);
+  --surface-strong: rgba(255, 255, 255, 0.86);
+  --surface-border: rgba(255, 255, 255, 0.9);
+  --surface-shadow: 0 8px 32px rgba(66, 108, 176, 0.14), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+
+  --ink: #0B1E33;
+  --ink-soft: #445067;
+  --ink-faint: #7E8CA3;
+
+  --prism-1: #38C6FF; /* cyan facet   */
+  --prism-2: #8C6BFF; /* violet facet */
+  --prism-3: #35E6C0; /* mint facet   */
+  --prism-gradient: linear-gradient(115deg, var(--prism-1) 0%, var(--prism-2) 50%, var(--prism-3) 100%);
+
+  --income: #17B07E;
+  --income-soft: rgba(23, 176, 126, 0.12);
+  --expense: #FF5C7C;
+  --expense-soft: rgba(255, 92, 124, 0.12);
+  --warning: #F6A623;
+  --warning-soft: rgba(246, 166, 35, 0.14);
+
+  --focus-ring: #38C6FF;
+
+  --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
+  --font-body: 'Inter', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', monospace;
+
+  --facet: 18px;      /* corner clip size for facet cards */
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-sm: 9px;
+
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #060B14;
+  --bg-radial: radial-gradient(circle at 20% -10%, #0E1B2E 0%, #070B13 45%, #0A0715 100%);
+  --surface: rgba(255, 255, 255, 0.045);
+  --surface-strong: rgba(255, 255, 255, 0.08);
+  --surface-border: rgba(255, 255, 255, 0.12);
+  --surface-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+
+  --ink: #EAF2FF;
+  --ink-soft: #A9B7CC;
+  --ink-faint: #647089;
+
+  --prism-1: #4FD8FF;
+  --prism-2: #A78BFF;
+  --prism-3: #47F2CE;
+
+  --income: #2FE1A3;
+  --income-soft: rgba(47, 225, 163, 0.14);
+  --expense: #FF7A93;
+  --expense-soft: rgba(255, 122, 147, 0.14);
+  --warning: #FFC24B;
+  --warning-soft: rgba(255, 194, 75, 0.16);
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--bg-radial);
+  background-attachment: fixed;
+  transition: background 0.4s ease, color 0.4s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+a { color: inherit; }
+
+button, input, select {
+  font-family: var(--font-body);
+  color: var(--ink);
+}
+
+::selection { background: var(--prism-2); color: white; }
+
+/* Visible focus ring for keyboard navigation, respected everywhere */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Facet Card — the signature element.
+   A glass panel with one clipped ("cut") corner and a prism-gradient
+   border that sits dim until hover, when it sweeps to full brightness —
+   like tilting a gemstone to catch the light.
+   --------------------------------------------------------------------- */
+.facet-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  clip-path: polygon(
+    var(--facet) 0%, 100% 0%, 100% calc(100% - var(--facet)), calc(100% - var(--facet)) 100%, 0% 100%, 0% var(--facet)
+  );
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: var(--surface-shadow);
+  padding: 22px 24px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.facet-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1.5px;
+  border-radius: inherit;
+  clip-path: inherit;
+  background: var(--prism-gradient);
+  opacity: 0.25;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.facet-card:hover::before { opacity: 0.9; }
+.facet-card:hover { transform: translateY(-2px); }
+
+.facet-card--flush { padding: 0; overflow: hidden; }
+
+/* Prism divider used as a section rule where it means something (a boundary
+   between periods / categories), not as decoration everywhere. */
+.prism-rule {
+  height: 2px;
+  border: none;
+  border-radius: 2px;
+  background: var(--prism-gradient);
+  opacity: 0.5;
+}
+
+/* Pill badges for trend / status */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.pill--income { background: var(--income-soft); color: var(--income); }
+.pill--expense { background: var(--expense-soft); color: var(--expense); }
+.pill--warning { background: var(--warning-soft); color: var(--warning); }
+
+/* Buttons */
+.btn {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14.5px;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 11px 20px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn--primary {
+  color: #061018;
+  background: var(--prism-gradient);
+  box-shadow: 0 6px 20px rgba(140, 107, 255, 0.28);
+}
+.btn--primary:hover { box-shadow: 0 8px 26px rgba(140, 107, 255, 0.4); }
+
+.btn--ghost {
+  background: var(--surface-strong);
+  border: 1px solid var(--surface-border);
+  color: var(--ink);
+}
+
+.btn--danger {
+  background: var(--expense-soft);
+  color: var(--expense);
+}
+
+.btn--block { width: 100%; }
+
+/* Inputs */
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.field label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.field input, .field select, .field textarea {
+  background: var(--surface-strong);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  font-size: 14.5px;
+  color: var(--ink);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--prism-1);
+}
+
+.helper-text { font-size: 12.5px; color: var(--ink-faint); }
+.error-text { font-size: 12.5px; color: var(--expense); font-weight: 600; }
