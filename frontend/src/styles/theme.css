@@ -22,6 +22,12 @@
   --prism-3: #35E6C0; /* mint facet   */
   --prism-gradient: linear-gradient(115deg, var(--prism-1) 0%, var(--prism-2) 50%, var(--prism-3) 100%);
 
+  /* Brand blues sampled directly from the BudgetIQ logo, used for primary actions
+     so buttons read as part of the same mark instead of an unrelated accent. */
+  --brand-mid: #0F71B4;
+  --brand-deep: #073E6E;
+  --brand-gradient: linear-gradient(120deg, var(--brand-mid) 0%, var(--brand-deep) 100%);
+
   --income: #17B07E;
   --income-soft: rgba(23, 176, 126, 0.12);
   --expense: #FF5C7C;
@@ -58,6 +64,10 @@
   --prism-1: #4FD8FF;
   --prism-2: #A78BFF;
   --prism-3: #47F2CE;
+
+  --brand-mid: #2E8FD1;
+  --brand-deep: #0B4C82;
+  --brand-gradient: linear-gradient(120deg, var(--brand-mid) 0%, var(--brand-deep) 100%);
 
   --income: #2FE1A3;
   --income-soft: rgba(47, 225, 163, 0.14);
@@ -196,11 +206,11 @@ button, input, select {
 .btn:active { transform: scale(0.97); }
 
 .btn--primary {
-  color: #061018;
-  background: var(--prism-gradient);
-  box-shadow: 0 6px 20px rgba(140, 107, 255, 0.28);
+  color: #FFFFFF;
+  background: var(--brand-gradient);
+  box-shadow: 0 6px 20px rgba(11, 76, 130, 0.28);
 }
-.btn--primary:hover { box-shadow: 0 8px 26px rgba(140, 107, 255, 0.4); }
+.btn--primary:hover { box-shadow: 0 8px 26px rgba(11, 76, 130, 0.4); }
 
 .btn--ghost {
   background: var(--surface-strong);

@@ -78,7 +78,7 @@ export default function Register() {
         </form>
 
         <p className="helper-text" style={{ marginTop: 18, textAlign: 'center' }}>
-          Already have an account? <Link to="/login" style={{ color: 'var(--prism-2)', fontWeight: 600 }}>Log in</Link>
+          Already have an account? <Link to="/login" style={{ color: 'var(--brand-mid)', fontWeight: 600 }}>Log in</Link>
         </p>
       </div>
     </div>

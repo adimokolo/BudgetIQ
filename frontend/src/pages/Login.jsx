@@ -56,7 +56,7 @@ export default function Login() {
         </form>
 
         <p className="helper-text" style={{ marginTop: 18, textAlign: 'center' }}>
-          New to BudgetIQ? <Link to="/register" style={{ color: 'var(--prism-2)', fontWeight: 600 }}>Create an account</Link>
+          New to BudgetIQ? <Link to="/register" style={{ color: 'var(--brand-mid)', fontWeight: 600 }}>Create an account</Link>
         </p>
       </div>
     </div>
