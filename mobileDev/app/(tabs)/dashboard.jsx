@@ -213,6 +213,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,
+    borderWidth: 3,
+    borderColor: "#111827",
   },
 
   cardsWrap: { gap: 12, marginBottom: 20 },

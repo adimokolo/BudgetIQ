@@ -23,7 +23,7 @@ export default function Profile() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="chevron-back" size={24} color="#16A34A" />
+          <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
         <View style={{ width: 24 }} />
@@ -45,14 +45,14 @@ export default function Profile() {
         <View style={styles.listRow}>
           <View style={styles.listLeft}>
             <View style={styles.iconBubble}>
-              <Ionicons name="moon-outline" size={18} color="#16A34A" />
+              <Ionicons name="moon-outline" size={18} color="#111827" />
             </View>
             <Text style={styles.listLabel}>Dark mode</Text>
           </View>
           <Switch
             value={darkMode}
             onValueChange={setDarkMode}
-            trackColor={{ false: "#E5E7EB", true: "#16A34A" }}
+            trackColor={{ false: "#E5E7EB", true: "#111827" }}
             thumbColor="#FFFFFF"
           />
         </View>
@@ -65,7 +65,7 @@ export default function Profile() {
         >
           <View style={styles.listLeft}>
             <View style={styles.iconBubble}>
-              <Ionicons name="lock-closed-outline" size={18} color="#16A34A" />
+              <Ionicons name="lock-closed-outline" size={18} color="#111827" />
             </View>
             <Text style={styles.listLabel}>Change password</Text>
           </View>
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#16A34A",
+    color: "#111827",
   },
 
   avatarSection: {
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     height: 128,
     borderRadius: 64,
     borderWidth: 3,
-    borderColor: "#86EFAC",
+    borderColor: "#14274E",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
