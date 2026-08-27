@@ -14,7 +14,7 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const ok = await register(fullName, email, password, currency);
-    if (ok) navigate('/');
+    if (ok) navigate('/verify-otp', { state: { email } });
   };
 
   return (

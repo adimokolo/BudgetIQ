@@ -1,0 +1,246 @@
+{
+  "info": {
+    "name": "BudgetIQ API",
+    "description": "End-to-end test flow for BudgetIQ: health check -> register -> verify OTP -> login -> categories -> transactions -> budgets -> dashboard -> forgot/reset password. Run requests top to bottom - each saves values later ones depend on.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "token", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "testEmail", "value": "adim.test@example.com" },
+    { "key": "testPassword", "value": "TestPass1234" },
+    { "key": "resetToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Server is up', function () {",
+        "  pm.response.to.have.status(200);",
+        "  pm.expect(pm.response.json().status).to.eql('ok');",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "2. Register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Adim Test\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"currency\": \"NGN\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Account created, verification required', function () {",
+        "  pm.response.to.have.status(201);",
+        "  pm.expect(pm.response.json().email).to.eql(pm.collectionVariables.get('testEmail'));",
+        "});",
+        "console.log('Check the BACKEND TERMINAL for the OTP code (SMTP is not configured, so it prints there) - you will need it for the next request.');"
+      ] } }]
+    },
+    {
+      "name": "3. Verify OTP",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/verify-otp",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"code\": \"PASTE_CODE_FROM_BACKEND_TERMINAL\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Verified and logged in', function () {",
+        "  pm.response.to.have.status(200);",
+        "  const body = pm.response.json();",
+        "  pm.expect(body.token).to.be.a('string');",
+        "  pm.collectionVariables.set('token', body.token);",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "3b. Resend OTP (optional, if code expired)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/resend-otp",
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{testEmail}}\"\n}" }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Resend responds regardless (no email enumeration)', function () {",
+        "  pm.response.to.have.status(200);",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "4. Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/login",
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}" }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Login succeeds now that the account is verified', function () {",
+        "  pm.response.to.have.status(200);",
+        "  const body = pm.response.json();",
+        "  pm.expect(body.token).to.be.a('string');",
+        "  pm.collectionVariables.set('token', body.token);",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "5. Get Current User (/auth/me)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/auth/me"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Token is valid and returns the verified user', function () {",
+        "  pm.response.to.have.status(200);",
+        "  const body = pm.response.json();",
+        "  pm.expect(body.user.email).to.eql(pm.collectionVariables.get('testEmail'));",
+        "  pm.expect(body.user.is_verified).to.eql(true);",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "6. List Categories (defaults seeded on register)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/categories"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('8 default categories exist, grab an expense one', function () {",
+        "  pm.response.to.have.status(200);",
+        "  const body = pm.response.json();",
+        "  pm.expect(body.categories.length).to.be.at.least(8);",
+        "  const expense = body.categories.find(c => c.type === 'expense');",
+        "  pm.expect(expense).to.not.be.undefined;",
+        "  pm.collectionVariables.set('categoryId', expense.id);",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "7. Create Transaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/transactions",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"expense\",\n  \"amount\": 5000,\n  \"categoryId\": \"{{categoryId}}\",\n  \"description\": \"Postman test transaction\",\n  \"occurredOn\": null\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Transaction created', function () {",
+        "  pm.response.to.have.status(201);",
+        "  pm.expect(pm.response.json().transaction.amount).to.eql('5000.00');",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "8. List Transactions",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/transactions"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Transaction shows up in the list', function () {",
+        "  pm.response.to.have.status(200);",
+        "  pm.expect(pm.response.json().transactions.length).to.be.at.least(1);",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "9. Set a Budget",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/budgets",
+        "body": { "mode": "raw", "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"monthlyLimit\": 20000\n}" }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Budget created', function () {",
+        "  pm.response.to.have.status(201);",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "10. List Budgets (with spend-vs-limit)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/budgets"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Budget shows spend from step 7', function () {",
+        "  pm.response.to.have.status(200);",
+        "  const body = pm.response.json();",
+        "  pm.expect(body.budgets[0].spent_this_month).to.be.above(0);",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "11. Dashboard Summary (with forecast)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/dashboard/summary"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Dashboard reflects the transaction and returns a forecast', function () {",
+        "  pm.response.to.have.status(200);",
+        "  const body = pm.response.json();",
+        "  pm.expect(body.summary.totalExpense).to.be.above(0);",
+        "  pm.expect(body.forecast).to.have.property('nextMonthPredictedExpense');",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "12. Forgot Password",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/forgot-password",
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{testEmail}}\"\n}" }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Reset link sent (check backend terminal for the token/URL)', function () {",
+        "  pm.response.to.have.status(200);",
+        "});",
+        "console.log('Check the BACKEND TERMINAL for the reset link - copy the token= value into the resetToken variable, then run 13.');"
+      ] } }]
+    },
+    {
+      "name": "13. Reset Password",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/reset-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"NewTestPass1234\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Password reset succeeds with a valid token', function () {",
+        "  pm.response.to.have.status(200);",
+        "});"
+      ] } }]
+    }
+  ]
+}

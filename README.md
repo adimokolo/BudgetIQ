@@ -1,10 +1,10 @@
 # BudgetIQ — Smart Expense Tracker
 
-A full-stack web and mobile expense tracker: record, categorize, and monitor income and
+A full-stack expense tracker: record, categorize, and monitor income and
 spending, with an interactive dashboard, visual charts, monthly summaries,
 a next-month spending forecast, and budget limits.
 
-Built by **Adim Barnabas Okolo** and **Pedro Olatunde** as a portfolio / production application.
+Built by **Adim Barnabas Okolo** as a portfolio / educational project.
 
 ## Tech stack
 
@@ -75,9 +75,21 @@ no CORS config is needed locally — just make sure the backend is running
 first. For production, set `CLIENT_ORIGIN` in the backend `.env` to your
 deployed frontend URL.
 
+## Authentication flow
+
+Registration now requires email verification before login is allowed:
+
+1. `POST /api/auth/register` creates the account (unverified) and emails a 6-digit OTP — no token is returned yet.
+2. `POST /api/auth/verify-otp` checks the code; on success it marks the account verified and returns a login token.
+3. `POST /api/auth/resend-otp` issues a new code if the first one expired (10-minute TTL).
+4. `POST /api/auth/login` now rejects unverified accounts with `403 { code: 'EMAIL_NOT_VERIFIED' }`, which the frontend uses to redirect to the verification screen.
+5. `POST /api/auth/forgot-password` / `POST /api/auth/reset-password` handle password resets via a time-limited (30-minute) emailed link. Both this and OTP delivery give an identical response whether or not the email is registered, to avoid leaking which addresses have accounts.
+
+**No SMTP configured yet?** That's fine for local development — leave `SMTP_HOST` blank in `.env` and every OTP code and reset link prints to the **backend terminal** instead of being emailed, so the whole flow is testable without a mail provider. Run `backend/migrations/001_add_auth_verification.sql` once against any database created before this feature existed (fresh installs via `schema.sql` already include it).
+
 ## Key features
 
-- **User authentication** — JWT-based, bcrypt-hashed passwords, protected routes
+- **User authentication** — JWT-based, bcrypt-hashed passwords, email verification via OTP, forgot/reset password, protected routes
 - **Transaction management** — add, edit, delete, filter by type/category/date
 - **Category organization** — custom income & expense categories with colors
 - **Visual dashboard** — income vs. expense trend, category breakdown donut chart, recent activity

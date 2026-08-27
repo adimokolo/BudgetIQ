@@ -10,9 +10,37 @@ CREATE TABLE IF NOT EXISTS users (
     email         VARCHAR(160) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     currency      VARCHAR(8) DEFAULT 'NGN',
+    is_verified   BOOLEAN NOT NULL DEFAULT FALSE,
     created_at    TIMESTAMPTZ DEFAULT now(),
     updated_at    TIMESTAMPTZ DEFAULT now()
 );
+
+-- One-time codes emailed to verify a user's address after registration.
+-- code_hash stores sha256(code), never the plaintext code.
+CREATE TABLE IF NOT EXISTS otp_codes (
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash   VARCHAR(64) NOT NULL,
+    purpose     VARCHAR(30) NOT NULL DEFAULT 'email_verification',
+    expires_at  TIMESTAMPTZ NOT NULL,
+    consumed_at TIMESTAMPTZ,
+    created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_otp_codes_user ON otp_codes (user_id, purpose);
+
+-- Password reset tokens. token_hash stores sha256(token) - the raw token is
+-- only ever emailed to the user, never persisted.
+CREATE TABLE IF NOT EXISTS password_resets (
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash  VARCHAR(64) NOT NULL,
+    expires_at  TIMESTAMPTZ NOT NULL,
+    consumed_at TIMESTAMPTZ,
+    created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (user_id);
 
 -- Categories (each user has their own set; a few seeded as defaults on signup)
 CREATE TABLE IF NOT EXISTS categories (

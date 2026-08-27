@@ -11,8 +11,12 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const ok = await login(email, password);
-    if (ok) navigate('/');
+    const result = await login(email, password);
+    if (result.ok) {
+      navigate('/');
+    } else if (result.needsVerification) {
+      navigate('/verify-otp', { state: { email: result.email } });
+    }
   };
 
   return (
@@ -46,6 +50,13 @@ export default function Login() {
               placeholder="••••••••"
               required
             />
+            <Link
+              to="/forgot-password"
+              className="helper-text"
+              style={{ color: 'var(--brand-mid)', fontWeight: 600, alignSelf: 'flex-end' }}
+            >
+              Forgot password?
+            </Link>
           </div>
 
           {error && <p className="error-text" style={{ marginBottom: 14 }}>{error}</p>}
