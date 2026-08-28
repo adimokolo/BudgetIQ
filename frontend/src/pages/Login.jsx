@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logoFull from '../assets/logo-full.png';
+import AuthLogo from '../components/AuthLogo';
 
 export default function Login() {
   const { login, loading, error } = useAuth();
@@ -22,9 +22,7 @@ export default function Login() {
   return (
     <div className="auth-wrap">
       <div className="facet-card auth-card">
-        <div className="auth-logo">
-          <img src={logoFull} alt="BudgetIQ — Spend with insight, not guesswork." />
-        </div>
+        <AuthLogo />
         <h2 className="auth-title">Welcome back</h2>
         <p className="auth-subtitle">Log in to see where your money's been.</p>
 

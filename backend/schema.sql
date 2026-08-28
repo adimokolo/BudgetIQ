@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     currency      VARCHAR(8) DEFAULT 'NGN',
     is_verified   BOOLEAN NOT NULL DEFAULT FALSE,
+    avatar_url    TEXT,
     created_at    TIMESTAMPTZ DEFAULT now(),
     updated_at    TIMESTAMPTZ DEFAULT now()
 );
@@ -76,12 +77,28 @@ CREATE TABLE IF NOT EXISTS budgets (
     user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     category_id  UUID REFERENCES categories(id) ON DELETE CASCADE,
     monthly_limit NUMERIC(14,2) NOT NULL CHECK (monthly_limit > 0),
+    last_alert_month CHAR(7),
     created_at   TIMESTAMPTZ DEFAULT now(),
     updated_at   TIMESTAMPTZ DEFAULT now(),
     UNIQUE (user_id, category_id)
 );
 
+-- In-app notifications (starting with budget-exceeded alerts).
+CREATE TABLE IF NOT EXISTS notifications (
+    id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type       VARCHAR(40) NOT NULL DEFAULT 'budget_exceeded',
+    title      VARCHAR(160) NOT NULL,
+    body       TEXT,
+    read_at    TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_created
+    ON notifications (user_id, created_at DESC);
+
 -- Keep updated_at fresh
+
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN

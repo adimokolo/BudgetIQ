@@ -9,13 +9,23 @@ import Transactions from './pages/Transactions';
 import Categories from './pages/Categories';
 import Budgets from './pages/Budgets';
 import Sidebar from './components/Sidebar';
+import ProfileMenu from './components/ProfileMenu';
+import NotificationBell from './components/NotificationBell';
+import FloatingAddButton from './components/FloatingAddButton';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function AppLayout({ children }) {
   return (
     <div className="app-shell">
       <Sidebar />
-      <main className="app-main">{children}</main>
+      <div className="app-content">
+        <header className="app-topbar">
+          <NotificationBell />
+          <ProfileMenu />
+        </header>
+        <main className="app-main">{children}</main>
+      </div>
+      <FloatingAddButton />
     </div>
   );
 }

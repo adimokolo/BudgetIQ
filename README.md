@@ -95,6 +95,12 @@ Registration now requires email verification before login is allowed:
 - **Visual dashboard** — income vs. expense trend, category breakdown donut chart, recent activity
 - **Monthly summaries & forecasting** — next-month spending prediction using linear regression over recent monthly totals
 - **Budget limits** — set a monthly cap per category (or overall) and track progress with a live percentage bar
+- **Budget alert emails** — the first time a transaction pushes a budget's monthly spend at or past its limit, the user gets an email alert. At most one alert per budget per calendar month, even if further transactions push it higher.
+- **Profile menu** — top-right avatar (upload a photo or fall back to initials), with a light/dark/system theme control, name/email, and logout in a dropdown panel
+- **Notification bell** — in-app alerts (starting with budget-exceeded), unread badge, mark-as-read, live-updates the moment a transaction triggers one
+- **Quick-add** — a floating "+" button reachable from any page, so adding a transaction never requires navigating to the Transactions page first
+- **CSV & PDF export** — download your transaction history as a spreadsheet or a formatted PDF report with an income/expense/net summary
+- **Skeleton loaders** — Dashboard, Transactions, Categories, and Budgets all show shape-matching placeholders while data loads, instead of plain "Loading…" text
 
 ## Design
 

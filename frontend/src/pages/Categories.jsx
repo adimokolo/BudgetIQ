@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../api/client';
 import Modal from '../components/Modal';
+import Skeleton from '../components/Skeleton';
 
 const SWATCHES = ['#38C6FF', '#8C6BFF', '#35E6C0', '#FF8FA3', '#FFC96B', '#63C7FF', '#4FD1C5', '#FF6B9D'];
 
@@ -56,7 +57,20 @@ export default function Categories() {
       </div>
 
       {loading ? (
-        <div className="empty-state">Loading categories…</div>
+        <div className="grid grid--two">
+          {[0, 1].map((col) => (
+            <div className="facet-card" key={col}>
+              <Skeleton width="30%" height={15} />
+              <Skeleton width="20%" height={11} style={{ marginTop: 8, marginBottom: 14 }} />
+              {[0, 1, 2].map((i) => (
+                <div className="skeleton-row" key={i}>
+                  <Skeleton width={10} height={10} radius={3} />
+                  <Skeleton width="50%" height={12} style={{ marginLeft: 6 }} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="grid grid--two">
           <div className="facet-card">

@@ -7,6 +7,7 @@ const {
   forgotPassword,
   resetPassword,
   me,
+  updateAvatar,
 } = require('../controllers/authController');
 const { requireAuth } = require('../middleware/auth');
 
@@ -19,5 +20,6 @@ router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/me', requireAuth, me);
+router.patch('/avatar', requireAuth, updateAvatar);
 
 module.exports = router;

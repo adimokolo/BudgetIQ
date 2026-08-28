@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logoFull from '../assets/logo-full.png';
+import AuthLogo from '../components/AuthLogo';
 
 export default function ForgotPassword() {
   const { forgotPassword, loading, error } = useAuth();
@@ -17,9 +17,7 @@ export default function ForgotPassword() {
   return (
     <div className="auth-wrap">
       <div className="facet-card auth-card">
-        <div className="auth-logo">
-          <img src={logoFull} alt="BudgetIQ — Spend with insight, not guesswork." />
-        </div>
+        <AuthLogo />
         <h2 className="auth-title">Reset your password</h2>
         <p className="auth-subtitle">
           Enter the email on your account and we'll send a reset link.

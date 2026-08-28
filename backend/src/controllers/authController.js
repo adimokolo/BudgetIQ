@@ -106,7 +106,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
   }
 
   const userResult = await pool.query(
-    'SELECT id, full_name, email, currency, is_verified FROM users WHERE email = $1',
+    'SELECT id, full_name, email, currency, is_verified, avatar_url FROM users WHERE email = $1',
     [email.toLowerCase()]
   );
   const user = userResult.rows[0];
@@ -170,7 +170,7 @@ const login = asyncHandler(async (req, res) => {
   }
 
   const result = await pool.query(
-    'SELECT id, full_name, email, password_hash, currency, is_verified FROM users WHERE email = $1',
+    'SELECT id, full_name, email, password_hash, currency, is_verified, avatar_url FROM users WHERE email = $1',
     [email.toLowerCase()]
   );
   const user = result.rows[0];
@@ -281,12 +281,33 @@ const resetPassword = asyncHandler(async (req, res) => {
 
 const me = asyncHandler(async (req, res) => {
   const result = await pool.query(
-    'SELECT id, full_name, email, currency, is_verified, created_at FROM users WHERE id = $1',
+    'SELECT id, full_name, email, currency, is_verified, avatar_url, created_at FROM users WHERE id = $1',
     [req.user.id]
   );
   if (result.rows.length === 0) {
     return res.status(404).json({ error: 'User not found.' });
   }
+  res.json({ user: result.rows[0] });
+});
+
+const updateAvatar = asyncHandler(async (req, res) => {
+  const { avatarDataUrl } = req.body;
+
+  if (!avatarDataUrl || typeof avatarDataUrl !== 'string' || !avatarDataUrl.startsWith('data:image/')) {
+    return res.status(400).json({ error: 'A valid image is required.' });
+  }
+  // Frontend resizes to ~240px before sending, so a well-formed upload should
+  // land well under this - this just guards against something malformed/huge.
+  if (avatarDataUrl.length > 600000) {
+    return res.status(413).json({ error: 'Image is too large. Please choose a smaller picture.' });
+  }
+
+  const result = await pool.query(
+    `UPDATE users SET avatar_url = $1 WHERE id = $2
+     RETURNING id, full_name, email, currency, is_verified, avatar_url`,
+    [avatarDataUrl, req.user.id]
+  );
+
   res.json({ user: result.rows[0] });
 });
 
@@ -298,4 +319,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   me,
+  updateAvatar,
 };

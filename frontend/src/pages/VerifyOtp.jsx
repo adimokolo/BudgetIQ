@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logoFull from '../assets/logo-full.png';
+import AuthLogo from '../components/AuthLogo';
 
 export default function VerifyOtp() {
   const { verifyOtp, resendOtp, loading, error } = useAuth();
@@ -28,9 +28,7 @@ export default function VerifyOtp() {
   return (
     <div className="auth-wrap">
       <div className="facet-card auth-card">
-        <div className="auth-logo">
-          <img src={logoFull} alt="BudgetIQ — Spend with insight, not guesswork." />
-        </div>
+        <AuthLogo />
         <h2 className="auth-title">Verify your email</h2>
         <p className="auth-subtitle">
           Enter the 6-digit code we sent to your inbox. It expires in 10 minutes.

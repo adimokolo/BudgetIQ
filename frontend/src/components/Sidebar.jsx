@@ -1,6 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { NavLink } from 'react-router-dom';
 import logoMark from '../assets/logo-mark.png';
 
 const LINKS = [
@@ -11,15 +9,6 @@ const LINKS = [
 ];
 
 export default function Sidebar() {
-  const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -46,22 +35,6 @@ export default function Sidebar() {
           ))}
         </ul>
       </nav>
-
-      <div className="sidebar-footer">
-        <button className="theme-toggle" onClick={toggleTheme}>
-          <span>{theme === 'light' ? 'Light mode' : 'Dark mode'}</span>
-          <span aria-hidden="true">{theme === 'light' ? '☀' : '☾'}</span>
-        </button>
-        <div className="facet-card" style={{ padding: '12px 14px' }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600 }}>{user?.full_name}</div>
-          <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginBottom: 10 }}>
-            {user?.email}
-          </div>
-          <button className="btn btn--ghost btn--block" onClick={handleLogout}>
-            Log out
-          </button>
-        </div>
-      </div>
     </aside>
   );
 }

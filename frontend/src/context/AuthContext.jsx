@@ -106,6 +106,19 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const updateAvatar = useCallback(async (avatarDataUrl) => {
+    setError(null);
+    try {
+      const { data } = await apiClient.patch('/auth/avatar', { avatarDataUrl });
+      setUser(data.user);
+      localStorage.setItem('budgetiq_user', JSON.stringify(data.user));
+      return true;
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not update your photo. Please try again.');
+      return false;
+    }
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem('budgetiq_token');
     localStorage.removeItem('budgetiq_user');
@@ -124,6 +137,7 @@ export function AuthProvider({ children }) {
         login,
         forgotPassword,
         resetPassword,
+        updateAvatar,
         logout,
       }}
     >

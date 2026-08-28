@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import apiClient from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
+import Skeleton from '../components/Skeleton';
 import { formatCurrency } from '../utils/format';
+import { TRANSACTION_CREATED_EVENT } from '../components/AddTransactionModal';
 
 export default function Budgets() {
   const { user } = useAuth();
@@ -28,6 +30,13 @@ export default function Budgets() {
       setCategories(res.data.categories.filter((c) => c.type === 'expense'))
     );
     loadBudgets();
+  }, []);
+
+  useEffect(() => {
+    const handler = () => loadBudgets();
+    window.addEventListener(TRANSACTION_CREATED_EVENT, handler);
+    return () => window.removeEventListener(TRANSACTION_CREATED_EVENT, handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreate = async (e) => {
@@ -65,7 +74,15 @@ export default function Budgets() {
       </div>
 
       {loading ? (
-        <div className="empty-state">Loading budgets…</div>
+        <div className="grid grid--stats">
+          {[0, 1, 2].map((i) => (
+            <div className="facet-card" key={i}>
+              <Skeleton width="60%" height={13} />
+              <Skeleton width="80%" height={22} style={{ marginTop: 12 }} />
+              <Skeleton height={8} radius={999} style={{ marginTop: 12 }} />
+            </div>
+          ))}
+        </div>
       ) : budgets.length === 0 ? (
         <div className="facet-card empty-state">No budgets yet — set a monthly limit to start tracking.</div>
       ) : (
