@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,32 +10,30 @@ import {
   TextInput,
   Alert,
   Platform,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
-
-const CATEGORIES = [
-  "Uncategorized",
-  "Salary",
-  "Food",
-  "Transport",
-  "Bills",
-  "Entertainment",
-  "Health",
-  "Shopping",
-  "Other",
-];
+import {
+  getTransactions,
+  createTransaction,
+  deleteTransaction as deleteTransactionApi,
+} from "../../services/transactions";
+import { getCategories } from "../../services/categories";
 
 const TYPES = ["Expense", "Income"];
 
-function Dropdown({ label, value, options, onSelect }) {
+function Dropdown({ label, value, options, onSelect, placeholder }) {
   const [open, setOpen] = useState(false);
 
   return (
     <View style={{ marginTop: 12 }}>
       <Text style={styles.inputLabel}>{label}</Text>
       <Pressable style={styles.dropdownField} onPress={() => setOpen(true)}>
-        <Text style={styles.dropdownValue}>{value}</Text>
+        <Text style={styles.dropdownValue}>
+          {value ? value : placeholder || "Select..."}
+        </Text>
         <Text style={styles.dropdownArrow}>⌄</Text>
       </Pressable>
 
@@ -45,25 +43,32 @@ function Dropdown({ label, value, options, onSelect }) {
           onPress={() => setOpen(false)}
         >
           <View style={styles.dropdownMenu}>
-            {options.map((opt) => (
-              <Pressable
-                key={opt}
-                style={styles.dropdownOption}
-                onPress={() => {
-                  onSelect(opt);
-                  setOpen(false);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.dropdownOptionText,
-                    opt === value && styles.dropdownOptionTextActive,
-                  ]}
+            {options.length > 0 ? (
+              options.map((opt) => (
+                <Pressable
+                  key={opt.id ?? opt}
+                  style={styles.dropdownOption}
+                  onPress={() => {
+                    onSelect(opt);
+                    setOpen(false);
+                  }}
                 >
-                  {opt}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text
+                    style={[
+                      styles.dropdownOptionText,
+                      (opt.id ?? opt) === (value?.id ?? value) &&
+                        styles.dropdownOptionTextActive,
+                    ]}
+                  >
+                    {opt.name ?? opt}
+                  </Text>
+                </Pressable>
+              ))
+            ) : (
+              <View style={styles.dropdownOption}>
+                <Text style={styles.dropdownOptionText}>No categories yet</Text>
+              </View>
+            )}
           </View>
         </Pressable>
       </Modal>
@@ -101,7 +106,8 @@ function TransactionCard({ transaction, onDelete }) {
             isIncome ? styles.incomeAmount : styles.expenseAmount,
           ]}
         >
-          {isIncome ? "+" : "-"}₦{transaction.amount.toLocaleString()}.00
+          {isIncome ? "+" : "-"}₦{Number(transaction.amount).toLocaleString()}
+          .00
         </Text>
 
         <Pressable
@@ -116,52 +122,96 @@ function TransactionCard({ transaction, onDelete }) {
   );
 }
 
+/*
+  Normalizes a raw backend transaction row into the shape
+  this screen renders. Matches transactionController.js:
+  - type: 'income' | 'expense'
+  - amount, description, occurred_on
+  - category_name / category_color from the categories JOIN
+*/
+function mapTransaction(raw) {
+  return {
+    id: raw.id,
+    title: raw.description || raw.category_name || "Transaction",
+    category: raw.category_name || "Uncategorized",
+    categoryColor: raw.category_color,
+    amount: Number(raw.amount || 0),
+    type: raw.type === "income" ? "Income" : "Expense",
+    date: raw.occurred_on
+      ? new Date(raw.occurred_on).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "",
+  };
+}
+
 export default function Transactions() {
   const [filter, setFilter] = useState("All types");
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const [transactions, setTransactions] = useState([
-    {
-      id: "1",
-      title: "Monthly Salary",
-      category: "Salary",
-      date: "Aug 25, 2026",
-      amount: 300000,
-      type: "Income",
-    },
-    {
-      id: "2",
-      title: "Groceries",
-      category: "Food",
-      date: "Aug 24, 2026",
-      amount: 15000,
-      type: "Expense",
-    },
-    {
-      id: "3",
-      title: "Uber",
-      category: "Transport",
-      date: "Aug 23, 2026",
-      amount: 5000,
-      type: "Expense",
-    },
-    {
-      id: "4",
-      title: "Freelance Project",
-      category: "Income",
-      date: "Aug 20, 2026",
-      amount: 75000,
-      type: "Income",
-    },
-  ]);
+  const [transactions, setTransactions] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
 
-  // Add-transaction form state — matches the screenshot's fields
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Add-transaction form state
   const [type, setType] = useState("Expense");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("Uncategorized");
+  const [selectedCategory, setSelectedCategory] = useState(null); // { id, name, type, color }
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const loadTransactions = useCallback(async () => {
+    try {
+      const data = await getTransactions();
+
+      console.log("Transactions API response:", data);
+
+      const list = data.transactions || [];
+
+      setTransactions(list.map(mapTransaction));
+    } catch (error) {
+      console.log("Get transactions error:", error);
+      Alert.alert("Error", error.message || "Unable to load transactions.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await getCategories();
+
+      console.log("Categories API response (transactions screen):", data);
+
+      setAllCategories(data.categories || []);
+    } catch (error) {
+      console.log("Get categories error (transactions screen):", error);
+      // Non-fatal: user just won't be able to pick a category yet.
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTransactions();
+    loadCategories();
+  }, [loadTransactions, loadCategories]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadTransactions();
+    loadCategories();
+  };
+
+  // Categories filtered to match the currently selected transaction type
+  const categoryOptions = allCategories.filter(
+    (c) => c.type?.toLowerCase() === type.toLowerCase(),
+  );
 
   const filteredTransactions = transactions.filter((transaction) => {
     if (filter === "All types") return true;
@@ -179,50 +229,85 @@ export default function Transactions() {
   const resetForm = () => {
     setType("Expense");
     setAmount("");
-    setCategory("Uncategorized");
+    setSelectedCategory(null);
     setDescription("");
     setDate(new Date());
   };
 
-  const addTransaction = () => {
+  const handleTypeChange = (newType) => {
+    setType(newType);
+    setSelectedCategory(null); // category list changes with type, so reset selection
+  };
+
+  const addTransaction = async () => {
     if (!amount.trim()) {
       Alert.alert("Missing information", "Please enter an amount.");
       return;
     }
 
-    const newTransaction = {
-      id: Date.now().toString(),
-      title: description.trim() || category,
-      category,
-      amount: Number(amount),
-      type,
-      date: date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-    };
+    setSaving(true);
 
-    setTransactions((currentTransactions) => [
-      newTransaction,
-      ...currentTransactions,
-    ]);
+    try {
+      const payload = {
+        type: type.toLowerCase(), // 'income' | 'expense'
+        amount: Number(amount),
+        description: description.trim() || null,
+        occurredOn: date.toISOString().slice(0, 10), // YYYY-MM-DD
+        categoryId: selectedCategory?.id || null,
+      };
 
-    resetForm();
-    setShowAddModal(false);
+      console.log("Sending transaction:", payload);
+
+      const response = await createTransaction(payload);
+
+      console.log("Create transaction response:", response);
+
+      await loadTransactions();
+
+      resetForm();
+      setShowAddModal(false);
+    } catch (error) {
+      console.log("Add transaction error:", error);
+      Alert.alert("Error", error.message || "Unable to save transaction.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const deleteTransaction = (id) => {
-    setTransactions((currentTransactions) =>
-      currentTransactions.filter((transaction) => transaction.id !== id),
+  const deleteTransaction = async (id) => {
+    // Optimistic UI update
+    const previous = transactions;
+    setTransactions((current) => current.filter((t) => t.id !== id));
+
+    try {
+      await deleteTransactionApi(id);
+    } catch (error) {
+      console.log("Delete transaction error:", error);
+      Alert.alert("Error", error.message || "Unable to delete transaction.");
+      // Roll back on failure
+      setTransactions(previous);
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#174E78" />
+          <Text style={styles.loadingText}>Loading transactions...</Text>
+        </View>
+      </SafeAreaView>
     );
-  };
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -327,7 +412,7 @@ export default function Transactions() {
               label="Type"
               value={type}
               options={TYPES}
-              onSelect={setType}
+              onSelect={handleTypeChange}
             />
 
             {/* AMOUNT */}
@@ -341,12 +426,17 @@ export default function Transactions() {
               keyboardType="numeric"
             />
 
-            {/* CATEGORY — dropdown */}
+            {/* CATEGORY — dropdown, sourced from real API categories */}
             <Dropdown
               label="Category"
-              value={category}
-              options={CATEGORIES}
-              onSelect={setCategory}
+              value={selectedCategory?.name}
+              options={categoryOptions}
+              onSelect={setSelectedCategory}
+              placeholder={
+                categoryOptions.length > 0
+                  ? "Select a category"
+                  : `No ${type.toLowerCase()} categories yet`
+              }
             />
 
             {/* DESCRIPTION */}
@@ -386,8 +476,16 @@ export default function Transactions() {
             )}
 
             {/* SAVE */}
-            <Pressable style={styles.saveButton} onPress={addTransaction}>
-              <Text style={styles.saveButtonText}>Save transaction</Text>
+            <Pressable
+              style={[styles.saveButton, saving && { opacity: 0.6 }]}
+              onPress={addTransaction}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save transaction</Text>
+              )}
             </Pressable>
           </View>
         </View>
@@ -405,6 +503,18 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingBottom: 40,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#6B7280",
   },
 
   header: {

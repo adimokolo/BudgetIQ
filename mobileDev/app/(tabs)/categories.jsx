@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,8 +9,15 @@ import {
   Pressable,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import {
+  getCategories,
+  createCategory,
+  deleteCategory,
+} from "../../services/categories";
 
 const SWATCHES = [
   "#174E78",
@@ -74,24 +81,81 @@ function CategorySection({ title, categories, onDelete }) {
 }
 
 export default function Categories() {
-  const [incomeCategories, setIncomeCategories] = useState([
-    { id: "1", name: "Freelance", color: "#3B82F6" },
-    { id: "2", name: "Salary", color: "#16A34A" },
-  ]);
+  const [incomeCategories, setIncomeCategories] = useState([]);
+  const [expenseCategories, setExpenseCategories] = useState([]);
 
-  const [expenseCategories, setExpenseCategories] = useState([
-    { id: "3", name: "Entertainment", color: "#7C6FF0" },
-    { id: "4", name: "Food & Groceries", color: "#EC4899" },
-    { id: "5", name: "Health", color: "#F59E0B" },
-    { id: "6", name: "Housing & Utilities", color: "#7C6FF0" },
-    { id: "7", name: "Savings", color: "#2DD4BF" },
-    { id: "8", name: "Transport", color: "#FBBF24" },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [name, setName] = useState("");
   const [type, setType] = useState("Expense");
   const [color, setColor] = useState(SWATCHES[0]);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      setLoading(true);
+
+      const data = await getCategories();
+
+      console.log("Categories from API:", data);
+
+      // Adjust this section if your backend response
+      // uses a different property name.
+
+      const categories = Array.isArray(data) ? data : data.categories || [];
+
+      const income = categories.filter(
+        (category) => category.type?.toLowerCase() === "income",
+      );
+
+      const expense = categories.filter(
+        (category) => category.type?.toLowerCase() === "expense",
+      );
+
+      setIncomeCategories(income);
+      setExpenseCategories(expense);
+    } catch (error) {
+      console.log("Category loading error:", error);
+
+      Alert.alert(
+        "Error",
+        error.message ||
+          "Unable to load categories. Please check your connection.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshCategories = async () => {
+    try {
+      setRefreshing(true);
+
+      const data = await getCategories();
+
+      const categories = Array.isArray(data) ? data : data.categories || [];
+
+      const income = categories.filter(
+        (category) => category.type?.toLowerCase() === "income",
+      );
+
+      const expense = categories.filter(
+        (category) => category.type?.toLowerCase() === "expense",
+      );
+
+      setIncomeCategories(income);
+      setExpenseCategories(expense);
+    } catch (error) {
+      console.log("Refresh error:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const resetForm = () => {
     setName("");
@@ -99,46 +163,94 @@ export default function Categories() {
     setColor(SWATCHES[0]);
   };
 
-  const addCategory = () => {
+  const addCategory = async () => {
     if (!name.trim()) {
       Alert.alert("Missing information", "Please enter a category name.");
       return;
     }
 
-    const newCategory = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      color,
-    };
+    try {
+      const newCategory = {
+        name: name.trim(),
+        type: type.toLowerCase(),
+        color: color,
+      };
 
-    if (type === "Income") {
-      setIncomeCategories((current) => [...current, newCategory]);
-    } else {
-      setExpenseCategories((current) => [...current, newCategory]);
+      console.log("Sending category:", newCategory);
+
+      await createCategory(newCategory);
+
+      Alert.alert("Success", "Category added successfully.");
+
+      resetForm();
+      setShowAddModal(false);
+
+      // Reload categories from backend
+      await loadCategories();
+    } catch (error) {
+      console.log("Add category error:", error);
+
+      Alert.alert("Error", error.message || "Unable to add category.");
     }
-
-    resetForm();
-    setShowAddModal(false);
   };
 
-  const deleteIncomeCategory = (id) => {
-    setIncomeCategories((current) => current.filter((c) => c.id !== id));
+  const handleDeleteCategory = (id) => {
+    Alert.alert(
+      "Delete Category",
+      "Are you sure you want to delete this category?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteCategory(id);
+
+              Alert.alert("Success", "Category deleted successfully.");
+
+              await loadCategories();
+            } catch (error) {
+              console.log("Delete category error:", error);
+
+              Alert.alert(
+                "Error",
+                error.message || "Unable to delete category.",
+              );
+            }
+          },
+        },
+      ],
+    );
   };
 
-  const deleteExpenseCategory = (id) => {
-    setExpenseCategories((current) => current.filter((c) => c.id !== id));
-  };
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#174E78" />
+          <Text style={styles.loadingText}>Loading categories...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={refreshCategories}
       >
         {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.heading}>Categories</Text>
+
             <Text style={styles.subheading}>
               Organize income and spending so patterns are easy to spot.
             </Text>
@@ -156,14 +268,14 @@ export default function Categories() {
         <CategorySection
           title="Income"
           categories={incomeCategories}
-          onDelete={deleteIncomeCategory}
+          onDelete={handleDeleteCategory}
         />
 
         {/* Expense */}
         <CategorySection
           title="Expense"
           categories={expenseCategories}
-          onDelete={deleteExpenseCategory}
+          onDelete={handleDeleteCategory}
         />
       </ScrollView>
 
@@ -172,7 +284,10 @@ export default function Categories() {
         visible={showAddModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowAddModal(false)}
+        onRequestClose={() => {
+          resetForm();
+          setShowAddModal(false);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -191,6 +306,7 @@ export default function Categories() {
 
             {/* NAME */}
             <Text style={styles.inputLabel}>Category name</Text>
+
             <TextInput
               style={styles.input}
               placeholder="e.g. Subscriptions"
@@ -201,6 +317,7 @@ export default function Categories() {
 
             {/* TYPE */}
             <Text style={styles.inputLabel}>Category type</Text>
+
             <View style={styles.typeButtons}>
               <Pressable
                 style={[
@@ -239,6 +356,7 @@ export default function Categories() {
 
             {/* COLOR */}
             <Text style={styles.inputLabel}>Color</Text>
+
             <View style={styles.swatchRow}>
               {SWATCHES.map((swatch) => (
                 <Pressable
@@ -246,7 +364,9 @@ export default function Categories() {
                   onPress={() => setColor(swatch)}
                   style={[
                     styles.swatch,
-                    { backgroundColor: swatch },
+                    {
+                      backgroundColor: swatch,
+                    },
                     color === swatch && styles.swatchSelected,
                   ]}
                 />
@@ -269,17 +389,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F9FAFB",
   },
-
   container: {
     padding: 20,
     paddingBottom: 40,
   },
-
-  /* Header */
   header: {
     marginBottom: 24,
   },
-
   heading: {
     fontSize: 26,
     fontWeight: "800",
@@ -508,5 +624,16 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#6B7280",
   },
 });
