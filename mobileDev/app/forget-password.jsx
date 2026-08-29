@@ -15,9 +15,14 @@ import {
 import { Link, useRouter } from "expo-router";
 
 import { forgotPassword } from "../services/auth";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function ForgetPasswordScreen() {
   const router = useRouter();
+
+  // Theme
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,6 +47,7 @@ export default function ForgetPasswordScreen() {
 
     try {
       setLoading(true);
+
       await forgotPassword(trimmedEmail);
 
       Alert.alert(
@@ -93,8 +99,11 @@ export default function ForgetPasswordScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.card}>
+          {/* LOGO */}
+
           <Image
             source={require("../assets/images/logo.png")}
             style={styles.logo}
@@ -105,18 +114,22 @@ export default function ForgetPasswordScreen() {
 
           <Text style={styles.tagline}>SPEND WITH INSIGHT, NOT GUESSWORK.</Text>
 
+          {/* TITLE */}
+
           <Text style={styles.welcome}>Reset your password</Text>
 
           <Text style={styles.subtext}>
             Enter the email on your account and we'll send you a reset code.
           </Text>
 
+          {/* EMAIL */}
+
           <Text style={styles.label}>Email</Text>
 
           <TextInput
             style={styles.input}
             placeholder="you@example.com"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textFaint}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -127,6 +140,8 @@ export default function ForgetPasswordScreen() {
             onSubmitEditing={handleSendResetLink}
           />
 
+          {/* SEND RESET LINK */}
+
           <TouchableOpacity
             style={[styles.resetButton, loading && styles.resetButtonDisabled]}
             onPress={handleSendResetLink}
@@ -135,7 +150,7 @@ export default function ForgetPasswordScreen() {
           >
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color={colors.primaryText} />
 
                 <Text style={styles.resetButtonText}>Sending...</Text>
               </View>
@@ -143,6 +158,8 @@ export default function ForgetPasswordScreen() {
               <Text style={styles.resetButtonText}>Send reset link</Text>
             )}
           </TouchableOpacity>
+
+          {/* BACK TO LOGIN */}
 
           <Link href="/" asChild>
             <TouchableOpacity disabled={loading}>
@@ -155,129 +172,151 @@ export default function ForgetPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#F3F4F6",
-  },
+/*
+|--------------------------------------------------------------------------
+| THEME-AWARE STYLES
+|--------------------------------------------------------------------------
+*/
 
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-
-  card: {
-    width: "100%",
-    maxWidth: 400,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    paddingVertical: 32,
-    paddingHorizontal: 28,
-    alignItems: "center",
-
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
+const createStyles = (colors) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
     },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-  },
 
-  logo: {
-    width: 75,
-    height: 75,
-    marginBottom: 5,
-  },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: 40,
+      paddingHorizontal: 20,
+    },
 
-  brand: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#1B3A6B",
-    letterSpacing: 3,
-  },
+    card: {
+      width: "100%",
+      maxWidth: 400,
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      paddingVertical: 32,
+      paddingHorizontal: 28,
+      alignItems: "center",
 
-  tagline: {
-    fontSize: 8,
-    fontWeight: "500",
-    color: "#6B7280",
-    letterSpacing: 1,
-    marginTop: 4,
-    marginBottom: 48,
-  },
+      shadowColor: "#000",
 
-  welcome: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-    alignSelf: "flex-start",
-  },
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
 
-  subtext: {
-    fontSize: 11,
-    color: "#6B7280",
-    alignSelf: "flex-start",
-    marginTop: 4,
-    marginBottom: 20,
-    lineHeight: 17,
-  },
+      shadowOpacity: colors.mode === "dark" ? 0.25 : 0.08,
 
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#374151",
-    alignSelf: "flex-start",
-    marginBottom: 6,
-  },
+      shadowRadius: 12,
+      elevation: 3,
 
-  input: {
-    width: "100%",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 10,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: "#111827",
-    marginBottom: 16,
-  },
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
 
-  resetButton: {
-    width: "100%",
-    backgroundColor: "#14274E",
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 9,
-    minHeight: 44,
-  },
+    logo: {
+      width: 75,
+      height: 75,
+      marginBottom: 5,
+    },
 
-  resetButtonDisabled: {
-    opacity: 0.7,
-  },
+    brand: {
+      fontSize: 20,
+      fontWeight: "800",
+      color: colors.primary,
+      letterSpacing: 3,
+    },
 
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
+    tagline: {
+      fontSize: 8,
+      fontWeight: "500",
+      color: colors.textMuted,
+      letterSpacing: 1,
+      marginTop: 4,
+      marginBottom: 48,
+    },
 
-  resetButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
+    welcome: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.text,
+      alignSelf: "flex-start",
+    },
 
-  backToLoginLink: {
-    fontSize: 12,
-    color: "#1B3A6B",
-    fontWeight: "700",
-    textDecorationLine: "underline",
-    marginTop: 18,
-  },
-});
+    subtext: {
+      fontSize: 11,
+      color: colors.textMuted,
+      alignSelf: "flex-start",
+      marginTop: 4,
+      marginBottom: 20,
+      lineHeight: 17,
+    },
+
+    label: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.text,
+      alignSelf: "flex-start",
+      marginBottom: 6,
+    },
+
+    input: {
+      width: "100%",
+      backgroundColor: colors.inputBg,
+
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+
+      borderRadius: 10,
+      paddingVertical: 11,
+      paddingHorizontal: 14,
+
+      fontSize: 14,
+      color: colors.text,
+
+      marginBottom: 16,
+    },
+
+    resetButton: {
+      width: "100%",
+      backgroundColor: colors.primary,
+
+      borderRadius: 10,
+      paddingVertical: 12,
+
+      alignItems: "center",
+      justifyContent: "center",
+
+      marginTop: 9,
+      minHeight: 44,
+    },
+
+    resetButtonDisabled: {
+      opacity: 0.7,
+    },
+
+    loadingContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+
+    resetButtonText: {
+      color: colors.primaryText,
+      fontSize: 14,
+      fontWeight: "700",
+    },
+
+    backToLoginLink: {
+      fontSize: 12,
+      color: colors.primary,
+      fontWeight: "700",
+      textDecorationLine: "underline",
+      marginTop: 18,
+    },
+  });

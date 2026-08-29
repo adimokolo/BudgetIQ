@@ -18,6 +18,7 @@ import {
   createCategory,
   deleteCategory,
 } from "../../services/categories";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const SWATCHES = [
   "#174E78",
@@ -32,32 +33,41 @@ const SWATCHES = [
   "#EF4444",
 ];
 
-function CategoryRow({ category, onDelete }) {
+function CategoryRow({ category, onDelete, colors }) {
   return (
-    <View style={styles.categoryRow}>
+    <View style={[styles.categoryRow, { borderTopColor: colors.divider }]}>
       <View style={styles.categoryLeft}>
         <View style={[styles.dot, { backgroundColor: category.color }]} />
-        <Text style={styles.categoryName}>{category.name}</Text>
+        <Text style={[styles.categoryName, { color: colors.textMuted }]}>
+          {category.name}
+        </Text>
       </View>
 
       <Pressable
         onPress={() => onDelete(category.id)}
         hitSlop={8}
-        style={styles.deleteButton}
+        style={[styles.deleteButton, { backgroundColor: colors.divider }]}
       >
-        <Text style={styles.deleteButtonText}>×</Text>
+        <Text style={[styles.deleteButtonText, { color: colors.textFaint }]}>
+          ×
+        </Text>
       </Pressable>
     </View>
   );
 }
 
-function CategorySection({ title, categories, onDelete }) {
+function CategorySection({ title, categories, onDelete, colors }) {
   const count = categories.length;
 
   return (
-    <View style={styles.sectionCard}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <Text style={styles.sectionSubtitle}>
+    <View
+      style={[
+        styles.sectionCard,
+        { backgroundColor: colors.card, borderColor: colors.cardBorder },
+      ]}
+    >
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+      <Text style={[styles.sectionSubtitle, { color: colors.textFaint }]}>
         {count} {count === 1 ? "category" : "categories"}
       </Text>
 
@@ -68,12 +78,15 @@ function CategorySection({ title, categories, onDelete }) {
               key={category.id}
               category={category}
               onDelete={onDelete}
+              colors={colors}
             />
           ))}
         </View>
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No categories yet.</Text>
+          <Text style={[styles.emptyText, { color: colors.textFaint }]}>
+            No categories yet.
+          </Text>
         </View>
       )}
     </View>
@@ -81,6 +94,8 @@ function CategorySection({ title, categories, onDelete }) {
 }
 
 export default function Categories() {
+  const { colors } = useTheme();
+
   const [incomeCategories, setIncomeCategories] = useState([]);
   const [expenseCategories, setExpenseCategories] = useState([]);
 
@@ -229,17 +244,23 @@ export default function Categories() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.screen}>
+      <SafeAreaView
+        style={[styles.screen, { backgroundColor: colors.background }]}
+      >
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#174E78" />
-          <Text style={styles.loadingText}>Loading categories...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+            Loading categories...
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView
+      style={[styles.screen, { backgroundColor: colors.background }]}
+    >
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -249,18 +270,22 @@ export default function Categories() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.heading}>Categories</Text>
+            <Text style={[styles.heading, { color: colors.text }]}>
+              Categories
+            </Text>
 
-            <Text style={styles.subheading}>
+            <Text style={[styles.subheading, { color: colors.textMuted }]}>
               Organize income and spending so patterns are easy to spot.
             </Text>
           </View>
 
           <TouchableOpacity
-            style={styles.addButton}
+            style={[styles.addButton, { backgroundColor: colors.primary }]}
             onPress={() => setShowAddModal(true)}
           >
-            <Text style={styles.addButtonText}>+ New category</Text>
+            <Text style={[styles.addButtonText, { color: colors.primaryText }]}>
+              + New category
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -269,6 +294,7 @@ export default function Categories() {
           title="Income"
           categories={incomeCategories}
           onDelete={handleDeleteCategory}
+          colors={colors}
         />
 
         {/* Expense */}
@@ -276,6 +302,7 @@ export default function Categories() {
           title="Expense"
           categories={expenseCategories}
           onDelete={handleDeleteCategory}
+          colors={colors}
         />
       </ScrollView>
 
@@ -289,10 +316,14 @@ export default function Categories() {
           setShowAddModal(false);
         }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+        <View
+          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
+        >
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New category</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                New category
+              </Text>
 
               <Pressable
                 onPress={() => {
@@ -300,36 +331,50 @@ export default function Categories() {
                   setShowAddModal(false);
                 }}
               >
-                <Text style={styles.closeButton}>×</Text>
+                <Text style={[styles.closeButton, { color: colors.textFaint }]}>
+                  ×
+                </Text>
               </Pressable>
             </View>
 
             {/* NAME */}
-            <Text style={styles.inputLabel}>Category name</Text>
+            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
+              Category name
+            </Text>
 
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                { borderColor: colors.inputBorder, color: colors.text },
+              ]}
               placeholder="e.g. Subscriptions"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textFaint}
               value={name}
               onChangeText={setName}
             />
 
             {/* TYPE */}
-            <Text style={styles.inputLabel}>Category type</Text>
+            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
+              Category type
+            </Text>
 
             <View style={styles.typeButtons}>
               <Pressable
                 style={[
                   styles.typeButton,
-                  type === "Income" && styles.activeIncomeButton,
+                  { borderColor: colors.inputBorder },
+                  type === "Income" && {
+                    backgroundColor: colors.incomeBg,
+                    borderColor: colors.income,
+                  },
                 ]}
                 onPress={() => setType("Income")}
               >
                 <Text
                   style={[
                     styles.typeButtonText,
-                    type === "Income" && styles.activeIncomeText,
+                    { color: colors.textMuted },
+                    type === "Income" && { color: colors.income },
                   ]}
                 >
                   Income
@@ -339,14 +384,19 @@ export default function Categories() {
               <Pressable
                 style={[
                   styles.typeButton,
-                  type === "Expense" && styles.activeExpenseButton,
+                  { borderColor: colors.inputBorder },
+                  type === "Expense" && {
+                    backgroundColor: colors.expenseBg,
+                    borderColor: colors.expense,
+                  },
                 ]}
                 onPress={() => setType("Expense")}
               >
                 <Text
                   style={[
                     styles.typeButtonText,
-                    type === "Expense" && styles.activeExpenseText,
+                    { color: colors.textMuted },
+                    type === "Expense" && { color: colors.expense },
                   ]}
                 >
                   Expense
@@ -355,7 +405,9 @@ export default function Categories() {
             </View>
 
             {/* COLOR */}
-            <Text style={styles.inputLabel}>Color</Text>
+            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
+              Color
+            </Text>
 
             <View style={styles.swatchRow}>
               {SWATCHES.map((swatch) => (
@@ -367,15 +419,24 @@ export default function Categories() {
                     {
                       backgroundColor: swatch,
                     },
-                    color === swatch && styles.swatchSelected,
+                    color === swatch && {
+                      borderColor: colors.text,
+                    },
                   ]}
                 />
               ))}
             </View>
 
             {/* SAVE */}
-            <Pressable style={styles.saveButton} onPress={addCategory}>
-              <Text style={styles.saveButtonText}>Add category</Text>
+            <Pressable
+              style={[styles.saveButton, { backgroundColor: colors.primary }]}
+              onPress={addCategory}
+            >
+              <Text
+                style={[styles.saveButtonText, { color: colors.primaryText }]}
+              >
+                Add category
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -387,7 +448,6 @@ export default function Categories() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
   },
   container: {
     padding: 20,
@@ -399,18 +459,15 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#111827",
   },
 
   subheading: {
     fontSize: 14,
-    color: "#6B7280",
     marginTop: 5,
   },
 
   addButton: {
     marginTop: 18,
-    backgroundColor: "#174E78",
     paddingVertical: 13,
     paddingHorizontal: 18,
     borderRadius: 10,
@@ -418,30 +475,25 @@ const styles = StyleSheet.create({
   },
 
   addButtonText: {
-    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
   },
 
   /* Sections */
   sectionCard: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#EEF0F3",
     marginBottom: 16,
   },
 
   sectionTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#111827",
   },
 
   sectionSubtitle: {
     fontSize: 12,
-    color: "#9CA3AF",
     marginTop: 2,
     marginBottom: 12,
   },
@@ -456,7 +508,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
   },
 
   categoryLeft: {
@@ -474,14 +525,12 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
   },
 
   deleteButton: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -489,7 +538,6 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 16,
     lineHeight: 16,
-    color: "#9CA3AF",
     fontWeight: "700",
   },
 
@@ -502,19 +550,16 @@ const styles = StyleSheet.create({
 
   emptyText: {
     fontSize: 13,
-    color: "#9CA3AF",
   },
 
   /* Add Category Modal */
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(17, 24, 39, 0.5)",
     justifyContent: "center",
     padding: 20,
   },
 
   modalCard: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
   },
@@ -529,31 +574,26 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#111827",
   },
 
   closeButton: {
     fontSize: 22,
-    color: "#9CA3AF",
     fontWeight: "700",
   },
 
   inputLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#374151",
     marginBottom: 6,
     marginTop: 12,
   },
 
   input: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
     borderRadius: 10,
     paddingVertical: 11,
     paddingHorizontal: 13,
     fontSize: 14,
-    color: "#111827",
   },
 
   typeButtons: {
@@ -564,7 +604,6 @@ const styles = StyleSheet.create({
   typeButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
     borderRadius: 10,
     paddingVertical: 11,
     alignItems: "center",
@@ -573,25 +612,6 @@ const styles = StyleSheet.create({
   typeButtonText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#6B7280",
-  },
-
-  activeIncomeButton: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#16A34A",
-  },
-
-  activeIncomeText: {
-    color: "#16A34A",
-  },
-
-  activeExpenseButton: {
-    backgroundColor: "#FCE7F3",
-    borderColor: "#EC4899",
-  },
-
-  activeExpenseText: {
-    color: "#EC4899",
   },
 
   swatchRow: {
@@ -608,20 +628,14 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
 
-  swatchSelected: {
-    borderColor: "#111827",
-  },
-
   saveButton: {
     marginTop: 20,
-    backgroundColor: "#174E78",
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
   },
 
   saveButtonText: {
-    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
   },
@@ -634,6 +648,5 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: "#6B7280",
   },
 });

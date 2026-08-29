@@ -15,9 +15,13 @@ import {
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 
 import { resetPassword } from "../services/auth";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
 
   const { email } = useLocalSearchParams();
 
@@ -75,7 +79,6 @@ export default function ResetPasswordScreen() {
     try {
       setLoading(true);
 
-      // Call backend
       await resetPassword(
         Array.isArray(email) ? email[0] : email,
         trimmedPassword,
@@ -126,6 +129,7 @@ export default function ResetPasswordScreen() {
       >
         <View style={styles.card}>
           {/* LOGO */}
+
           <Image
             source={require("../assets/images/logo.png")}
             style={styles.logo}
@@ -137,6 +141,7 @@ export default function ResetPasswordScreen() {
           <Text style={styles.tagline}>SPEND WITH INSIGHT, NOT GUESSWORK.</Text>
 
           {/* TITLE */}
+
           <Text style={styles.welcome}>Create new password</Text>
 
           <Text style={styles.subtext}>
@@ -144,12 +149,13 @@ export default function ResetPasswordScreen() {
           </Text>
 
           {/* NEW PASSWORD */}
+
           <Text style={styles.label}>New password</Text>
 
           <TextInput
             style={styles.input}
             placeholder="At least 8 characters"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textFaint}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -159,12 +165,13 @@ export default function ResetPasswordScreen() {
           />
 
           {/* CONFIRM PASSWORD */}
+
           <Text style={styles.label}>Confirm password</Text>
 
           <TextInput
             style={styles.input}
             placeholder="Re-enter your password"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textFaint}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
@@ -176,6 +183,7 @@ export default function ResetPasswordScreen() {
           />
 
           {/* RESET BUTTON */}
+
           <TouchableOpacity
             style={[styles.resetButton, loading && styles.resetButtonDisabled]}
             onPress={handleResetPassword}
@@ -184,7 +192,7 @@ export default function ResetPasswordScreen() {
           >
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color={colors.primaryText} />
 
                 <Text style={styles.resetButtonText}>Resetting...</Text>
               </View>
@@ -194,6 +202,7 @@ export default function ResetPasswordScreen() {
           </TouchableOpacity>
 
           {/* BACK TO LOGIN */}
+
           <Link href="/" asChild>
             <TouchableOpacity disabled={loading}>
               <Text style={styles.backToLoginLink}>Back to log in</Text>
@@ -205,128 +214,158 @@ export default function ResetPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#F3F4F6",
-  },
+/*
+|--------------------------------------------------------------------------
+| THEME-AWARE STYLES
+|--------------------------------------------------------------------------
+*/
 
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-
-  card: {
-    width: "100%",
-    maxWidth: 400,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    paddingVertical: 32,
-    paddingHorizontal: 28,
-    alignItems: "center",
-
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
+const createStyles = (colors) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
     },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-  },
 
-  logo: {
-    width: 75,
-    height: 75,
-    marginBottom: 5,
-  },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: 40,
+      paddingHorizontal: 20,
+    },
 
-  brand: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#1B3A6B",
-    letterSpacing: 3,
-  },
+    card: {
+      width: "100%",
+      maxWidth: 400,
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      paddingVertical: 32,
+      paddingHorizontal: 28,
+      alignItems: "center",
 
-  tagline: {
-    fontSize: 8,
-    fontWeight: "500",
-    color: "#6B7280",
-    letterSpacing: 1,
-    marginTop: 4,
-    marginBottom: 48,
-  },
+      /*
+       * Keep the shadow subtle in both themes.
+       * The dark card already contrasts with
+       * the dark background.
+       */
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: colors.mode === "dark" ? 0.25 : 0.08,
+      shadowRadius: 12,
+      elevation: 3,
 
-  welcome: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-    alignSelf: "flex-start",
-  },
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
 
-  subtext: {
-    fontSize: 11,
-    color: "#6B7280",
-    alignSelf: "flex-start",
-    marginTop: 4,
-    marginBottom: 20,
-  },
+    logo: {
+      width: 75,
+      height: 75,
+      marginBottom: 5,
+    },
 
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#374151",
-    alignSelf: "flex-start",
-    marginBottom: 6,
-  },
+    brand: {
+      fontSize: 20,
+      fontWeight: "800",
 
-  input: {
-    width: "100%",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 10,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: "#111827",
-    marginBottom: 16,
-  },
+      /*
+       * Uses your primary theme color
+       * instead of the hard-coded #1B3A6B.
+       */
+      color: colors.primary,
 
-  resetButton: {
-    width: "100%",
-    backgroundColor: "#14274E",
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 9,
-    minHeight: 44,
-  },
+      letterSpacing: 3,
+    },
 
-  resetButtonDisabled: {
-    opacity: 0.7,
-  },
+    tagline: {
+      fontSize: 8,
+      fontWeight: "500",
+      color: colors.textMuted,
+      letterSpacing: 1,
+      marginTop: 4,
+      marginBottom: 48,
+    },
 
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
+    welcome: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.text,
+      alignSelf: "flex-start",
+    },
 
-  resetButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
+    subtext: {
+      fontSize: 11,
+      color: colors.textMuted,
+      alignSelf: "flex-start",
+      marginTop: 4,
+      marginBottom: 20,
+    },
 
-  backToLoginLink: {
-    fontSize: 12,
-    color: "#1B3A6B",
-    fontWeight: "700",
-    textDecorationLine: "underline",
-    marginTop: 18,
-  },
-});
+    label: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.text,
+      alignSelf: "flex-start",
+      marginBottom: 6,
+    },
+
+    input: {
+      width: "100%",
+      backgroundColor: colors.inputBg,
+
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+
+      borderRadius: 10,
+      paddingVertical: 11,
+      paddingHorizontal: 14,
+
+      fontSize: 14,
+      color: colors.text,
+
+      marginBottom: 16,
+    },
+
+    resetButton: {
+      width: "100%",
+      backgroundColor: colors.primary,
+
+      borderRadius: 10,
+      paddingVertical: 12,
+
+      alignItems: "center",
+      justifyContent: "center",
+
+      marginTop: 9,
+      minHeight: 44,
+    },
+
+    resetButtonDisabled: {
+      opacity: 0.7,
+    },
+
+    loadingContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+
+    resetButtonText: {
+      color: colors.primaryText,
+      fontSize: 14,
+      fontWeight: "700",
+    },
+
+    backToLoginLink: {
+      fontSize: 12,
+      color: colors.primary,
+      fontWeight: "700",
+      textDecorationLine: "underline",
+      marginTop: 18,
+    },
+  });

@@ -15,29 +15,47 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
+
 import {
   getTransactions,
   createTransaction,
   deleteTransaction as deleteTransactionApi,
 } from "../../services/transactions";
+
 import { getCategories } from "../../services/categories";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const TYPES = ["Expense", "Income"];
 
-function Dropdown({ label, value, options, onSelect, placeholder }) {
+/*
+|--------------------------------------------------------------------------
+| DROPDOWN
+|--------------------------------------------------------------------------
+*/
+
+function Dropdown({ label, value, options, onSelect, placeholder, styles }) {
   const [open, setOpen] = useState(false);
 
   return (
     <View style={{ marginTop: 12 }}>
       <Text style={styles.inputLabel}>{label}</Text>
+
       <Pressable style={styles.dropdownField} onPress={() => setOpen(true)}>
-        <Text style={styles.dropdownValue}>
+        <Text
+          style={[styles.dropdownValue, !value && styles.dropdownPlaceholder]}
+        >
           {value ? value : placeholder || "Select..."}
         </Text>
+
         <Text style={styles.dropdownArrow}>⌄</Text>
       </Pressable>
 
-      <Modal visible={open} transparent animationType="fade">
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+      >
         <Pressable
           style={styles.dropdownOverlay}
           onPress={() => setOpen(false)}
@@ -76,7 +94,13 @@ function Dropdown({ label, value, options, onSelect, placeholder }) {
   );
 }
 
-function TransactionCard({ transaction, onDelete }) {
+/*
+|--------------------------------------------------------------------------
+| TRANSACTION CARD
+|--------------------------------------------------------------------------
+*/
+
+function TransactionCard({ transaction, onDelete, styles }) {
   const isIncome = transaction.type === "Income";
 
   return (
@@ -88,12 +112,22 @@ function TransactionCard({ transaction, onDelete }) {
             isIncome ? styles.incomeIcon : styles.expenseIcon,
           ]}
         >
-          <Text style={styles.iconText}>{isIncome ? "↓" : "↑"}</Text>
+          <Text
+            style={[
+              styles.iconText,
+              isIncome ? styles.incomeIconText : styles.expenseIconText,
+            ]}
+          >
+            {isIncome ? "↓" : "↑"}
+          </Text>
         </View>
 
-        <View>
-          <Text style={styles.transactionTitle}>{transaction.title}</Text>
-          <Text style={styles.transactionMeta}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.transactionTitle} numberOfLines={1}>
+            {transaction.title}
+          </Text>
+
+          <Text style={styles.transactionMeta} numberOfLines={1}>
             {transaction.category} • {transaction.date}
           </Text>
         </View>
@@ -123,20 +157,24 @@ function TransactionCard({ transaction, onDelete }) {
 }
 
 /*
-  Normalizes a raw backend transaction row into the shape
-  this screen renders. Matches transactionController.js:
-  - type: 'income' | 'expense'
-  - amount, description, occurred_on
-  - category_name / category_color from the categories JOIN
+|--------------------------------------------------------------------------
+| NORMALIZE BACKEND TRANSACTION
+|--------------------------------------------------------------------------
 */
+
 function mapTransaction(raw) {
   return {
     id: raw.id,
     title: raw.description || raw.category_name || "Transaction",
+
     category: raw.category_name || "Uncategorized",
+
     categoryColor: raw.category_color,
+
     amount: Number(raw.amount || 0),
+
     type: raw.type === "income" ? "Income" : "Expense",
+
     date: raw.occurred_on
       ? new Date(raw.occurred_on).toLocaleDateString("en-US", {
           month: "short",
@@ -147,7 +185,23 @@ function mapTransaction(raw) {
   };
 }
 
+/*
+|--------------------------------------------------------------------------
+| TRANSACTIONS SCREEN
+|--------------------------------------------------------------------------
+*/
+
 export default function Transactions() {
+  const { colors } = useTheme();
+
+  /*
+  |--------------------------------------------------------------------------
+  | THEME-AWARE STYLES
+  |--------------------------------------------------------------------------
+  */
+
+  const styles = createStyles(colors);
+
   const [filter, setFilter] = useState("All types");
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -158,13 +212,19 @@ export default function Transactions() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Add-transaction form state
+  // Add transaction form
   const [type, setType] = useState("Expense");
   const [amount, setAmount] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(null); // { id, name, type, color }
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD TRANSACTIONS
+  |--------------------------------------------------------------------------
+  */
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -177,6 +237,7 @@ export default function Transactions() {
       setTransactions(list.map(mapTransaction));
     } catch (error) {
       console.log("Get transactions error:", error);
+
       Alert.alert("Error", error.message || "Unable to load transactions.");
     } finally {
       setLoading(false);
@@ -184,39 +245,77 @@ export default function Transactions() {
     }
   }, []);
 
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD CATEGORIES
+  |--------------------------------------------------------------------------
+  */
+
   const loadCategories = useCallback(async () => {
     try {
       const data = await getCategories();
 
-      console.log("Categories API response (transactions screen):", data);
+      console.log("Categories API response:", data);
 
       setAllCategories(data.categories || []);
     } catch (error) {
-      console.log("Get categories error (transactions screen):", error);
-      // Non-fatal: user just won't be able to pick a category yet.
+      console.log("Get categories error:", error);
     }
   }, []);
+
+  /*
+  |--------------------------------------------------------------------------
+  | INITIAL LOAD
+  |--------------------------------------------------------------------------
+  */
 
   useEffect(() => {
     loadTransactions();
     loadCategories();
   }, [loadTransactions, loadCategories]);
 
+  /*
+  |--------------------------------------------------------------------------
+  | REFRESH
+  |--------------------------------------------------------------------------
+  */
+
   const onRefresh = () => {
     setRefreshing(true);
+
     loadTransactions();
     loadCategories();
   };
 
-  // Categories filtered to match the currently selected transaction type
+  /*
+  |--------------------------------------------------------------------------
+  | CATEGORY OPTIONS
+  |--------------------------------------------------------------------------
+  */
+
   const categoryOptions = allCategories.filter(
     (c) => c.type?.toLowerCase() === type.toLowerCase(),
   );
 
+  /*
+  |--------------------------------------------------------------------------
+  | FILTER TRANSACTIONS
+  |--------------------------------------------------------------------------
+  */
+
   const filteredTransactions = transactions.filter((transaction) => {
-    if (filter === "All types") return true;
+    if (filter === "All types") {
+      return true;
+    }
+
     return transaction.type === filter;
   });
+
+  /*
+  |--------------------------------------------------------------------------
+  | TOTALS
+  |--------------------------------------------------------------------------
+  */
 
   const totalIncome = transactions
     .filter((item) => item.type === "Income")
@@ -226,6 +325,12 @@ export default function Transactions() {
     .filter((item) => item.type === "Expense")
     .reduce((total, item) => total + item.amount, 0);
 
+  /*
+  |--------------------------------------------------------------------------
+  | RESET FORM
+  |--------------------------------------------------------------------------
+  */
+
   const resetForm = () => {
     setType("Expense");
     setAmount("");
@@ -234,14 +339,27 @@ export default function Transactions() {
     setDate(new Date());
   };
 
+  /*
+  |--------------------------------------------------------------------------
+  | TYPE CHANGE
+  |--------------------------------------------------------------------------
+  */
+
   const handleTypeChange = (newType) => {
     setType(newType);
-    setSelectedCategory(null); // category list changes with type, so reset selection
+    setSelectedCategory(null);
   };
+
+  /*
+  |--------------------------------------------------------------------------
+  | ADD TRANSACTION
+  |--------------------------------------------------------------------------
+  */
 
   const addTransaction = async () => {
     if (!amount.trim()) {
       Alert.alert("Missing information", "Please enter an amount.");
+
       return;
     }
 
@@ -249,10 +367,10 @@ export default function Transactions() {
 
     try {
       const payload = {
-        type: type.toLowerCase(), // 'income' | 'expense'
+        type: type.toLowerCase(),
         amount: Number(amount),
         description: description.trim() || null,
-        occurredOn: date.toISOString().slice(0, 10), // YYYY-MM-DD
+        occurredOn: date.toISOString().slice(0, 10),
         categoryId: selectedCategory?.id || null,
       };
 
@@ -265,40 +383,64 @@ export default function Transactions() {
       await loadTransactions();
 
       resetForm();
+
       setShowAddModal(false);
     } catch (error) {
       console.log("Add transaction error:", error);
+
       Alert.alert("Error", error.message || "Unable to save transaction.");
     } finally {
       setSaving(false);
     }
   };
 
+  /*
+  |--------------------------------------------------------------------------
+  | DELETE TRANSACTION
+  |--------------------------------------------------------------------------
+  */
+
   const deleteTransaction = async (id) => {
-    // Optimistic UI update
     const previous = transactions;
+
+    // Optimistic update
     setTransactions((current) => current.filter((t) => t.id !== id));
 
     try {
       await deleteTransactionApi(id);
     } catch (error) {
       console.log("Delete transaction error:", error);
+
       Alert.alert("Error", error.message || "Unable to delete transaction.");
-      // Roll back on failure
+
+      // Rollback
       setTransactions(previous);
     }
   };
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOADING STATE
+  |--------------------------------------------------------------------------
+  */
 
   if (loading) {
     return (
       <SafeAreaView style={styles.screen}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#174E78" />
+          <ActivityIndicator size="large" color={colors.primary} />
+
           <Text style={styles.loadingText}>Loading transactions...</Text>
         </View>
       </SafeAreaView>
     );
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | SCREEN
+  |--------------------------------------------------------------------------
+  */
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -306,13 +448,21 @@ export default function Transactions() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+            progressBackgroundColor={colors.card}
+          />
         }
       >
-        {/* Header */}
+        {/* HEADER */}
+
         <View style={styles.header}>
           <View>
             <Text style={styles.heading}>Transactions</Text>
+
             <Text style={styles.subheading}>
               Every naira in, every naira out.
             </Text>
@@ -326,24 +476,30 @@ export default function Transactions() {
           </TouchableOpacity>
         </View>
 
-        {/* Summary */}
+        {/* SUMMARY */}
+
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>TOTAL INCOME</Text>
+
             <Text style={styles.incomeSummary}>
-              ₦{totalIncome.toLocaleString()}.00
+              ₦{totalIncome.toLocaleString()}
+              .00
             </Text>
           </View>
 
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>TOTAL EXPENSE</Text>
+
             <Text style={styles.expenseSummary}>
-              ₦{totalExpense.toLocaleString()}.00
+              ₦{totalExpense.toLocaleString()}
+              .00
             </Text>
           </View>
         </View>
 
-        {/* Filter */}
+        {/* FILTER */}
+
         <View style={styles.filterContainer}>
           <Text style={styles.filterLabel}>Filter transactions</Text>
 
@@ -370,7 +526,8 @@ export default function Transactions() {
           </View>
         </View>
 
-        {/* Transaction List */}
+        {/* TRANSACTION LIST */}
+
         <View style={styles.listCard}>
           {filteredTransactions.length > 0 ? (
             filteredTransactions.map((transaction) => (
@@ -378,11 +535,13 @@ export default function Transactions() {
                 key={transaction.id}
                 transaction={transaction}
                 onDelete={deleteTransaction}
+                styles={styles}
               />
             ))
           ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>No transactions yet</Text>
+
               <Text style={styles.emptyText}>
                 No transactions match this filter yet.
               </Text>
@@ -391,7 +550,8 @@ export default function Transactions() {
         </View>
       </ScrollView>
 
-      {/* Add Transaction Modal */}
+      {/* ADD TRANSACTION MODAL */}
+
       <Modal
         visible={showAddModal}
         transparent
@@ -402,31 +562,37 @@ export default function Transactions() {
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add transaction</Text>
+
               <Pressable onPress={() => setShowAddModal(false)}>
                 <Text style={styles.closeButton}>×</Text>
               </Pressable>
             </View>
 
-            {/* TYPE — dropdown */}
+            {/* TYPE */}
+
             <Dropdown
               label="Type"
               value={type}
               options={TYPES}
               onSelect={handleTypeChange}
+              styles={styles}
             />
 
             {/* AMOUNT */}
+
             <Text style={styles.inputLabel}>Amount</Text>
+
             <TextInput
               style={styles.input}
               placeholder="₦0.00"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textFaint}
               value={amount}
               onChangeText={setAmount}
               keyboardType="numeric"
             />
 
-            {/* CATEGORY — dropdown, sourced from real API categories */}
+            {/* CATEGORY */}
+
             <Dropdown
               label="Category"
               value={selectedCategory?.name}
@@ -437,25 +603,30 @@ export default function Transactions() {
                   ? "Select a category"
                   : `No ${type.toLowerCase()} categories yet`
               }
+              styles={styles}
             />
 
             {/* DESCRIPTION */}
+
             <Text style={styles.inputLabel}>Description</Text>
+
             <TextInput
               style={styles.input}
               placeholder="Optional note"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textFaint}
               value={description}
               onChangeText={setDescription}
             />
 
             {/* DATE */}
+
             <Text style={styles.inputLabel}>Date</Text>
+
             <Pressable
               style={styles.input}
               onPress={() => setShowDatePicker(true)}
             >
-              <Text style={{ color: "#111827", fontSize: 14 }}>
+              <Text style={styles.dateText}>
                 {date.toLocaleDateString("en-US", {
                   month: "2-digit",
                   day: "2-digit",
@@ -463,6 +634,7 @@ export default function Transactions() {
                 })}
               </Text>
             </Pressable>
+
             {showDatePicker && (
               <DateTimePicker
                 value={date}
@@ -470,19 +642,23 @@ export default function Transactions() {
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={(event, selectedDate) => {
                   setShowDatePicker(Platform.OS === "ios");
-                  if (selectedDate) setDate(selectedDate);
+
+                  if (selectedDate) {
+                    setDate(selectedDate);
+                  }
                 }}
               />
             )}
 
             {/* SAVE */}
+
             <Pressable
-              style={[styles.saveButton, saving && { opacity: 0.6 }]}
+              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
               onPress={addTransaction}
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={colors.primaryText} />
               ) : (
                 <Text style={styles.saveButtonText}>Save transaction</Text>
               )}
@@ -494,361 +670,418 @@ export default function Transactions() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
-  },
+/*
+|--------------------------------------------------------------------------
+| THEME-AWARE STYLES
+|--------------------------------------------------------------------------
+*/
 
-  container: {
-    padding: 20,
-    paddingBottom: 40,
-  },
+const createStyles = (colors) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
 
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+    container: {
+      padding: 20,
+      paddingBottom: 40,
+    },
 
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: "#6B7280",
-  },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.background,
+    },
 
-  header: {
-    marginBottom: 24,
-  },
+    loadingText: {
+      marginTop: 12,
+      fontSize: 14,
+      color: colors.textMuted,
+    },
 
-  heading: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#111827",
-  },
+    header: {
+      marginBottom: 24,
+    },
 
-  subheading: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 5,
-  },
+    heading: {
+      fontSize: 26,
+      fontWeight: "800",
+      color: colors.text,
+    },
 
-  addButton: {
-    marginTop: 18,
-    backgroundColor: "#174E78",
-    paddingVertical: 13,
-    paddingHorizontal: 18,
-    borderRadius: 10,
-    alignSelf: "flex-start",
-  },
+    subheading: {
+      fontSize: 14,
+      color: colors.textMuted,
+      marginTop: 5,
+    },
 
-  addButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
+    addButton: {
+      marginTop: 18,
+      backgroundColor: colors.primary,
+      paddingVertical: 13,
+      paddingHorizontal: 18,
+      borderRadius: 10,
+      alignSelf: "flex-start",
+    },
 
-  summaryContainer: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
-  },
+    addButtonText: {
+      color: colors.primaryText,
+      fontSize: 14,
+      fontWeight: "700",
+    },
 
-  summaryCard: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#EEF0F3",
-  },
+    summaryContainer: {
+      flexDirection: "row",
+      gap: 12,
+      marginBottom: 20,
+    },
 
-  summaryLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#9CA3AF",
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
+    summaryCard: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
 
-  incomeSummary: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#16A34A",
-  },
+    summaryLabel: {
+      fontSize: 10,
+      fontWeight: "700",
+      color: colors.textFaint,
+      letterSpacing: 0.5,
+      marginBottom: 8,
+    },
 
-  expenseSummary: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#EC4899",
-  },
+    incomeSummary: {
+      fontSize: 16,
+      fontWeight: "800",
+      color: colors.income,
+    },
 
-  filterContainer: {
-    marginBottom: 16,
-  },
+    expenseSummary: {
+      fontSize: 16,
+      fontWeight: "800",
+      color: colors.expense,
+    },
 
-  filterLabel: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#374151",
-    marginBottom: 10,
-  },
+    filterContainer: {
+      marginBottom: 16,
+    },
 
-  filterButtons: {
-    flexDirection: "row",
-    gap: 8,
-  },
+    filterLabel: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: colors.text,
+      marginBottom: 10,
+    },
 
-  filterButton: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    paddingVertical: 9,
-    paddingHorizontal: 13,
-    borderRadius: 20,
-  },
+    filterButtons: {
+      flexDirection: "row",
+      gap: 8,
+    },
 
-  activeFilter: {
-    backgroundColor: "#174E78",
-    borderColor: "#174E78",
-  },
+    filterButton: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      paddingVertical: 9,
+      paddingHorizontal: 13,
+      borderRadius: 20,
+    },
 
-  filterText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6B7280",
-  },
+    activeFilter: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
 
-  activeFilterText: {
-    color: "#FFFFFF",
-  },
+    filterText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.textMuted,
+    },
 
-  listCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#EEF0F3",
-    overflow: "hidden",
-  },
+    activeFilterText: {
+      color: colors.primaryText,
+    },
 
-  transactionCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
+    listCard: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      overflow: "hidden",
+    },
 
-  transactionLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
+    transactionCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
 
-  transactionRight: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+    transactionLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+      minWidth: 0,
+    },
 
-  transactionIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
+    transactionRight: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
 
-  incomeIcon: {
-    backgroundColor: "#DCFCE7",
-  },
+    transactionIcon: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: 12,
+    },
 
-  expenseIcon: {
-    backgroundColor: "#FCE7F3",
-  },
+    incomeIcon: {
+      backgroundColor: colors.incomeBg,
+    },
 
-  iconText: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#374151",
-  },
+    expenseIcon: {
+      backgroundColor: colors.expenseBg,
+    },
 
-  transactionTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
-  },
+    iconText: {
+      fontSize: 20,
+      fontWeight: "800",
+    },
 
-  transactionMeta: {
-    fontSize: 11,
-    color: "#9CA3AF",
-    marginTop: 4,
-  },
+    incomeIconText: {
+      color: colors.income,
+    },
 
-  transactionAmount: {
-    fontSize: 14,
-    fontWeight: "800",
-    marginLeft: 10,
-  },
+    expenseIconText: {
+      color: colors.expense,
+    },
 
-  incomeAmount: {
-    color: "#16A34A",
-  },
+    transactionTitle: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: colors.text,
+    },
 
-  expenseAmount: {
-    color: "#EC4899",
-  },
+    transactionMeta: {
+      fontSize: 11,
+      color: colors.textFaint,
+      marginTop: 4,
+    },
 
-  deleteButton: {
-    marginLeft: 10,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    transactionAmount: {
+      fontSize: 14,
+      fontWeight: "800",
+      marginLeft: 10,
+    },
 
-  deleteButtonText: {
-    fontSize: 16,
-    lineHeight: 16,
-    color: "#9CA3AF",
-    fontWeight: "700",
-  },
+    incomeAmount: {
+      color: colors.income,
+    },
 
-  emptyState: {
-    paddingVertical: 50,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    expenseAmount: {
+      color: colors.expense,
+    },
 
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#374151",
-    marginBottom: 6,
-  },
+    deleteButton: {
+      marginLeft: 10,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: colors.chipBg,
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  emptyText: {
-    fontSize: 13,
-    color: "#9CA3AF",
-    textAlign: "center",
-  },
+    deleteButtonText: {
+      fontSize: 16,
+      lineHeight: 16,
+      color: colors.textFaint,
+      fontWeight: "700",
+    },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(17, 24, 39, 0.5)",
-    justifyContent: "center",
-    padding: 20,
-  },
+    emptyState: {
+      paddingVertical: 50,
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  modalCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-  },
+    emptyTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: colors.text,
+      marginBottom: 6,
+    },
 
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
+    emptyText: {
+      fontSize: 13,
+      color: colors.textFaint,
+      textAlign: "center",
+    },
 
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#111827",
-  },
+    /*
+    |--------------------------------------------------------------------------
+    | MODAL
+    |--------------------------------------------------------------------------
+    */
 
-  closeButton: {
-    fontSize: 22,
-    color: "#9CA3AF",
-    fontWeight: "700",
-  },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: "center",
+      padding: 20,
+    },
 
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#374151",
-    marginBottom: 6,
-    marginTop: 12,
-  },
+    modalCard: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
 
-  input: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 10,
-    paddingVertical: 11,
-    paddingHorizontal: 13,
-    fontSize: 14,
-    color: "#111827",
-    backgroundColor: "#F9FAFB",
-  },
+    modalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 4,
+    },
 
-  dropdownField: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 10,
-    paddingVertical: 11,
-    paddingHorizontal: 13,
-    backgroundColor: "#F9FAFB",
-  },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "800",
+      color: colors.text,
+    },
 
-  dropdownValue: {
-    fontSize: 14,
-    color: "#111827",
-  },
+    closeButton: {
+      fontSize: 22,
+      color: colors.textFaint,
+      fontWeight: "700",
+    },
 
-  dropdownArrow: {
-    fontSize: 16,
-    color: "#9CA3AF",
-  },
+    /*
+    |--------------------------------------------------------------------------
+    | INPUTS
+    |--------------------------------------------------------------------------
+    */
 
-  dropdownOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(17, 24, 39, 0.4)",
-    justifyContent: "center",
-    padding: 40,
-  },
+    inputLabel: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.text,
+      marginBottom: 6,
+      marginTop: 12,
+    },
 
-  dropdownMenu: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    paddingVertical: 8,
-    maxHeight: 320,
-  },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 10,
+      paddingVertical: 11,
+      paddingHorizontal: 13,
+      fontSize: 14,
+      color: colors.text,
+      backgroundColor: colors.inputBg,
+    },
 
-  dropdownOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-  },
+    dateText: {
+      color: colors.text,
+      fontSize: 14,
+    },
 
-  dropdownOptionText: {
-    fontSize: 14,
-    color: "#374151",
-  },
+    /*
+    |--------------------------------------------------------------------------
+    | DROPDOWN
+    |--------------------------------------------------------------------------
+    */
 
-  dropdownOptionTextActive: {
-    fontWeight: "700",
-    color: "#174E78",
-  },
+    dropdownField: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 10,
+      paddingVertical: 11,
+      paddingHorizontal: 13,
+      backgroundColor: colors.inputBg,
+    },
 
-  saveButton: {
-    marginTop: 20,
-    backgroundColor: "#174E78",
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
+    dropdownValue: {
+      fontSize: 14,
+      color: colors.text,
+    },
 
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-});
+    dropdownPlaceholder: {
+      color: colors.textFaint,
+    },
+
+    dropdownArrow: {
+      fontSize: 16,
+      color: colors.textFaint,
+    },
+
+    dropdownOverlay: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: "center",
+      padding: 40,
+    },
+
+    dropdownMenu: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      paddingVertical: 8,
+      maxHeight: 320,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+
+    dropdownOption: {
+      paddingVertical: 12,
+      paddingHorizontal: 18,
+    },
+
+    dropdownOptionText: {
+      fontSize: 14,
+      color: colors.text,
+    },
+
+    dropdownOptionTextActive: {
+      fontWeight: "700",
+      color: colors.primary,
+    },
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE BUTTON
+    |--------------------------------------------------------------------------
+    */
+
+    saveButton: {
+      marginTop: 20,
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      paddingVertical: 14,
+      alignItems: "center",
+    },
+
+    saveButtonDisabled: {
+      opacity: 0.6,
+    },
+
+    saveButtonText: {
+      color: colors.primaryText,
+      fontSize: 14,
+      fontWeight: "700",
+    },
+  });

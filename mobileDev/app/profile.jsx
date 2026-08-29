@@ -7,107 +7,138 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import { getCurrentUser } from "../services/auth";
+import * as ImagePicker from "expo-image-picker";
+
+import { getCurrentUser, logoutUser, uploadAvatar } from "../services/auth";
+
+import { useTheme } from "../contexts/ThemeContext";
+
+const API_BASE_URL = "http://10.0.2.2:5000";
 
 export default function Profile() {
   const router = useRouter();
 
-  const [darkMode, setDarkMode] = useState(false);
+  const { colors, isDark, setDarkMode } = useTheme();
 
   const [user, setUser] = useState({
     name: "",
     email: "",
+    avatar_url: null,
   });
 
   const [loading, setLoading] = useState(true);
+
   const [loggingOut, setLoggingOut] = useState(false);
 
-  /*
-   * =========================================================
-   * GET USER PROFILE
-   * =========================================================
-   */
+  const [uploading, setUploading] = useState(false);
+
   const loadProfile = async () => {
     try {
       setLoading(true);
 
-      // getCurrentUser() already returns response.data
       const data = await getCurrentUser();
-
-      /*
-       * Supports both possible API response formats:
-       *
-       * FORMAT 1:
-       * {
-       *   name: "Adim",
-       *   email: "adim@example.com"
-       * }
-       *
-       * FORMAT 2:
-       * {
-       *   user: {
-       *     name: "Adim",
-       *     email: "adim@example.com"
-       *   }
-       * }
-       */
 
       const profile = data?.user || data;
 
       setUser({
-        name: profile?.name || profile?.fullName || profile?.username || "User",
+        name:
+          profile?.full_name ||
+          profile?.name ||
+          profile?.fullName ||
+          profile?.username ||
+          "User",
 
         email: profile?.email || "",
+
+        avatar_url: profile?.avatar_url || null,
       });
     } catch (error) {
       console.log("Load profile error:", error);
 
-      let errorMessage = "We couldn't load your profile information.";
-
-      if (typeof error === "string") {
-        errorMessage = error;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.error) {
-        errorMessage = error.error;
-      }
-
-      Alert.alert("Unable to load profile", errorMessage);
+      Alert.alert(
+        "Unable to load profile",
+        error?.message ||
+          error?.error ||
+          "We couldn't load your profile information.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  /*
-   * =========================================================
-   * LOAD PROFILE WHEN SCREEN OPENS
-   * =========================================================
-   */
   useFocusEffect(
     useCallback(() => {
       loadProfile();
     }, []),
   );
 
-  /*
-   * =========================================================
-   * CHANGE PASSWORD
-   * =========================================================
-   */
+  const handleAvatarPress = async () => {
+    try {
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert(
+          "Permission required",
+          "Please allow access to your photo library to upload a profile picture.",
+        );
+
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const imageUri = result.assets[0].uri;
+
+      setUploading(true);
+
+      const response = await uploadAvatar(imageUri);
+
+      console.log("AVATAR UPLOAD RESPONSE:", response);
+
+      const updatedUser = response.user;
+
+      setUser((currentUser) => ({
+        ...currentUser,
+
+        avatar_url: updatedUser.avatar_url,
+      }));
+
+      Alert.alert("Success", "Your profile picture has been updated.");
+    } catch (error) {
+      console.log("Avatar error:", error);
+
+      Alert.alert(
+        "Upload Failed",
+        error?.message ||
+          error?.error ||
+          "Unable to upload your profile picture.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleChangePassword = () => {
     router.push("/forget-password");
   };
 
-  /*
-   * =========================================================
-   * LOGOUT CONFIRMATION
-   * =========================================================
-   */
   const handleLogout = () => {
     Alert.alert("Log out", "Are you sure you want to log out?", [
       {
@@ -122,29 +153,11 @@ export default function Profile() {
     ]);
   };
 
-  /*
-   * =========================================================
-   * PERFORM LOGOUT
-   * =========================================================
-   */
   const performLogout = async () => {
     try {
       setLoggingOut(true);
 
-      /*
-       * IMPORTANT:
-       *
-       * If you store your authentication token in
-       * AsyncStorage, SecureStore, or another storage system,
-       * remove it here.
-       *
-       * Example:
-       *
-       * await AsyncStorage.removeItem("token");
-       *
-       * We will connect this properly once we see your
-       * login/api authentication setup.
-       */
+      await logoutUser();
 
       router.replace("/");
     } catch (error) {
@@ -156,83 +169,199 @@ export default function Profile() {
     }
   };
 
-  /*
-   * =========================================================
-   * UI
-   * =========================================================
-   */
+  const avatarSource = user.avatar_url
+    ? {
+        uri: `${API_BASE_URL}${user.avatar_url}`,
+      }
+    : null;
+
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      {/* =====================================================
-          HEADER
-          ===================================================== */}
+    <SafeAreaView
+      style={[
+        styles.screen,
+        {
+          backgroundColor: colors.background,
+        },
+      ]}
+      edges={["top"]}
+    >
+      {/* HEADER */}
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="chevron-back" size={24} color="#111827" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text
+          style={[
+            styles.headerTitle,
+            {
+              color: colors.text,
+            },
+          ]}
+        >
+          Profile
+        </Text>
 
-        {/* Keeps title centered */}
         <View style={{ width: 24 }} />
       </View>
 
-      {/* =====================================================
-          PROFILE AVATAR + USER INFORMATION
-          ===================================================== */}
+      {/* AVATAR */}
+
       <View style={styles.avatarSection}>
-        <View style={styles.avatarRing}>
-          <View style={styles.avatarCircle}>
-            {loading ? (
-              <ActivityIndicator size="small" color="#9CA3AF" />
-            ) : (
-              <Ionicons name="person" size={56} color="#9CA3AF" />
-            )}
+        <TouchableOpacity
+          onPress={handleAvatarPress}
+          disabled={loading || uploading}
+          activeOpacity={0.8}
+        >
+          <View
+            style={[
+              styles.avatarRing,
+              {
+                borderColor: colors.primary,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.avatarCircle,
+                {
+                  backgroundColor: colors.skeleton,
+                },
+              ]}
+            >
+              {uploading ? (
+                <ActivityIndicator size="large" color={colors.primary} />
+              ) : loading ? (
+                <ActivityIndicator size="small" color={colors.textFaint} />
+              ) : avatarSource ? (
+                <Image source={avatarSource} style={styles.avatarImage} />
+              ) : (
+                <Ionicons name="person" size={56} color={colors.textFaint} />
+              )}
+            </View>
+
+            {/* CAMERA ICON */}
+
+            <View
+              style={[
+                styles.cameraButton,
+                {
+                  backgroundColor: colors.primary,
+                },
+              ]}
+            >
+              <Ionicons name="camera" size={16} color="#FFFFFF" />
+            </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {loading ? (
           <>
-            <View style={styles.nameSkeleton} />
-            <View style={styles.emailSkeleton} />
+            <View
+              style={[
+                styles.nameSkeleton,
+                {
+                  backgroundColor: colors.skeleton,
+                },
+              ]}
+            />
+
+            <View
+              style={[
+                styles.emailSkeleton,
+                {
+                  backgroundColor: colors.skeleton,
+                },
+              ]}
+            />
           </>
         ) : (
           <>
-            <Text style={styles.userName}>{user.name}</Text>
+            <Text
+              style={[
+                styles.userName,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              {user.name}
+            </Text>
 
-            <Text style={styles.userEmail}>{user.email}</Text>
+            <Text
+              style={[
+                styles.userEmail,
+                {
+                  color: colors.textFaint,
+                },
+              ]}
+            >
+              {user.email}
+            </Text>
           </>
         )}
       </View>
 
-      {/* =====================================================
-          SETTINGS CARD
-          ===================================================== */}
-      <View style={styles.listCard}>
+      {/* SETTINGS */}
+
+      <View
+        style={[
+          styles.listCard,
+          {
+            backgroundColor: colors.card,
+          },
+        ]}
+      >
         {/* DARK MODE */}
+
         <View style={styles.listRow}>
           <View style={styles.listLeft}>
-            <View style={styles.iconBubble}>
-              <Ionicons name="moon-outline" size={18} color="#111827" />
+            <View
+              style={[
+                styles.iconBubble,
+                {
+                  backgroundColor: colors.background,
+                },
+              ]}
+            >
+              <Ionicons name="moon-outline" size={18} color={colors.text} />
             </View>
 
-            <Text style={styles.listLabel}>Dark mode</Text>
+            <Text
+              style={[
+                styles.listLabel,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              Dark mode
+            </Text>
           </View>
 
           <Switch
-            value={darkMode}
+            value={isDark}
             onValueChange={setDarkMode}
             trackColor={{
               false: "#E5E7EB",
-              true: "#111827",
+              true: colors.primary,
             }}
             thumbColor="#FFFFFF"
           />
         </View>
 
-        <View style={styles.divider} />
+        <View
+          style={[
+            styles.divider,
+            {
+              backgroundColor: colors.divider,
+            },
+          ]}
+        />
 
         {/* CHANGE PASSWORD */}
+
         <TouchableOpacity
           style={styles.listRow}
           onPress={handleChangePassword}
@@ -240,33 +369,65 @@ export default function Profile() {
           activeOpacity={0.7}
         >
           <View style={styles.listLeft}>
-            <View style={styles.iconBubble}>
-              <Ionicons name="lock-closed-outline" size={18} color="#111827" />
+            <View
+              style={[
+                styles.iconBubble,
+                {
+                  backgroundColor: colors.background,
+                },
+              ]}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={18}
+                color={colors.text}
+              />
             </View>
 
-            <Text style={styles.listLabel}>Change password</Text>
+            <Text
+              style={[
+                styles.listLabel,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              Change password
+            </Text>
           </View>
 
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
         </TouchableOpacity>
       </View>
 
-      {/* =====================================================
-          LOGOUT BUTTON
-          ===================================================== */}
+      {/* LOGOUT */}
+
       <TouchableOpacity
-        style={[styles.logoutButton, loggingOut && styles.logoutButtonDisabled]}
+        style={[
+          styles.logoutButton,
+          {
+            borderColor: colors.dangerBorder,
+          },
+          loggingOut && styles.logoutButtonDisabled,
+        ]}
         onPress={handleLogout}
         disabled={loggingOut}
         activeOpacity={0.7}
       >
         {loggingOut ? (
-          <ActivityIndicator size="small" color="#EF4444" />
+          <ActivityIndicator size="small" color={colors.danger} />
         ) : (
-          <Ionicons name="log-out-outline" size={18} color="#EF4444" />
+          <Ionicons name="log-out-outline" size={18} color={colors.danger} />
         )}
 
-        <Text style={styles.logoutText}>
+        <Text
+          style={[
+            styles.logoutText,
+            {
+              color: colors.danger,
+            },
+          ]}
+        >
           {loggingOut ? "Logging out..." : "Logout"}
         </Text>
       </TouchableOpacity>
@@ -274,21 +435,10 @@ export default function Profile() {
   );
 }
 
-/*
- * ===========================================================
- * STYLES
- * ===========================================================
- */
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
-
-  /* =========================================================
-     HEADER
-     ========================================================= */
 
   header: {
     flexDirection: "row",
@@ -301,12 +451,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827",
   },
-
-  /* =========================================================
-     PROFILE
-     ========================================================= */
 
   avatarSection: {
     alignItems: "center",
@@ -319,59 +464,64 @@ const styles = StyleSheet.create({
     height: 128,
     borderRadius: 64,
     borderWidth: 1,
-    borderColor: "#14274E",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
+    position: "relative",
   },
 
   avatarCircle: {
     width: 112,
     height: 112,
     borderRadius: 56,
-    backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+  },
+
+  cameraButton: {
+    position: "absolute",
+    right: 2,
+    bottom: 2,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
   },
 
   userName: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#111827",
   },
 
   userEmail: {
     fontSize: 14,
-    color: "#9CA3AF",
     marginTop: 4,
   },
-
-  /* =========================================================
-     LOADING SKELETON
-     ========================================================= */
 
   nameSkeleton: {
     width: 120,
     height: 22,
     borderRadius: 6,
-    backgroundColor: "#F3F4F6",
   },
 
   emailSkeleton: {
     width: 160,
     height: 14,
     borderRadius: 5,
-    backgroundColor: "#F3F4F6",
     marginTop: 8,
   },
 
-  /* =========================================================
-     SETTINGS
-     ========================================================= */
-
   listCard: {
     marginHorizontal: 20,
-    backgroundColor: "#F9FAFB",
     borderRadius: 16,
     overflow: "hidden",
   },
@@ -394,26 +544,19 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
 
   listLabel: {
     fontSize: 15,
-    color: "#111827",
     fontWeight: "500",
   },
 
   divider: {
     height: 1,
-    backgroundColor: "#E5E7EB",
     marginLeft: 62,
   },
-
-  /* =========================================================
-     LOGOUT
-     ========================================================= */
 
   logoutButton: {
     flexDirection: "row",
@@ -424,7 +567,6 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: "#FCA5A5",
     borderRadius: 12,
   },
 
@@ -433,7 +575,6 @@ const styles = StyleSheet.create({
   },
 
   logoutText: {
-    color: "#EF4444",
     fontSize: 15,
     fontWeight: "700",
   },

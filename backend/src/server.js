@@ -4,12 +4,14 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const path = require("path");
 
 const authRoutes = require("./routes/auth");
 const categoryRoutes = require("./routes/categories");
 const transactionRoutes = require("./routes/transactions");
 const budgetRoutes = require("./routes/budgets");
 const dashboardRoutes = require("./routes/dashboard");
+const profileRoutes = require("./routes/profile");
 
 const app = express();
 
@@ -29,7 +31,7 @@ app.use(
 app.use(express.json());
 
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
-
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // =====================================================
 // HEALTH CHECK
 // =====================================================
@@ -55,6 +57,8 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/budgets", budgetRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);
+
+app.use("/api/profile", profileRoutes);
 
 // =====================================================
 // 404 HANDLER

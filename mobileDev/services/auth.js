@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "./api";
 import { TOKEN_KEY, USER_KEY } from "./constants";
-
+import * as ImagePicker from "expo-image-picker";
 /*
 |--------------------------------------------------------------------------
 | REGISTER
@@ -223,6 +223,47 @@ export const verifyResetOTP = async (email, otp) => {
     throw (
       error.response?.data || {
         message: error.message || "Unable to verify reset OTP",
+      }
+    );
+  }
+};
+/*
+|--------------------------------------------------------------------------
+| UPLOAD AVATAR
+|--------------------------------------------------------------------------
+*/
+
+export const uploadAvatar = async (imageUri) => {
+  try {
+    const formData = new FormData();
+
+    const filename = imageUri.split("/").pop();
+
+    const match = /\.(\w+)$/.exec(filename || "");
+
+    const type = match ? `image/${match[1]}` : "image/jpeg";
+
+    formData.append("avatar", {
+      uri: imageUri,
+      name: filename || "avatar.jpg",
+      type,
+    });
+
+    const response = await api.post("/profile/avatar", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.log("UPLOAD AVATAR ERROR:", error);
+    console.log("STATUS:", error.response?.status);
+    console.log("DATA:", error.response?.data);
+
+    throw (
+      error.response?.data || {
+        message: error.message || "Unable to upload profile picture",
       }
     );
   }
