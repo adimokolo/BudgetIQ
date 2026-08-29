@@ -131,23 +131,40 @@ async function checkBudgetAlerts(userId, categoryId) {
         const label = budget.category_name || 'your overall spending';
         const currency = user.currency || 'NGN';
 
-        await sendEmail({
-          to: user.email,
-          subject: `Budget alert: you've exceeded your ${label} limit`,
-          text: `Hi ${user.full_name}, you've spent ${currency} ${spent.toFixed(2)} against your ${currency} ${limit.toFixed(2)} monthly limit for ${label}.`,
-          html: `<p>Hi ${user.full_name},</p><p>You've exceeded your monthly budget for <strong>${label}</strong>.</p><p>Spent: <strong>${currency} ${spent.toFixed(2)}</strong> / Limit: <strong>${currency} ${limit.toFixed(2)}</strong></p><p>You can review and adjust this budget any time in BudgetIQ.</p>`,
-        });
+        // These three steps are intentionally isolated from each other: a
+        // failure in any one (most likely email, if SMTP is misconfigured)
+        // must never silently prevent the others. Previously a thrown error
+        // from sendEmail() skipped the notification insert AND the
+        // last_alert_month update entirely, which looked like "nothing
+        // happened" even though the budget really was exceeded.
+        try {
+          await pool.query(
+            `INSERT INTO notifications (user_id, type, title, body)
+             VALUES ($1, 'budget_exceeded', $2, $3)`,
+            [
+              userId,
+              `Budget exceeded: ${label}`,
+              `You've spent ${currency} ${spent.toFixed(2)} of your ${currency} ${limit.toFixed(2)} monthly limit.`,
+            ]
+          );
+        } catch (notifyErr) {
+          console.error('Failed to create in-app notification:', notifyErr.message);
+        }
 
-        await pool.query(
-          `INSERT INTO notifications (user_id, type, title, body)
-           VALUES ($1, 'budget_exceeded', $2, $3)`,
-          [
-            userId,
-            `Budget exceeded: ${label}`,
-            `You've spent ${currency} ${spent.toFixed(2)} of your ${currency} ${limit.toFixed(2)} monthly limit.`,
-          ]
-        );
+        try {
+          await sendEmail({
+            to: user.email,
+            subject: `Budget alert: you've exceeded your ${label} limit`,
+            text: `Hi ${user.full_name}, you've spent ${currency} ${spent.toFixed(2)} against your ${currency} ${limit.toFixed(2)} monthly limit for ${label}.`,
+            html: `<p>Hi ${user.full_name},</p><p>You've exceeded your monthly budget for <strong>${label}</strong>.</p><p>Spent: <strong>${currency} ${spent.toFixed(2)}</strong> / Limit: <strong>${currency} ${limit.toFixed(2)}</strong></p><p>You can review and adjust this budget any time in BudgetIQ.</p>`,
+          });
+        } catch (emailErr) {
+          console.error('Failed to send budget alert email:', emailErr.message);
+        }
 
+        // Always mark as alerted this month regardless of the outcome above,
+        // so a misconfigured SMTP doesn't cause a retry (and therefore a
+        // fresh failed-send attempt) on every single subsequent transaction.
         await pool.query('UPDATE budgets SET last_alert_month = $1 WHERE id = $2', [
           currentMonth,
           budget.id,

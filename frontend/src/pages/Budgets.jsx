@@ -3,6 +3,7 @@ import apiClient from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
 import Skeleton from '../components/Skeleton';
+import KebabMenu from '../components/KebabMenu';
 import { formatCurrency } from '../utils/format';
 import { TRANSACTION_CREATED_EVENT } from '../components/AddTransactionModal';
 
@@ -14,6 +15,7 @@ export default function Budgets() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingBudget, setEditingBudget] = useState(null); // null = creating, object = editing
   const [form, setForm] = useState({ categoryId: '', monthlyLimit: '' });
   const [error, setError] = useState(null);
 
@@ -39,15 +41,36 @@ export default function Budgets() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCreate = async (e) => {
+  const openCreateModal = () => {
+    setEditingBudget(null);
+    setForm({ categoryId: '', monthlyLimit: '' });
+    setError(null);
+    setModalOpen(true);
+  };
+
+  const openEditModal = (budget) => {
+    setEditingBudget(budget);
+    setForm({ categoryId: budget.category_id || '', monthlyLimit: String(budget.monthly_limit) });
+    setError(null);
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     try {
-      await apiClient.post('/budgets', {
-        categoryId: form.categoryId || null,
-        monthlyLimit: Number(form.monthlyLimit),
-      });
+      if (editingBudget) {
+        await apiClient.patch(`/budgets/${editingBudget.id}`, {
+          monthlyLimit: Number(form.monthlyLimit),
+        });
+      } else {
+        await apiClient.post('/budgets', {
+          categoryId: form.categoryId || null,
+          monthlyLimit: Number(form.monthlyLimit),
+        });
+      }
       setModalOpen(false);
+      setEditingBudget(null);
       setForm({ categoryId: '', monthlyLimit: '' });
       loadBudgets();
     } catch (err) {
@@ -68,7 +91,7 @@ export default function Budgets() {
           <h1>Budgets</h1>
           <p>Set monthly limits and see how close you are to them.</p>
         </div>
-        <button className="btn btn--primary" onClick={() => setModalOpen(true)}>
+        <button className="btn btn--primary" onClick={openCreateModal}>
           + Set budget
         </button>
       </div>
@@ -96,9 +119,13 @@ export default function Budgets() {
                     <span className="cat-dot" style={{ background: b.category_color || '#B9C3D4' }} />
                     {b.category_name || 'Overall'}
                   </span>
-                  <button className="icon-btn" onClick={() => handleDelete(b.id)} aria-label="Delete budget">
-                    ✕
-                  </button>
+                  <KebabMenu
+                    ariaLabel={`Options for ${b.category_name || 'Overall'} budget`}
+                    items={[
+                      { label: 'Edit limit', onClick: () => openEditModal(b) },
+                      { label: 'Delete', danger: true, onClick: () => handleDelete(b.id) },
+                    ]}
+                  />
                 </div>
 
                 <div className="stat-value" style={{ fontSize: 20, marginTop: 12 }}>
@@ -124,14 +151,15 @@ export default function Budgets() {
       )}
 
       {modalOpen && (
-        <Modal title="Set a budget limit" onClose={() => setModalOpen(false)}>
-          <form onSubmit={handleCreate}>
+        <Modal title={editingBudget ? 'Edit budget limit' : 'Set a budget limit'} onClose={() => setModalOpen(false)}>
+          <form onSubmit={handleSubmit}>
             <div className="field">
               <label htmlFor="budgetCategory">Category</label>
               <select
                 id="budgetCategory"
                 value={form.categoryId}
                 onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                disabled={Boolean(editingBudget)}
               >
                 <option value="">Overall spending</option>
                 {categories.map((c) => (
@@ -140,6 +168,9 @@ export default function Budgets() {
                   </option>
                 ))}
               </select>
+              {editingBudget && (
+                <p className="helper-text">Category can't be changed on an existing budget — delete and create a new one instead.</p>
+              )}
             </div>
             <div className="field">
               <label htmlFor="budgetLimit">Monthly limit</label>
@@ -155,7 +186,7 @@ export default function Budgets() {
             </div>
             {error && <p className="error-text" style={{ marginBottom: 12 }}>{error}</p>}
             <button className="btn btn--primary btn--block" type="submit">
-              Save budget
+              {editingBudget ? 'Save changes' : 'Save budget'}
             </button>
           </form>
         </Modal>

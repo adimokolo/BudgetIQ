@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLogo from '../components/AuthLogo';
+import TermsModal from '../components/TermsModal';
 
 export default function Register() {
   const { register, loading, error } = useAuth();
@@ -10,9 +11,17 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [currency, setCurrency] = useState('NGN');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [agreementError, setAgreementError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!agreedToTerms) {
+      setAgreementError('Please agree to the Terms of Service and Privacy Policy to continue.');
+      return;
+    }
+    setAgreementError(null);
     const ok = await register(fullName, email, password, currency);
     if (ok) navigate('/verify-otp', { state: { email } });
   };
@@ -68,6 +77,28 @@ export default function Register() {
             </select>
           </div>
 
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => {
+                setAgreedToTerms(e.target.checked);
+                if (e.target.checked) setAgreementError(null);
+              }}
+            />
+            <span>
+              I agree to the{' '}
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => setTermsOpen(true)}
+              >
+                Terms of Service and Privacy Policy
+              </button>
+            </span>
+          </label>
+          {agreementError && <p className="error-text" style={{ marginBottom: 14 }}>{agreementError}</p>}
+
           {error && <p className="error-text" style={{ marginBottom: 14 }}>{error}</p>}
 
           <button className="btn btn--primary btn--block" type="submit" disabled={loading}>
@@ -79,6 +110,8 @@ export default function Register() {
           Already have an account? <Link to="/login" style={{ color: 'var(--brand-mid)', fontWeight: 600 }}>Log in</Link>
         </p>
       </div>
+
+      {termsOpen && <TermsModal onClose={() => setTermsOpen(false)} />}
     </div>
   );
 }
