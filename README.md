@@ -4,7 +4,7 @@ A full-stack expense tracker: record, categorize, and monitor income and
 spending, with an interactive dashboard, visual charts, monthly summaries,
 a next-month spending forecast, and budget limits.
 
-Built by **Adim Barnabas Okolo** as a portfolio / educational project.
+Built by **Adim Barnabas Okolo** , **Pedro Olatunde** and **Murtala Adedapo** as portfolio / production-ready project.
 
 ## Tech stack
 
