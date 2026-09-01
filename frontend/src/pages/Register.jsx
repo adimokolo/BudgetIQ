@@ -1,3 +1,4 @@
+import { PasswordInput } from '../components/PasswordInput';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -57,14 +58,10 @@ export default function Register() {
           </div>
           <div className="field">
             <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
-              minLength={8}
-              required
+              placeholder="Create a password"
             />
           </div>
           <div className="field">

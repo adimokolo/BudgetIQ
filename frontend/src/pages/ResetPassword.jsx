@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLogo from '../components/AuthLogo';
+import { PasswordInput } from '../components/PasswordInput';
 
 export default function ResetPassword() {
   const { resetPassword, loading, error } = useAuth();
@@ -39,6 +40,7 @@ export default function ResetPassword() {
         <p className="auth-subtitle">Choose a new password for your account.</p>
 
         <form onSubmit={handleSubmit}>
+
           <div className="field">
             <label htmlFor="email">Email</label>
             <input
@@ -50,43 +52,47 @@ export default function ResetPassword() {
               required
             />
           </div>
+
           <div className="field">
             <label htmlFor="newPassword">New password</label>
-            <input
-              id="newPassword"
-              type="password"
+            <PasswordInput
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="At least 8 characters"
-              minLength={8}
-              required
+              placeholder="Enter new password"
             />
           </div>
+
           <div className="field">
             <label htmlFor="confirmPassword">Confirm new password</label>
-            <input
-              id="confirmPassword"
-              type="password"
+            <PasswordInput
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repeat your new password"
-              minLength={8}
-              required
+              placeholder="Confirm new password"
             />
           </div>
 
           {(localError || error) && (
-            <p className="error-text" style={{ marginBottom: 14 }}>{localError || error}</p>
+            <p className="error-text" style={{ marginBottom: 14 }}>
+              {localError || error}
+            </p>
           )}
 
-          <button className="btn btn--primary btn--block" type="submit" disabled={loading}>
+          <button
+            className="btn btn--primary btn--block"
+            type="submit"
+            disabled={loading}
+          >
             {loading ? 'Saving…' : 'Reset password'}
           </button>
+
         </form>
 
         <p className="helper-text" style={{ marginTop: 18, textAlign: 'center' }}>
-          <Link to="/login" style={{ color: 'var(--ink-faint)' }}>Back to log in</Link>
+          <Link to="/login" style={{ color: 'var(--ink-faint)' }}>
+            Back to log in
+          </Link>
         </p>
+
       </div>
     </div>
   );

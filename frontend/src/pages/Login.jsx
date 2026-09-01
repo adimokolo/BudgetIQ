@@ -1,3 +1,4 @@
+import { PasswordInput } from '../components/PasswordInput';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -58,13 +59,10 @@ export default function Login() {
           </div>
           <div className="field">
             <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
+              placeholder="Enter your password"
             />
             <Link
               to="/forgot-password"
