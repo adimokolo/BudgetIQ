@@ -202,7 +202,7 @@ export default function Profile() {
           hitSlop={10}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
+          <Ionicons name="chevron-back" size={18} color={colors.text} />
         </TouchableOpacity>
 
         <Text

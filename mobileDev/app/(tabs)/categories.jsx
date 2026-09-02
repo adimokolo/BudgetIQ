@@ -698,13 +698,9 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-
-  /* HEADER */
-
   header: {
-    marginBottom: 24,
+    marginBottom: 14,
   },
-
   heading: {
     fontSize: 18,
     fontFamily: "SpaceGrotesk_700Bold",
@@ -714,32 +710,26 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: "Inter_400Regular",
     marginTop: 4,
-    marginBottom: 20,
+    marginBottom: 10,
     lineHeight: 15,
   },
-
   addButton: {
-    marginTop: 18,
-    paddingVertical: 13,
+    marginTop: 10,
+    paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 10,
     alignSelf: "flex-start",
   },
-
   addButtonText: {
     fontSize: 10,
     fontFamily: "Inter_700Bold",
   },
-
-  /* SECTIONS */
-
   sectionCard: {
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
     marginBottom: 16,
   },
-
   sectionTitle: {
     fontSize: 13,
     fontFamily: "SpaceGrotesk_600SemiBold",
@@ -771,8 +761,8 @@ const styles = StyleSheet.create({
   },
 
   dot: {
-    width: 10,
-    height: 10,
+    width: 9,
+    height: 9,
     borderRadius: 5,
   },
 
@@ -794,9 +784,6 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontFamily: "Inter_700Bold",
   },
-
-  /* EMPTY STATE */
-
   emptyState: {
     paddingVertical: 24,
     alignItems: "center",
@@ -807,9 +794,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Inter_400Regular",
   },
-
-  /* ADD CATEGORY MODAL */
-
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
@@ -829,13 +813,13 @@ const styles = StyleSheet.create({
   },
 
   modalTitle: {
-    fontSize: 18,
+    fontSize: 13,
     fontFamily: "SpaceGrotesk_700Bold",
   },
 
   closeButton: {
-    fontSize: 22,
-    lineHeight: 22,
+    fontSize: 17,
+    lineHeight: 18,
     fontFamily: "Inter_700Bold",
   },
 
@@ -889,8 +873,8 @@ const styles = StyleSheet.create({
 
   saveButton: {
     marginTop: 20,
-    borderRadius: 10,
-    paddingVertical: 14,
+    borderRadius: 9,
+    paddingVertical: 12,
     alignItems: "center",
   },
 
@@ -898,9 +882,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_700Bold",
   },
-
-  /* LOADING */
-
   loadingContainer: {
     flex: 1,
     justifyContent: "center",

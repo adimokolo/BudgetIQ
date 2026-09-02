@@ -711,7 +711,7 @@ export default function Dashboard() {
               },
             }}
             style={{
-              marginLeft: -16,
+              marginLeft: -12,
             }}
             onDataPointClick={({ index, x, y }) => {
               setTooltip((current) => {
@@ -901,7 +901,7 @@ const styles = StyleSheet.create({
   subheading: {
     fontSize: 10,
     fontFamily: "Inter_400Regular",
-    marginTop: 4,
+    marginTop: 2,
     marginBottom: 20,
   },
 
@@ -916,23 +916,23 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   avatarLarge: {
-    width: 60,
-    height: 60,
+    width: 55,
+    height: 55,
     borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
+    marginBottom: 15,
     borderWidth: 1,
     overflow: "hidden",
   },
   avatarImage: {
-    width: 60,
-    height: 60,
+    width: 55,
+    height: 55,
     borderRadius: 32,
   },
   notificationButton: {
-    width: 36,
-    height: 36,
+    width: 33,
+    height: 33,
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
@@ -950,12 +950,13 @@ const styles = StyleSheet.create({
   },
   cardsWrap: {
     gap: 12,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   card: {
     borderRadius: 14,
-    padding: 16,
+    padding: 13,
     borderWidth: 1,
+    marginBottom: -5,
   },
   cardLabel: {
     fontSize: 9,
@@ -964,7 +965,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   cardValue: {
-    fontSize: 17,
+    fontSize: 15,
     fontFamily: "JetBrainsMono_500Medium",
   },
   badge: {
@@ -975,11 +976,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   badgeText: {
-    fontSize: 9,
+    fontSize: 8,
     fontFamily: "Inter_600SemiBold",
   },
   cardFooter: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Inter_400Regular",
     marginTop: 8,
     lineHeight: 16,
@@ -989,14 +990,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   forecastLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Inter_600SemiBold",
     letterSpacing: 0.8,
     lineHeight: 18,
   },
   forecastAmount: {
     marginTop: 8,
-    fontSize: 22,
+    fontSize: 16,
     fontFamily: "JetBrainsMono_500Medium",
   },
   forecastPills: {
@@ -1007,30 +1008,30 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   forecastPill: {
-    paddingVertical: 4,
+    paddingVertical: 3,
     paddingHorizontal: 14,
     borderRadius: 14,
   },
   forecastPillText: {
-    fontSize: 10,
+    fontSize: 8,
     fontFamily: "Inter_600SemiBold",
   },
   forecastConfidencePill: {
-    paddingVertical: 4,
+    paddingVertical: 3,
     paddingHorizontal: 14,
     borderRadius: 20,
   },
 
   forecastConfidenceText: {
-    fontSize: 10,
+    fontSize: 8,
     fontFamily: "Inter_500Medium",
   },
 
   forecastDescription: {
-    marginTop: 12,
-    fontSize: 10,
+    marginTop: 10,
+    fontSize: 9,
     fontFamily: "Inter_400Regular",
-    lineHeight: 14,
+    lineHeight: 13,
   },
 
   tooltipBox: {
@@ -1048,27 +1049,27 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   tooltipMonth: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: "Inter_600SemiBold",
     marginBottom: 2,
   },
   tooltipRow: {
-    fontSize: 11,
+    fontSize: 9,
     fontFamily: "Inter_500Medium",
     marginTop: 2,
   },
   sectionCard: {
     borderRadius: 14,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 10,
     borderWidth: 1,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "SpaceGrotesk_600SemiBold",
   },
   sectionSubtitle: {
-    fontSize: 11,
+    fontSize: 9,
     fontFamily: "Inter_400Regular",
     marginTop: 2,
     marginBottom: 12,
@@ -1078,13 +1079,13 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   emptyDonut: {
-    borderWidth: 20,
+    borderWidth: 23,
     alignItems: "center",
     justifyContent: "center",
   },
 
   emptyDonutText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
   },
 
@@ -1104,13 +1105,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-
   legendDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
   },
-
   legendLabel: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
@@ -1120,10 +1119,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "JetBrainsMono_500Medium",
   },
-
   noDataText: {
     textAlign: "center",
     marginVertical: 20,
     fontFamily: "Inter_400Regular",
+    fontSize: 10,
+    marginTop: 5,
   },
 });

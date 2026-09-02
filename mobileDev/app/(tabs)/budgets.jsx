@@ -951,33 +951,28 @@ const styles = StyleSheet.create({
   headerTextContainer: {
     flex: 1,
   },
-
-  /*
-   * DISPLAY / HEADINGS
-   * Space Grotesk
-   */
   heading: {
-    fontSize: 26,
+    fontSize: 18,
     fontFamily: "SpaceGrotesk_700Bold",
   },
 
   subheading: {
-    fontSize: 14,
+    fontSize: 10,
     fontFamily: "Inter_400Regular",
-    marginTop: 5,
-    lineHeight: 20,
+    marginTop: 4,
+    lineHeight: 15,
   },
 
   addButton: {
-    marginTop: 18,
-    paddingVertical: 13,
+    marginTop: 15,
+    paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 10,
     alignSelf: "flex-start",
   },
 
   addButtonText: {
-    fontSize: 14,
+    fontSize: 10,
     fontFamily: "Inter_600SemiBold",
   },
 
@@ -991,7 +986,7 @@ const styles = StyleSheet.create({
 
   loadingText: {
     marginTop: 12,
-    fontSize: 13,
+    fontSize: 10,
     fontFamily: "Inter_400Regular",
   },
 
@@ -1014,18 +1009,18 @@ const styles = StyleSheet.create({
   },
 
   emptyIconText: {
-    fontSize: 22,
+    fontSize: 18,
     fontFamily: "JetBrainsMono_500Medium",
   },
 
   emptyTitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontFamily: "SpaceGrotesk_700Bold",
     marginBottom: 6,
   },
 
   emptyText: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
     textAlign: "center",
     lineHeight: 19,
@@ -1040,18 +1035,18 @@ const styles = StyleSheet.create({
   },
 
   emptyButtonText: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: "Inter_600SemiBold",
   },
 
   budgetList: {
-    gap: 12,
+    gap: 10,
   },
 
   budgetCard: {
     borderRadius: 16,
     borderWidth: 1,
-    padding: 16,
+    padding: 13,
   },
 
   budgetHeader: {
@@ -1069,13 +1064,13 @@ const styles = StyleSheet.create({
   },
 
   dot: {
-    width: 10,
-    height: 10,
+    width: 8,
+    height: 8,
     borderRadius: 5,
   },
 
   budgetName: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     flexShrink: 1,
   },
@@ -1093,32 +1088,32 @@ const styles = StyleSheet.create({
   },
 
   editButtonText: {
-    fontSize: 11,
+    fontSize: 9,
     fontFamily: "Inter_600SemiBold",
   },
 
   deleteButton: {
-    width: 22,
-    height: 22,
+    width: 20,
+    height: 20,
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
   },
 
   deleteButtonText: {
-    fontSize: 16,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 13,
     fontFamily: "Inter_600SemiBold",
   },
 
   progressTrack: {
-    height: 8,
+    height: 7,
     borderRadius: 4,
     overflow: "hidden",
   },
 
   progressFill: {
-    height: 8,
+    height: 7,
     borderRadius: 4,
   },
 
@@ -1129,47 +1124,43 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 
-  /*
-   * NUMERIC DATA
-   * JetBrains Mono
-   */
   budgetSpent: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "JetBrainsMono_500Medium",
   },
 
   budgetOf: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: "JetBrainsMono_400Regular",
   },
 
   budgetPercent: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "JetBrainsMono_500Medium",
   },
 
   warningText: {
     marginTop: 9,
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Inter_600SemiBold",
   },
 
   cautionText: {
     marginTop: 9,
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Inter_600SemiBold",
   },
 
   safeText: {
     marginTop: 9,
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Inter_600SemiBold",
   },
 
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
-    padding: 20,
+    padding: 18,
   },
 
   modalCard: {
@@ -1190,25 +1181,25 @@ const styles = StyleSheet.create({
   },
 
   modalTitle: {
-    fontSize: 18,
+    fontSize: 13,
     fontFamily: "SpaceGrotesk_700Bold",
   },
 
   modalSubtitle: {
-    fontSize: 12,
+    fontSize: 9.5,
     fontFamily: "Inter_400Regular",
     marginTop: 3,
   },
 
   closeButton: {
-    fontSize: 22,
+    fontSize: 17,
     fontFamily: "Inter_600SemiBold",
   },
 
   inputLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: "Inter_600SemiBold",
-    marginBottom: 7,
+    marginBottom: 6,
     marginTop: 12,
   },
 
@@ -1224,18 +1215,18 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 1,
     borderRadius: 20,
-    paddingVertical: 8,
+    paddingVertical: 7,
     paddingHorizontal: 12,
   },
 
   chipDot: {
-    width: 8,
-    height: 8,
+    width: 6,
+    height: 6,
     borderRadius: 4,
   },
 
   categoryChipText: {
-    fontSize: 12,
+    fontSize: 9,
     fontFamily: "Inter_500Medium",
   },
 
@@ -1248,22 +1239,22 @@ const styles = StyleSheet.create({
   },
 
   currencySymbol: {
-    fontSize: 15,
+    fontSize: 13,
     fontFamily: "JetBrainsMono_500Medium",
   },
 
   input: {
     flex: 1,
-    paddingVertical: 11,
+    paddingVertical: 10,
     paddingHorizontal: 9,
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: "JetBrainsMono_400Regular",
   },
 
   saveButton: {
     marginTop: 20,
-    borderRadius: 10,
-    paddingVertical: 14,
+    borderRadius: 9,
+    paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 48,
@@ -1274,7 +1265,7 @@ const styles = StyleSheet.create({
   },
 
   saveButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: "Inter_600SemiBold",
   },
 });

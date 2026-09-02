@@ -53,8 +53,6 @@ import { useTheme } from "../../contexts/ThemeContext";
 
 const TYPES = ["Expense", "Income"];
 
-// Font family tokens — keep these in one place so weight/family choices
-// stay consistent with the BudgetIQ font stack (display/body/numeric).
 const fonts = {
   displayRegular: "SpaceGrotesk_400Regular",
   displayMedium: "SpaceGrotesk_500Medium",
@@ -483,7 +481,7 @@ export default function Transactions() {
             <Text style={styles.heading}>Transactions</Text>
 
             <Text style={styles.subheading}>
-              Every naira in, every naira out.
+              Every money in, Every money out.
             </Text>
           </View>
 
@@ -735,25 +733,24 @@ const createStyles = (colors) =>
     },
 
     header: {
-      marginBottom: 24,
+      marginBottom: 12,
     },
 
     headerTitleContainer: {
       width: "100%",
     },
 
-    // Display/headings -> Space Grotesk. "Page titles"
     heading: {
-      fontSize: 26,
+      fontSize: 18,
       fontFamily: fonts.displayBold,
       color: colors.text,
     },
 
     subheading: {
-      fontSize: 14,
+      fontSize: 10,
       fontFamily: fonts.bodyRegular,
       color: colors.textMuted,
-      marginTop: 5,
+      marginTop: 4,
     },
 
     headerActions: {
@@ -764,7 +761,7 @@ const createStyles = (colors) =>
 
     addButton: {
       backgroundColor: colors.primary,
-      paddingVertical: 13,
+      paddingVertical: 10,
       paddingHorizontal: 18,
       borderRadius: 10,
       alignSelf: "flex-start",
@@ -772,29 +769,26 @@ const createStyles = (colors) =>
 
     addButtonText: {
       color: colors.primaryText,
-      fontSize: 14,
+      fontSize: 10,
       fontFamily: fonts.bodySemiBold,
     },
 
     exportMenuContainer: {
       position: "relative",
-      marginLeft: 8,
+      marginLeft: 215,
       zIndex: 50,
     },
 
     moreButton: {
-      width: 46,
+      width: 36,
       height: 46,
       borderRadius: 10,
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
       alignItems: "center",
       justifyContent: "center",
     },
 
     moreButtonText: {
-      fontSize: 28,
+      fontSize: 21,
       lineHeight: 30,
       color: colors.text,
       fontFamily: fonts.bodySemiBold,
@@ -805,18 +799,12 @@ const createStyles = (colors) =>
       position: "absolute",
       top: 52,
       right: 0,
-
-      width: 175,
-
+      width: 140,
       backgroundColor: colors.card,
-
       borderRadius: 12,
-
       borderWidth: 1,
       borderColor: colors.cardBorder,
-
       paddingVertical: 5,
-
       shadowColor: "#000",
       shadowOffset: {
         width: 0,
@@ -824,37 +812,30 @@ const createStyles = (colors) =>
       },
       shadowOpacity: 0.18,
       shadowRadius: 10,
-
       elevation: 10,
     },
-
     exportMenuItem: {
       flexDirection: "row",
       alignItems: "center",
-
-      paddingVertical: 12,
+      paddingVertical: 10,
       paddingHorizontal: 14,
     },
-
     exportMenuIcon: {
-      width: 32,
-      fontSize: 12,
+      width: 28,
+      fontSize: 11,
       fontFamily: fonts.bodySemiBold,
       color: colors.primary,
     },
-
     exportMenuText: {
-      fontSize: 13,
+      fontSize: 11,
       fontFamily: fonts.bodySemiBold,
       color: colors.text,
     },
-
     summaryContainer: {
       flexDirection: "row",
       gap: 12,
-      marginBottom: 20,
+      marginBottom: 15,
     },
-
     summaryCard: {
       flex: 1,
       backgroundColor: colors.card,
@@ -863,8 +844,6 @@ const createStyles = (colors) =>
       borderWidth: 1,
       borderColor: colors.cardBorder,
     },
-
-    // Uppercase eyebrow label above a stat -> treat as section header (Space Grotesk)
     summaryLabel: {
       fontSize: 10,
       fontFamily: fonts.displaySemiBold,
@@ -872,27 +851,21 @@ const createStyles = (colors) =>
       letterSpacing: 0.5,
       marginBottom: 8,
     },
-
-    // Currency amounts -> JetBrains Mono
     incomeSummary: {
-      fontSize: 16,
+      fontSize: 14,
       fontFamily: fonts.monoMedium,
       color: colors.income,
     },
-
     expenseSummary: {
-      fontSize: 16,
+      fontSize: 14,
       fontFamily: fonts.monoMedium,
       color: colors.expense,
     },
-
     filterContainer: {
       marginBottom: 16,
     },
-
-    // Section header -> Space Grotesk
     filterLabel: {
-      fontSize: 13,
+      fontSize: 12,
       fontFamily: fonts.displaySemiBold,
       color: colors.text,
       marginBottom: 10,
@@ -900,7 +873,7 @@ const createStyles = (colors) =>
 
     filterButtons: {
       flexDirection: "row",
-      gap: 8,
+      gap: 6,
     },
 
     filterButton: {
@@ -908,7 +881,7 @@ const createStyles = (colors) =>
       borderWidth: 1,
       borderColor: colors.inputBorder,
       paddingVertical: 9,
-      paddingHorizontal: 13,
+      paddingHorizontal: 12,
       borderRadius: 20,
     },
 
@@ -918,7 +891,7 @@ const createStyles = (colors) =>
     },
 
     filterText: {
-      fontSize: 12,
+      fontSize: 9,
       fontFamily: fonts.bodyMedium,
       color: colors.textMuted,
     },
@@ -957,8 +930,8 @@ const createStyles = (colors) =>
     },
 
     transactionIcon: {
-      width: 42,
-      height: 42,
+      width: 28,
+      height: 28,
       borderRadius: 21,
       justifyContent: "center",
       alignItems: "center",
@@ -974,7 +947,7 @@ const createStyles = (colors) =>
     },
 
     iconText: {
-      fontSize: 20,
+      fontSize: 15,
       fontFamily: fonts.bodySemiBold,
     },
 
@@ -987,21 +960,19 @@ const createStyles = (colors) =>
     },
 
     transactionTitle: {
-      fontSize: 14,
+      fontSize: 12,
       fontFamily: fonts.bodySemiBold,
       color: colors.text,
     },
 
     transactionMeta: {
-      fontSize: 11,
+      fontSize: 9,
       fontFamily: fonts.bodyRegular,
       color: colors.textFaint,
       marginTop: 4,
     },
-
-    // Currency amounts -> JetBrains Mono
     transactionAmount: {
-      fontSize: 14,
+      fontSize: 13,
       fontFamily: fonts.monoMedium,
       marginLeft: 10,
     },
@@ -1023,14 +994,12 @@ const createStyles = (colors) =>
       alignItems: "center",
       justifyContent: "center",
     },
-
     deleteButtonText: {
-      fontSize: 16,
+      fontSize: 13,
       lineHeight: 16,
       fontFamily: fonts.bodySemiBold,
       color: colors.textFaint,
     },
-
     emptyState: {
       paddingVertical: 50,
       alignItems: "center",
@@ -1038,14 +1007,14 @@ const createStyles = (colors) =>
     },
 
     emptyTitle: {
-      fontSize: 16,
+      fontSize: 13,
       fontFamily: fonts.bodySemiBold,
       color: colors.text,
       marginBottom: 6,
     },
 
     emptyText: {
-      fontSize: 13,
+      fontSize: 11,
       fontFamily: fonts.bodyRegular,
       color: colors.textFaint,
       textAlign: "center",
@@ -1061,7 +1030,7 @@ const createStyles = (colors) =>
     modalCard: {
       backgroundColor: colors.card,
       borderRadius: 16,
-      padding: 20,
+      padding: 18,
       borderWidth: 1,
       borderColor: colors.cardBorder,
     },
@@ -1073,21 +1042,20 @@ const createStyles = (colors) =>
       marginBottom: 4,
     },
 
-    // Modal title -> Space Grotesk
     modalTitle: {
-      fontSize: 18,
+      fontSize: 13,
       fontFamily: fonts.displayBold,
       color: colors.text,
     },
 
     closeButton: {
-      fontSize: 22,
+      fontSize: 17,
       color: colors.textFaint,
       fontFamily: fonts.bodySemiBold,
     },
 
     inputLabel: {
-      fontSize: 12,
+      fontSize: 10,
       fontFamily: fonts.bodySemiBold,
       color: colors.text,
       marginBottom: 6,
@@ -1098,9 +1066,9 @@ const createStyles = (colors) =>
       borderWidth: 1,
       borderColor: colors.inputBorder,
       borderRadius: 10,
-      paddingVertical: 11,
+      paddingVertical: 7,
       paddingHorizontal: 13,
-      fontSize: 14,
+      fontSize: 12,
       fontFamily: fonts.bodyRegular,
       color: colors.text,
       backgroundColor: colors.inputBg,
@@ -1108,7 +1076,7 @@ const createStyles = (colors) =>
 
     dateText: {
       color: colors.text,
-      fontSize: 14,
+      fontSize: 12,
       fontFamily: fonts.bodyRegular,
     },
 
@@ -1119,13 +1087,13 @@ const createStyles = (colors) =>
       borderWidth: 1,
       borderColor: colors.inputBorder,
       borderRadius: 10,
-      paddingVertical: 11,
+      paddingVertical: 6,
       paddingHorizontal: 13,
       backgroundColor: colors.inputBg,
     },
 
     dropdownValue: {
-      fontSize: 14,
+      fontSize: 12,
       fontFamily: fonts.bodyRegular,
       color: colors.text,
     },
@@ -1149,8 +1117,8 @@ const createStyles = (colors) =>
     dropdownMenu: {
       backgroundColor: colors.card,
       borderRadius: 12,
-      paddingVertical: 8,
-      maxHeight: 320,
+      paddingVertical: 6,
+      maxHeight: 300,
       borderWidth: 1,
       borderColor: colors.cardBorder,
     },
@@ -1161,7 +1129,7 @@ const createStyles = (colors) =>
     },
 
     dropdownOptionText: {
-      fontSize: 14,
+      fontSize: 12,
       fontFamily: fonts.bodyRegular,
       color: colors.text,
     },
@@ -1174,8 +1142,8 @@ const createStyles = (colors) =>
     saveButton: {
       marginTop: 20,
       backgroundColor: colors.primary,
-      borderRadius: 10,
-      paddingVertical: 14,
+      borderRadius: 9,
+      paddingVertical: 12,
       alignItems: "center",
     },
 
@@ -1185,7 +1153,7 @@ const createStyles = (colors) =>
 
     saveButtonText: {
       color: colors.primaryText,
-      fontSize: 14,
+      fontSize: 12,
       fontFamily: fonts.bodySemiBold,
     },
   });
