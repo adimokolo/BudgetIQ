@@ -1,16 +1,21 @@
-import { PasswordInput } from '../components/PasswordInput';
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import AuthLogo from '../components/AuthLogo';
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import AuthLogo from "../components/AuthLogo";
 
-const REMEMBERED_EMAIL_KEY = 'budgetiq_remembered_email';
+import { PasswordInput } from "../components/PasswordInput";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import AuthLogo from "../components/AuthLogo";
+
+const REMEMBERED_EMAIL_KEY = "budgetiq_remembered_email";
 
 export default function Login() {
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
   // Prefill the email (and check the box) if a previous login remembered it -
@@ -32,9 +37,9 @@ export default function Login() {
       } else {
         localStorage.removeItem(REMEMBERED_EMAIL_KEY);
       }
-      navigate('/');
+      navigate("/");
     } else if (result.needsVerification) {
-      navigate('/verify-otp', { state: { email: result.email } });
+      navigate("/verify-otp", { state: { email: result.email } });
     }
   };
 
@@ -67,7 +72,11 @@ export default function Login() {
             <Link
               to="/forgot-password"
               className="helper-text"
-              style={{ color: 'var(--brand-mid)', fontWeight: 600, alignSelf: 'flex-end' }}
+              style={{
+                color: "var(--brand-mid)",
+                fontWeight: 600,
+                alignSelf: "flex-end",
+              }}
             >
               Forgot password?
             </Link>
@@ -79,18 +88,38 @@ export default function Login() {
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
             />
-            <span>Remember my email on this device</span>
+            <span>Remember my login</span>
           </label>
 
-          {error && <p className="error-text" style={{ marginTop: 14, marginBottom: 14 }}>{error}</p>}
+          {error && (
+            <p
+              className="error-text"
+              style={{ marginTop: 14, marginBottom: 14 }}
+            >
+              {error}
+            </p>
+          )}
 
-          <button className="btn btn--primary btn--block" type="submit" disabled={loading}>
-            {loading ? 'Logging in…' : 'Log in'}
+          <button
+            className="btn btn--primary btn--block"
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? "Logging in…" : "Log in"}
           </button>
         </form>
 
-        <p className="helper-text" style={{ marginTop: 18, textAlign: 'center' }}>
-          New to BudgetIQ? <Link to="/register" style={{ color: 'var(--brand-mid)', fontWeight: 600 }}>Create an account</Link>
+        <p
+          className="helper-text"
+          style={{ marginTop: 18, textAlign: "center" }}
+        >
+          New to BudgetIQ?{" "}
+          <Link
+            to="/register"
+            style={{ color: "var(--brand-mid)", fontWeight: 600 }}
+          >
+            Create an account
+          </Link>
         </p>
       </div>
     </div>

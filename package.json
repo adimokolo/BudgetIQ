@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "react-native-chart-kit": "^7.0.2",
+    "react-native-svg": "^15.2.0"
+  }
+}
