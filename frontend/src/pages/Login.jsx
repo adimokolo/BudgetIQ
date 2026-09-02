@@ -3,6 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AuthLogo from "../components/AuthLogo";
 
+import { PasswordInput } from "../components/PasswordInput";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import AuthLogo from "../components/AuthLogo";
+
 const REMEMBERED_EMAIL_KEY = "budgetiq_remembered_email";
 
 export default function Login() {
@@ -58,13 +64,10 @@ export default function Login() {
           </div>
           <div className="field">
             <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
+              placeholder="Enter your password"
             />
             <Link
               to="/forgot-password"
