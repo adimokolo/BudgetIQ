@@ -20,12 +20,8 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-<<<<<<< HEAD
-    "nodemailer": "^6.9.14",
-=======
     "multer": "^2.2.0",
     "nodemailer": "^9.0.6",
->>>>>>> BudgetIQ-mobile
     "pg": "^8.12.0"
   },
   "devDependencies": {

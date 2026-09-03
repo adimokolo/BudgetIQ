@@ -1,13 +1,5 @@
 require("dotenv").config();
 
-<<<<<<< HEAD
-const authRoutes = require('./routes/auth');
-const categoryRoutes = require('./routes/categories');
-const transactionRoutes = require('./routes/transactions');
-const budgetRoutes = require('./routes/budgets');
-const dashboardRoutes = require('./routes/dashboard');
-const notificationRoutes = require('./routes/notifications');
-=======
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -20,7 +12,6 @@ const transactionRoutes = require("./routes/transactions");
 const budgetRoutes = require("./routes/budgets");
 const dashboardRoutes = require("./routes/dashboard");
 const profileRoutes = require("./routes/profile");
->>>>>>> BudgetIQ-mobile
 
 const app = express();
 
@@ -45,32 +36,11 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // HEALTH CHECK
 // =====================================================
 
-<<<<<<< HEAD
-app.use('/api/auth', authRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/transactions', transactionRoutes);
-app.use('/api/budgets', budgetRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/notifications', notificationRoutes);
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found.' });
-});
-
-// Central error handler
-// eslint-disable-next-line no-unused-vars
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Something went wrong on our end. Please try again.',
-=======
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     status: "ok",
     service: "BudgetIQ API",
     time: new Date().toISOString(),
->>>>>>> BudgetIQ-mobile
   });
 });
 
