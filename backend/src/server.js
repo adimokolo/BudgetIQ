@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+const notificationRoutes = require("./routes/notifications");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");

@@ -73,7 +73,6 @@ const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT || 587),
 
-  // Gmail SMTP port 587 uses STARTTLS
   secure: false,
 
   auth: {
@@ -131,7 +130,7 @@ function generateOTP() {
 
 /*
 |--------------------------------------------------------------------------
-| HASH OTP
+| HASH OTP / TOKEN
 |--------------------------------------------------------------------------
 */
 
@@ -168,7 +167,6 @@ If you did not create this account, you can ignore this email.
           padding: 30px;
         "
       >
-
         <h2 style="color: #14274E;">
           BudgetIQ
         </h2>
@@ -202,7 +200,73 @@ If you did not create this account, you can ignore this email.
           If you did not create this account,
           you can ignore this email.
         </p>
+      </div>
+    `,
+  });
+}
 
+/*
+|--------------------------------------------------------------------------
+| SEND PASSWORD RESET OTP EMAIL
+|--------------------------------------------------------------------------
+*/
+
+async function sendPasswordResetOtpEmail(email, code) {
+  return transporter.sendMail({
+    from: process.env.EMAIL_FROM || process.env.SMTP_USER,
+    to: email,
+    subject: "BudgetIQ Password Reset Code",
+
+    text: `
+Your BudgetIQ password reset code is ${code}.
+
+This code expires in 10 minutes.
+
+If you did not request a password reset, you can ignore this email.
+    `,
+
+    html: `
+      <div
+        style="
+          font-family: Arial, sans-serif;
+          max-width: 500px;
+          margin: auto;
+          padding: 30px;
+        "
+      >
+        <h2 style="color: #14274E;">
+          BudgetIQ
+        </h2>
+
+        <p>
+          We received a request to reset your BudgetIQ password.
+        </p>
+
+        <p>
+          Your password reset code is:
+        </p>
+
+        <div
+          style="
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            color: #14274E;
+            margin: 20px 0;
+          "
+        >
+          ${code}
+        </div>
+
+        <p>
+          This code will expire in
+          <strong>10 minutes</strong>.
+        </p>
+
+        <p>
+          If you did not request this password reset,
+          you can safely ignore this email.
+        </p>
       </div>
     `,
   });
@@ -217,19 +281,11 @@ If you did not create this account, you can ignore this email.
 const register = asyncHandler(async (req, res) => {
   const { fullName, email, password, currency } = req.body;
 
-  /*
-   * Validate required fields
-   */
-
   if (!fullName || !email || !password) {
     return res.status(400).json({
       error: "Full name, email, and password are required.",
     });
   }
-
-  /*
-   * Validate password
-   */
 
   if (password.length < 8) {
     return res.status(400).json({
@@ -237,15 +293,7 @@ const register = asyncHandler(async (req, res) => {
     });
   }
 
-  /*
-   * Clean email
-   */
-
   const cleanEmail = email.trim().toLowerCase();
-
-  /*
-   * Check if account already exists
-   */
 
   const existing = await pool.query("SELECT id FROM users WHERE email = $1", [
     cleanEmail,
@@ -257,24 +305,12 @@ const register = asyncHandler(async (req, res) => {
     });
   }
 
-  /*
-   * Hash password
-   */
-
   const passwordHash = await bcrypt.hash(password, 12);
-
-  /*
-   * Start database transaction
-   */
 
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
-
-    /*
-     * Create user
-     */
 
     const userResult = await client.query(
       `
@@ -301,10 +337,6 @@ const register = asyncHandler(async (req, res) => {
 
     const user = userResult.rows[0];
 
-    /*
-     * Create default categories
-     */
-
     for (const category of DEFAULT_CATEGORIES) {
       await client.query(
         `
@@ -323,23 +355,10 @@ const register = asyncHandler(async (req, res) => {
       );
     }
 
-    /*
-     * Generate OTP
-     */
-
     const otp = generateOTP();
-
     const otpHash = hashOTP(otp);
 
-    /*
-     * OTP expires in 10 minutes
-     */
-
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-    /*
-     * Save OTP hash
-     */
 
     await client.query(
       `
@@ -361,19 +380,7 @@ const register = asyncHandler(async (req, res) => {
       [user.id, otpHash, expiresAt],
     );
 
-    /*
-     * Commit transaction
-     */
-
     await client.query("COMMIT");
-
-    /*
-     * IMPORTANT:
-     * Print OTP to backend terminal during development.
-     *
-     * This means even if Gmail fails, you can still
-     * continue testing your mobile app.
-     */
 
     if (process.env.NODE_ENV !== "production") {
       console.log("");
@@ -386,10 +393,6 @@ const register = asyncHandler(async (req, res) => {
       console.log("");
     }
 
-    /*
-     * Send email
-     */
-
     try {
       await sendVerificationEmail(cleanEmail, otp);
 
@@ -397,26 +400,14 @@ const register = asyncHandler(async (req, res) => {
     } catch (emailError) {
       console.error("❌ Email sending failed:", emailError.message);
 
-      /*
-       * Do not fail registration just because
-       * the email service failed during development.
-       */
-
       if (process.env.NODE_ENV !== "production") {
         console.log(`🔐 DEVELOPMENT OTP: ${otp}`);
       }
     }
 
-    /*
-     * Do not log the user in yet.
-     * User must verify OTP first.
-     */
-
     return res.status(201).json({
       message: "Account created. Please verify your email.",
-
       email: cleanEmail,
-
       requiresVerification: true,
     });
   } catch (error) {
@@ -432,19 +423,12 @@ const register = asyncHandler(async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| VERIFY OTP
+| VERIFY EMAIL OTP
 |--------------------------------------------------------------------------
 */
 
 const verifyOTP = asyncHandler(async (req, res) => {
   const { email, code, otp } = req.body;
-
-  /*
-   * Accept either:
-   * code
-   * or
-   * otp
-   */
 
   const verificationCode = code || otp;
 
@@ -455,10 +439,6 @@ const verifyOTP = asyncHandler(async (req, res) => {
   }
 
   const cleanEmail = email.trim().toLowerCase();
-
-  /*
-   * Find user
-   */
 
   const userResult = await pool.query(
     `
@@ -482,25 +462,13 @@ const verifyOTP = asyncHandler(async (req, res) => {
     });
   }
 
-  /*
-   * Already verified?
-   */
-
   if (user.is_verified) {
     return res.status(400).json({
       error: "This account is already verified.",
     });
   }
 
-  /*
-   * Hash submitted OTP
-   */
-
   const codeHash = hashOTP(verificationCode.toString().trim());
-
-  /*
-   * Find valid OTP
-   */
 
   const otpResult = await pool.query(
     `
@@ -523,18 +491,10 @@ const verifyOTP = asyncHandler(async (req, res) => {
     });
   }
 
-  /*
-   * Use one client for the transaction
-   */
-
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
-
-    /*
-     * Verify user
-     */
 
     await client.query(
       `
@@ -545,10 +505,6 @@ const verifyOTP = asyncHandler(async (req, res) => {
       `,
       [user.id],
     );
-
-    /*
-     * Mark OTP as consumed
-     */
 
     await client.query(
       `
@@ -567,17 +523,11 @@ const verifyOTP = asyncHandler(async (req, res) => {
     client.release();
   }
 
-  /*
-   * Generate login token
-   */
-
   const token = signToken(user);
 
   return res.json({
     message: "Email verified successfully.",
-
     token,
-
     user: {
       id: user.id,
       full_name: user.full_name,
@@ -590,7 +540,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| RESEND OTP
+| RESEND EMAIL OTP
 |--------------------------------------------------------------------------
 */
 
@@ -605,10 +555,6 @@ const resendOTP = asyncHandler(async (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
 
-  /*
-   * Find user
-   */
-
   const userResult = await pool.query(
     `
     SELECT
@@ -621,10 +567,6 @@ const resendOTP = asyncHandler(async (req, res) => {
     [cleanEmail],
   );
 
-  /*
-   * Don't reveal whether account exists
-   */
-
   if (userResult.rows.length === 0) {
     return res.json({
       message: "If the account exists, a verification code has been sent.",
@@ -633,29 +575,16 @@ const resendOTP = asyncHandler(async (req, res) => {
 
   const user = userResult.rows[0];
 
-  /*
-   * Already verified
-   */
-
   if (user.is_verified) {
     return res.json({
       message: "If the account exists, a verification code has been sent.",
     });
   }
 
-  /*
-   * Generate new OTP
-   */
-
   const otp = generateOTP();
-
   const otpHash = hashOTP(otp);
 
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-  /*
-   * Invalidate previous OTPs
-   */
 
   await pool.query(
     `
@@ -667,10 +596,6 @@ const resendOTP = asyncHandler(async (req, res) => {
     `,
     [user.id],
   );
-
-  /*
-   * Save new OTP
-   */
 
   await pool.query(
     `
@@ -692,10 +617,6 @@ const resendOTP = asyncHandler(async (req, res) => {
     [user.id, otpHash, expiresAt],
   );
 
-  /*
-   * Always print OTP in development
-   */
-
   if (process.env.NODE_ENV !== "production") {
     console.log("");
     console.log("========================================");
@@ -706,10 +627,6 @@ const resendOTP = asyncHandler(async (req, res) => {
     console.log("========================================");
     console.log("");
   }
-
-  /*
-   * Send email
-   */
 
   try {
     await sendVerificationEmail(cleanEmail, otp);
@@ -745,10 +662,6 @@ const login = asyncHandler(async (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
 
-  /*
-   * Find user
-   */
-
   const result = await pool.query(
     `
     SELECT
@@ -772,10 +685,6 @@ const login = asyncHandler(async (req, res) => {
     });
   }
 
-  /*
-   * Check password
-   */
-
   const valid = await bcrypt.compare(password, user.password_hash);
 
   if (!valid) {
@@ -784,29 +693,15 @@ const login = asyncHandler(async (req, res) => {
     });
   }
 
-  /*
-   * Check email verification
-   */
-
   if (!user.is_verified) {
     return res.status(403).json({
       error: "Please verify your email before logging in.",
-
       requiresVerification: true,
-
       email: user.email,
     });
   }
 
-  /*
-   * Remove password hash
-   */
-
   delete user.password_hash;
-
-  /*
-   * Generate JWT
-   */
 
   const token = signToken(user);
 
@@ -818,13 +713,535 @@ const login = asyncHandler(async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
+| FORGOT PASSWORD
+| Legacy / Link-Based Endpoint
+|--------------------------------------------------------------------------
+*/
+
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      error: "Email is required.",
+    });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  const userResult = await pool.query(
+    `
+    SELECT id, email
+    FROM users
+    WHERE email = $1
+    `,
+    [cleanEmail],
+  );
+
+  /*
+   * Do not reveal whether an account exists.
+   */
+
+  if (userResult.rows.length === 0) {
+    return res.json({
+      message:
+        "If the account exists, a password reset request has been created.",
+    });
+  }
+
+  const user = userResult.rows[0];
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashOTP(token);
+
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+  await pool.query(
+    `
+    UPDATE password_resets
+    SET consumed_at = NOW()
+    WHERE user_id = $1
+      AND consumed_at IS NULL
+    `,
+    [user.id],
+  );
+
+  await pool.query(
+    `
+    INSERT INTO password_resets
+      (
+        user_id,
+        token_hash,
+        expires_at
+      )
+    VALUES
+      (
+        $1,
+        $2,
+        $3
+      )
+    `,
+    [user.id, tokenHash, expiresAt],
+  );
+
+  /*
+   * The token is intentionally not emailed here because
+   * the mobile application uses the OTP flow below.
+   *
+   * It is returned only during development.
+   */
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("");
+    console.log("========================================");
+    console.log("🔐 BUDGETIQ PASSWORD RESET TOKEN");
+    console.log(`📧 Email: ${cleanEmail}`);
+    console.log(`🔑 Token: ${token}`);
+    console.log("⏰ Expires in: 30 minutes");
+    console.log("========================================");
+    console.log("");
+  }
+
+  return res.json({
+    message:
+      "If the account exists, a password reset request has been created.",
+  });
+});
+
+/*
+|--------------------------------------------------------------------------
+| RESET PASSWORD
+| Legacy / Token-Based Endpoint
+|--------------------------------------------------------------------------
+*/
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password, newPassword } = req.body;
+
+  const finalPassword = newPassword || password;
+
+  if (!token || !finalPassword) {
+    return res.status(400).json({
+      error: "Reset token and new password are required.",
+    });
+  }
+
+  if (finalPassword.length < 8) {
+    return res.status(400).json({
+      error: "Password must be at least 8 characters.",
+    });
+  }
+
+  const tokenHash = hashOTP(token.trim());
+
+  const resetResult = await pool.query(
+    `
+    SELECT
+      id,
+      user_id
+    FROM password_resets
+    WHERE token_hash = $1
+      AND consumed_at IS NULL
+      AND expires_at > NOW()
+    ORDER BY created_at DESC
+    LIMIT 1
+    `,
+    [tokenHash],
+  );
+
+  if (resetResult.rows.length === 0) {
+    return res.status(400).json({
+      error: "Invalid or expired reset token.",
+    });
+  }
+
+  const reset = resetResult.rows[0];
+
+  const passwordHash = await bcrypt.hash(finalPassword, 12);
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    await client.query(
+      `
+      UPDATE users
+      SET password_hash = $1,
+          updated_at = NOW()
+      WHERE id = $2
+      `,
+      [passwordHash, reset.user_id],
+    );
+
+    await client.query(
+      `
+      UPDATE password_resets
+      SET consumed_at = NOW()
+      WHERE id = $1
+      `,
+      [reset.id],
+    );
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  return res.json({
+    message: "Password reset successfully.",
+  });
+});
+
+/*
+|--------------------------------------------------------------------------
+| FORGOT PASSWORD OTP
+|--------------------------------------------------------------------------
+*/
+
+const forgotPasswordOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      error: "Email is required.",
+    });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  const userResult = await pool.query(
+    `
+    SELECT
+      id,
+      email
+    FROM users
+    WHERE email = $1
+    `,
+    [cleanEmail],
+  );
+
+  /*
+   * Always return the same response so we do not
+   * reveal whether an email is registered.
+   */
+
+  if (userResult.rows.length === 0) {
+    return res.json({
+      message: "If the account exists, a password reset code has been sent.",
+    });
+  }
+
+  const user = userResult.rows[0];
+
+  /*
+   * Generate six-digit reset OTP.
+   */
+
+  const otp = generateOTP();
+  const tokenHash = hashOTP(otp);
+
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  /*
+   * Invalidate previous reset codes.
+   */
+
+  await pool.query(
+    `
+    UPDATE password_resets
+    SET consumed_at = NOW()
+    WHERE user_id = $1
+      AND consumed_at IS NULL
+    `,
+    [user.id],
+  );
+
+  /*
+   * Store hashed OTP.
+   */
+
+  await pool.query(
+    `
+    INSERT INTO password_resets
+      (
+        user_id,
+        token_hash,
+        expires_at
+      )
+    VALUES
+      (
+        $1,
+        $2,
+        $3
+      )
+    `,
+    [user.id, tokenHash, expiresAt],
+  );
+
+  /*
+   * Print OTP in development.
+   */
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("");
+    console.log("========================================");
+    console.log("🔐 BUDGETIQ PASSWORD RESET OTP");
+    console.log(`📧 Email: ${cleanEmail}`);
+    console.log(`🔢 OTP: ${otp}`);
+    console.log("⏰ Expires in: 10 minutes");
+    console.log("========================================");
+    console.log("");
+  }
+
+  /*
+   * Send email.
+   */
+
+  try {
+    await sendPasswordResetOtpEmail(cleanEmail, otp);
+
+    console.log(`✅ Password reset OTP sent to ${cleanEmail}`);
+  } catch (emailError) {
+    console.error("❌ Password reset email failed:", emailError.message);
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`🔐 DEVELOPMENT PASSWORD RESET OTP: ${otp}`);
+    }
+  }
+
+  return res.json({
+    message: "If the account exists, a password reset code has been sent.",
+    email: cleanEmail,
+  });
+});
+
+/*
+|--------------------------------------------------------------------------
+| VERIFY PASSWORD RESET OTP
+|--------------------------------------------------------------------------
+*/
+
+const verifyResetOtp = asyncHandler(async (req, res) => {
+  const { email, code, otp } = req.body;
+
+  const verificationCode = code || otp;
+
+  if (!email || !verificationCode) {
+    return res.status(400).json({
+      error: "Email and verification code are required.",
+    });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  const userResult = await pool.query(
+    `
+    SELECT id, email
+    FROM users
+    WHERE email = $1
+    `,
+    [cleanEmail],
+  );
+
+  if (userResult.rows.length === 0) {
+    return res.status(400).json({
+      error: "Invalid or expired reset code.",
+    });
+  }
+
+  const user = userResult.rows[0];
+
+  const tokenHash = hashOTP(verificationCode.toString().trim());
+
+  const resetResult = await pool.query(
+    `
+    SELECT id
+    FROM password_resets
+    WHERE user_id = $1
+      AND token_hash = $2
+      AND consumed_at IS NULL
+      AND expires_at > NOW()
+    ORDER BY created_at DESC
+    LIMIT 1
+    `,
+    [user.id, tokenHash],
+  );
+
+  if (resetResult.rows.length === 0) {
+    return res.status(400).json({
+      error: "Invalid or expired reset code.",
+    });
+  }
+
+  /*
+   * The OTP remains valid until the password is changed.
+   *
+   * We return a temporary reset token.
+   *
+   * This prevents the client from needing to send the
+   * actual OTP again during password reset.
+   */
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  const resetTokenHash = hashOTP(resetToken);
+
+  await pool.query(
+    `
+    UPDATE password_resets
+    SET token_hash = $1
+    WHERE id = $2
+    `,
+    [resetTokenHash, resetResult.rows[0].id],
+  );
+
+  return res.json({
+    message: "Reset code verified successfully.",
+    resetToken,
+    email: cleanEmail,
+  });
+});
+
+/*
+|--------------------------------------------------------------------------
+| RESET PASSWORD WITH OTP
+|--------------------------------------------------------------------------
+*/
+
+const resetPasswordWithOtp = asyncHandler(async (req, res) => {
+  const { email, resetToken, token, password, newPassword } = req.body;
+
+  const finalToken = resetToken || token;
+  const finalPassword = newPassword || password;
+
+  if (!email || !finalToken || !finalPassword) {
+    return res.status(400).json({
+      error: "Email, reset token, and new password are required.",
+    });
+  }
+
+  if (finalPassword.length < 8) {
+    return res.status(400).json({
+      error: "Password must be at least 8 characters.",
+    });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  const userResult = await pool.query(
+    `
+      SELECT id, email
+      FROM users
+      WHERE email = $1
+      `,
+    [cleanEmail],
+  );
+
+  if (userResult.rows.length === 0) {
+    return res.status(400).json({
+      error: "Invalid or expired reset request.",
+    });
+  }
+
+  const user = userResult.rows[0];
+
+  const tokenHash = hashOTP(finalToken.trim());
+
+  const resetResult = await pool.query(
+    `
+      SELECT id
+      FROM password_resets
+      WHERE user_id = $1
+        AND token_hash = $2
+        AND consumed_at IS NULL
+        AND expires_at > NOW()
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+    [user.id, tokenHash],
+  );
+
+  if (resetResult.rows.length === 0) {
+    return res.status(400).json({
+      error: "Invalid or expired reset request.",
+    });
+  }
+
+  const passwordHash = await bcrypt.hash(finalPassword, 12);
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    /*
+     * Update password.
+     */
+
+    await client.query(
+      `
+        UPDATE users
+        SET password_hash = $1,
+            updated_at = NOW()
+        WHERE id = $2
+        `,
+      [passwordHash, user.id],
+    );
+
+    /*
+     * Consume reset token.
+     */
+
+    await client.query(
+      `
+        UPDATE password_resets
+        SET consumed_at = NOW()
+        WHERE id = $1
+        `,
+      [resetResult.rows[0].id],
+    );
+
+    /*
+     * Invalidate any other active reset tokens.
+     */
+
+    await client.query(
+      `
+        UPDATE password_resets
+        SET consumed_at = NOW()
+        WHERE user_id = $1
+          AND consumed_at IS NULL
+        `,
+      [user.id],
+    );
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  return res.json({
+    message: "Password reset successfully.",
+  });
+});
+
+/*
+|--------------------------------------------------------------------------
 | CURRENT USER
 |--------------------------------------------------------------------------
 */
 
 const me = asyncHandler(async (req, res) => {
   const result = await pool.query(
-    `SELECT
+    `
+    SELECT
       id,
       full_name,
       email,
@@ -832,8 +1249,9 @@ const me = asyncHandler(async (req, res) => {
       is_verified,
       avatar_url,
       created_at
-     FROM users
-     WHERE id = $1`,
+    FROM users
+    WHERE id = $1
+    `,
     [req.user.id],
   );
 
@@ -847,11 +1265,7 @@ const me = asyncHandler(async (req, res) => {
     user: result.rows[0],
   });
 });
-/*
-|--------------------------------------------------------------------------
-| EXPORTS
-|--------------------------------------------------------------------------
-*/
+
 /*
 |--------------------------------------------------------------------------
 | UPLOAD PROFILE AVATAR
@@ -868,16 +1282,18 @@ const uploadAvatar = asyncHandler(async (req, res) => {
   const avatarUrl = `/uploads/${req.file.filename}`;
 
   const result = await pool.query(
-    `UPDATE users
-     SET avatar_url = $1
-     WHERE id = $2
-     RETURNING
-       id,
-       full_name,
-       email,
-       currency,
-       is_verified,
-       avatar_url`,
+    `
+    UPDATE users
+    SET avatar_url = $1
+    WHERE id = $2
+    RETURNING
+      id,
+      full_name,
+      email,
+      currency,
+      is_verified,
+      avatar_url
+    `,
     [avatarUrl, req.user.id],
   );
 
@@ -895,11 +1311,28 @@ const uploadAvatar = asyncHandler(async (req, res) => {
   });
 });
 
+/*
+|--------------------------------------------------------------------------
+| EXPORTS
+|--------------------------------------------------------------------------
+*/
+
 module.exports = {
   register,
   login,
   me,
+
+  // Email verification
   verifyOTP,
   resendOTP,
+
+  // Password reset
+  forgotPassword,
+  resetPassword,
+  forgotPasswordOtp,
+  verifyResetOtp,
+  resetPasswordWithOtp,
+
+  // Profile
   uploadAvatar,
 };
