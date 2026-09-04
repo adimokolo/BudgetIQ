@@ -1,44 +1,6 @@
 const express = require("express");
-<<<<<<< HEAD
-const {
-  register,
-  verifyOtp,
-  resendOtp,
-  login,
-  forgotPassword,
-  resetPassword,
-  forgotPasswordOtp,
-  verifyResetOtp,
-  resetPasswordWithOtp,
-  me,
-  updateAvatar,
-} = require("../controllers/authController");
-const { requireAuth } = require("../middleware/auth");
 
-const router = express.Router();
-
-router.post("/register", register);
-router.post("/verify-otp", verifyOtp);
-router.post("/resend-otp", resendOtp);
-router.post("/login", login);
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
-router.post("/forgot-password-otp", forgotPasswordOtp);
-router.post("/verify-reset-otp", verifyResetOtp);
-router.post("/reset-password-otp", resetPasswordWithOtp);
-router.get("/me", requireAuth, me);
-router.patch("/avatar", requireAuth, updateAvatar);
-=======
-
-const {
-  register,
-  login,
-  me,
-  verifyOTP,
-  resendOTP,
-  uploadAvatar,
-} = require("../controllers/authController");
-
+const authController = require("../controllers/authController");
 const { requireAuth } = require("../middleware/auth");
 const upload = require("../middleware/upload");
 
@@ -46,27 +8,119 @@ const router = express.Router();
 
 /*
 |--------------------------------------------------------------------------
-| AUTH ROUTES
+| DEBUG — Check controller functions
+|--------------------------------------------------------------------------
+|
+| This can be removed later, but it is useful while resolving the merge.
 |--------------------------------------------------------------------------
 */
 
-// Register
-router.post("/register", register);
+console.log("Auth controller functions:", {
+  register: typeof authController.register,
+  verifyOTP: typeof authController.verifyOTP,
+  resendOTP: typeof authController.resendOTP,
+  login: typeof authController.login,
 
-// Verify registration OTP
-router.post("/verify-otp", verifyOTP);
+  forgotPassword: typeof authController.forgotPassword,
+  resetPassword: typeof authController.resetPassword,
 
-// Resend registration OTP
-router.post("/resend-otp", resendOTP);
+  forgotPasswordOtp: typeof authController.forgotPasswordOtp,
+  verifyResetOtp: typeof authController.verifyResetOtp,
+  resetPasswordWithOtp: typeof authController.resetPasswordWithOtp,
 
-// Login
-router.post("/login", login);
+  me: typeof authController.me,
 
-// Upload profile picture
-router.post("/avatar", requireAuth, upload.single("avatar"), uploadAvatar);
+  uploadAvatar: typeof authController.uploadAvatar,
+  updateAvatar: typeof authController.updateAvatar,
+});
 
-// Current logged-in user
-router.get("/me", requireAuth, me);
->>>>>>> BudgetIQ-mobile
+/*
+|--------------------------------------------------------------------------
+| REGISTRATION
+|--------------------------------------------------------------------------
+*/
+
+router.post("/register", authController.register);
+
+/*
+|--------------------------------------------------------------------------
+| EMAIL VERIFICATION
+|--------------------------------------------------------------------------
+*/
+
+router.post("/verify-otp", authController.verifyOTP);
+
+router.post("/resend-otp", authController.resendOTP);
+
+/*
+|--------------------------------------------------------------------------
+| LOGIN
+|--------------------------------------------------------------------------
+*/
+
+router.post("/login", authController.login);
+
+/*
+|--------------------------------------------------------------------------
+| PASSWORD RESET — LEGACY LINK
+|--------------------------------------------------------------------------
+*/
+
+router.post("/forgot-password", authController.forgotPassword);
+
+router.post("/reset-password", authController.resetPassword);
+
+/*
+|--------------------------------------------------------------------------
+| PASSWORD RESET — OTP
+|--------------------------------------------------------------------------
+*/
+
+router.post("/forgot-password-otp", authController.forgotPasswordOtp);
+
+router.post("/verify-reset-otp", authController.verifyResetOtp);
+
+router.post("/reset-password-otp", authController.resetPasswordWithOtp);
+
+/*
+|--------------------------------------------------------------------------
+| CURRENT USER
+|--------------------------------------------------------------------------
+*/
+
+router.get("/me", requireAuth, authController.me);
+
+/*
+|--------------------------------------------------------------------------
+| PROFILE AVATAR — MOBILE
+|--------------------------------------------------------------------------
+|
+| Mobile sends multipart/form-data with:
+|
+| avatar: image file
+|--------------------------------------------------------------------------
+*/
+
+router.post(
+  "/avatar",
+  requireAuth,
+  upload.single("avatar"),
+  authController.uploadAvatar,
+);
+
+/*
+|--------------------------------------------------------------------------
+| PROFILE AVATAR — WEB
+|--------------------------------------------------------------------------
+|
+| Web sends:
+|
+| {
+|   avatarDataUrl: "data:image/..."
+| }
+|--------------------------------------------------------------------------
+*/
+
+router.patch("/avatar", requireAuth, authController.updateAvatar);
 
 module.exports = router;
