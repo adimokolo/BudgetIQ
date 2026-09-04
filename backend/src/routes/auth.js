@@ -6,9 +6,14 @@ const upload = require("../middleware/upload");
 
 const router = express.Router();
 
-// --------------------------------------------------
-// DEBUG: Check that all controller functions exist
-// --------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| DEBUG — Check controller functions
+|--------------------------------------------------------------------------
+|
+| This can be removed later, but it is useful while resolving the merge.
+|--------------------------------------------------------------------------
+*/
 
 console.log("Auth controller functions:", {
   register: typeof authController.register,
@@ -24,40 +29,77 @@ console.log("Auth controller functions:", {
   resetPasswordWithOtp: typeof authController.resetPasswordWithOtp,
 
   me: typeof authController.me,
+
   uploadAvatar: typeof authController.uploadAvatar,
+  updateAvatar: typeof authController.updateAvatar,
 });
 
-// --------------------------------------------------
-// AUTH ROUTES
-// --------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| REGISTRATION
+|--------------------------------------------------------------------------
+*/
 
 router.post("/register", authController.register);
+
+/*
+|--------------------------------------------------------------------------
+| EMAIL VERIFICATION
+|--------------------------------------------------------------------------
+*/
 
 router.post("/verify-otp", authController.verifyOTP);
 
 router.post("/resend-otp", authController.resendOTP);
 
+/*
+|--------------------------------------------------------------------------
+| LOGIN
+|--------------------------------------------------------------------------
+*/
+
 router.post("/login", authController.login);
 
-// --------------------------------------------------
-// PASSWORD RESET
-// --------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| PASSWORD RESET — LEGACY LINK
+|--------------------------------------------------------------------------
+*/
 
-// Legacy token-based reset
 router.post("/forgot-password", authController.forgotPassword);
 
 router.post("/reset-password", authController.resetPassword);
 
-// OTP-based reset
+/*
+|--------------------------------------------------------------------------
+| PASSWORD RESET — OTP
+|--------------------------------------------------------------------------
+*/
+
 router.post("/forgot-password-otp", authController.forgotPasswordOtp);
 
 router.post("/verify-reset-otp", authController.verifyResetOtp);
 
 router.post("/reset-password-otp", authController.resetPasswordWithOtp);
 
-// --------------------------------------------------
-// PROFILE
-// --------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| CURRENT USER
+|--------------------------------------------------------------------------
+*/
+
+router.get("/me", requireAuth, authController.me);
+
+/*
+|--------------------------------------------------------------------------
+| PROFILE AVATAR — MOBILE
+|--------------------------------------------------------------------------
+|
+| Mobile sends multipart/form-data with:
+|
+| avatar: image file
+|--------------------------------------------------------------------------
+*/
 
 router.post(
   "/avatar",
@@ -66,8 +108,19 @@ router.post(
   authController.uploadAvatar,
 );
 
-router.get("/me", requireAuth, authController.me);
+/*
+|--------------------------------------------------------------------------
+| PROFILE AVATAR — WEB
+|--------------------------------------------------------------------------
+|
+| Web sends:
+|
+| {
+|   avatarDataUrl: "data:image/..."
+| }
+|--------------------------------------------------------------------------
+*/
 
-// --------------------------------------------------
+router.patch("/avatar", requireAuth, authController.updateAvatar);
 
 module.exports = router;
