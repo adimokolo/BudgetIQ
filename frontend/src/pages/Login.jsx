@@ -2,12 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AuthLogo from "../components/AuthLogo";
-
 import { PasswordInput } from "../components/PasswordInput";
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import AuthLogo from "../components/AuthLogo";
 
 const REMEMBERED_EMAIL_KEY = "budgetiq_remembered_email";
 
