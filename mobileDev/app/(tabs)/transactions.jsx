@@ -44,12 +44,15 @@ import {
 
 import { getCategories } from "../../services/categories";
 
+import { getCurrentUser } from "../../services/auth";
+
 import {
   exportTransactionsToCsv,
   exportTransactionsToPdf,
 } from "../../services/exportTransactions";
 
 import { useTheme } from "../../contexts/ThemeContext";
+import { formatCurrency } from "../../utils/currency";
 
 const TYPES = ["Expense", "Income"];
 
@@ -128,7 +131,7 @@ function Dropdown({ label, value, options, onSelect, placeholder, styles }) {
   );
 }
 
-function TransactionCard({ transaction, onDelete, styles }) {
+function TransactionCard({ transaction, currency, onDelete, styles }) {
   const isIncome = transaction.type === "Income";
 
   return (
@@ -168,8 +171,8 @@ function TransactionCard({ transaction, onDelete, styles }) {
             isIncome ? styles.incomeAmount : styles.expenseAmount,
           ]}
         >
-          {isIncome ? "+" : "-"}₦{Number(transaction.amount).toLocaleString()}
-          .00
+          {isIncome ? "+" : "-"}
+          {formatCurrency(transaction.amount, currency)}
         </Text>
 
         <Pressable
@@ -235,6 +238,8 @@ export default function Transactions() {
 
   const [allCategories, setAllCategories] = useState([]);
 
+  const [currency, setCurrency] = useState("NGN");
+
   const [loading, setLoading] = useState(true);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -285,16 +290,36 @@ export default function Transactions() {
     }
   }, []);
 
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD USER CURRENCY
+  |--------------------------------------------------------------------------
+  */
+
+  const loadCurrency = useCallback(async () => {
+    try {
+      const data = await getCurrentUser();
+
+      const profile = data?.user || data?.data?.user || data?.data || data;
+
+      setCurrency(profile?.currency || "NGN");
+    } catch (error) {
+      console.log("Load currency error:", error);
+    }
+  }, []);
+
   useEffect(() => {
     loadTransactions();
     loadCategories();
-  }, [loadTransactions, loadCategories]);
+    loadCurrency();
+  }, [loadTransactions, loadCategories, loadCurrency]);
 
   const onRefresh = () => {
     setRefreshing(true);
 
     loadTransactions();
     loadCategories();
+    loadCurrency();
   };
 
   const categoryOptions = allCategories.filter(
@@ -405,7 +430,7 @@ export default function Transactions() {
 
       const rawTransactions = data.transactions || [];
 
-      await exportTransactionsToCsv(rawTransactions, "NGN");
+      await exportTransactionsToCsv(rawTransactions, currency);
     } catch (error) {
       console.log("CSV export error:", error);
 
@@ -436,7 +461,7 @@ export default function Transactions() {
 
       const rawTransactions = data.transactions || [];
 
-      await exportTransactionsToPdf(rawTransactions, "NGN");
+      await exportTransactionsToPdf(rawTransactions, currency);
     } catch (error) {
       console.log("PDF export error:", error);
 
@@ -537,8 +562,7 @@ export default function Transactions() {
             <Text style={styles.summaryLabel}>TOTAL INCOME</Text>
 
             <Text style={styles.incomeSummary}>
-              ₦{totalIncome.toLocaleString()}
-              .00
+              {formatCurrency(totalIncome, currency)}
             </Text>
           </View>
 
@@ -546,8 +570,7 @@ export default function Transactions() {
             <Text style={styles.summaryLabel}>TOTAL EXPENSE</Text>
 
             <Text style={styles.expenseSummary}>
-              ₦{totalExpense.toLocaleString()}
-              .00
+              {formatCurrency(totalExpense, currency)}
             </Text>
           </View>
         </View>
@@ -584,6 +607,7 @@ export default function Transactions() {
               <TransactionCard
                 key={transaction.id}
                 transaction={transaction}
+                currency={currency}
                 onDelete={deleteTransaction}
                 styles={styles}
               />
@@ -628,7 +652,7 @@ export default function Transactions() {
 
             <TextInput
               style={styles.input}
-              placeholder="₦0.00"
+              placeholder={formatCurrency(0, currency)}
               placeholderTextColor={colors.textFaint}
               value={amount}
               onChangeText={setAmount}

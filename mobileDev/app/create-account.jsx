@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   View,
   Image,
@@ -11,6 +11,9 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Modal,
+  Pressable,
+  FlatList,
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -18,62 +21,113 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import { registerUser } from "../services/auth";
 import { useTheme } from "../contexts/ThemeContext";
+import { ALL_CURRENCIES } from "../utils/currency";
 
-const CURRENCIES = [
-  { code: "NGN", label: "NGN — Naira" },
-  { code: "USD", label: "USD — US Dollar" },
-  { code: "GBP", label: "GBP — Pound Sterling" },
-  { code: "EUR", label: "EUR — Euro" },
-];
+/*
+|--------------------------------------------------------------------------
+| CURRENCY DROPDOWN (searchable - 170+ currencies)
+|--------------------------------------------------------------------------
+*/
 
 function CurrencyDropdown({ value, onChange, colors, styles }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const selected =
-    CURRENCIES.find((currency) => currency.code === value) || CURRENCIES[0];
+    ALL_CURRENCIES.find((currency) => currency.code === value) ||
+    ALL_CURRENCIES[0];
+
+  const filteredCurrencies = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) return ALL_CURRENCIES;
+
+    return ALL_CURRENCIES.filter(
+      (currency) =>
+        currency.code.toLowerCase().includes(query) ||
+        currency.name.toLowerCase().includes(query),
+    );
+  }, [search]);
+
+  const handleClose = () => {
+    setOpen(false);
+    setSearch("");
+  };
 
   return (
     <View style={styles.dropdownWrap}>
       <TouchableOpacity
         style={[styles.dropdownField, open && styles.dropdownFieldOpen]}
         activeOpacity={0.8}
-        onPress={() => setOpen((current) => !current)}
+        onPress={() => setOpen(true)}
       >
-        <Text style={styles.dropdownFieldText}>{selected.label}</Text>
+        <Text style={styles.dropdownFieldText} numberOfLines={1}>
+          {selected.code} — {selected.name}
+        </Text>
 
-        <Text style={[styles.chevron, open && styles.chevronOpen]}>⌄</Text>
+        <Text style={styles.chevron}>⌄</Text>
       </TouchableOpacity>
 
-      {open && (
-        <View style={styles.dropdownList}>
-          {CURRENCIES.map((currency) => {
-            const isSelected = currency.code === value;
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={handleClose}
+      >
+        <Pressable style={styles.currencyOverlay} onPress={handleClose}>
+          <Pressable style={styles.currencyModal} onPress={() => {}}>
+            <Text style={styles.currencyModalTitle}>Select currency</Text>
 
-            return (
-              <TouchableOpacity
-                key={currency.code}
-                style={[
-                  styles.dropdownItem,
-                  isSelected && styles.dropdownItemSelected,
-                ]}
-                onPress={() => {
-                  onChange(currency.code);
-                  setOpen(false);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.dropdownItemText,
-                    isSelected && styles.dropdownItemTextSelected,
-                  ]}
-                >
-                  {currency.label}
+            <TextInput
+              style={styles.currencySearchInput}
+              placeholder="Search by name or code"
+              placeholderTextColor={colors.textFaint}
+              value={search}
+              onChangeText={setSearch}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+            />
+
+            <FlatList
+              data={filteredCurrencies}
+              keyExtractor={(item) => item.code}
+              keyboardShouldPersistTaps="handled"
+              style={styles.currencyList}
+              renderItem={({ item }) => {
+                const isSelected = item.code === value;
+
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.currencyOption,
+                      isSelected && styles.currencyOptionSelected,
+                    ]}
+                    onPress={() => {
+                      onChange(item.code);
+                      handleClose();
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.currencyOptionText,
+                        isSelected && styles.currencyOptionTextSelected,
+                      ]}
+                    >
+                      {item.code} — {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={
+                <Text style={styles.currencyEmptyText}>
+                  No currencies match "{search}"
                 </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
+              }
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -461,7 +515,6 @@ const createStyles = (colors) =>
     dropdownWrap: {
       width: "100%",
       marginBottom: 5,
-      zIndex: 10,
     },
 
     dropdownField: {
@@ -471,6 +524,7 @@ const createStyles = (colors) =>
       justifyContent: "space-between",
       backgroundColor: colors.inputBg,
       borderColor: colors.inputBorder,
+      borderWidth: 1,
       borderRadius: 10,
       paddingVertical: 10,
       paddingHorizontal: 14,
@@ -481,6 +535,7 @@ const createStyles = (colors) =>
     },
 
     dropdownFieldText: {
+      flex: 1,
       fontSize: 12,
       fontFamily: "Inter_400Regular",
       color: colors.text,
@@ -489,55 +544,84 @@ const createStyles = (colors) =>
     chevron: {
       fontSize: 16,
       color: colors.textMuted,
+      marginLeft: 8,
     },
 
-    chevronOpen: {
-      color: colors.primary,
+    /*
+    |--------------------------------------------------------------------------
+    | SEARCHABLE CURRENCY MODAL
+    |--------------------------------------------------------------------------
+    */
+
+    currencyOverlay: {
+      flex: 1,
+      backgroundColor: colors.overlay || "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      padding: 20,
     },
 
-    dropdownList: {
-      position: "absolute",
-      top: "100%",
-      left: 0,
-      right: 0,
-      marginTop: 2,
-
+    currencyModal: {
+      width: "100%",
+      maxHeight: "75%",
       backgroundColor: colors.card,
-
-      borderRadius: 10,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.cardBorder,
-
-      overflow: "hidden",
-
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 4,
-      },
-      shadowOpacity: colors.mode === "dark" ? 0.3 : 0.12,
-      shadowRadius: 10,
-      elevation: 6,
+      padding: 16,
     },
 
-    dropdownItem: {
+    currencyModalTitle: {
+      fontSize: 15,
+      fontFamily: "SpaceGrotesk_600SemiBold",
+      color: colors.text,
+      marginBottom: 12,
+    },
+
+    currencySearchInput: {
+      width: "100%",
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 10,
       paddingVertical: 10,
       paddingHorizontal: 14,
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+      color: colors.text,
+      marginBottom: 10,
     },
 
-    dropdownItemSelected: {
+    currencyList: {
+      maxHeight: 360,
+    },
+
+    currencyOption: {
+      paddingVertical: 12,
+      paddingHorizontal: 10,
+      borderRadius: 8,
+    },
+
+    currencyOptionSelected: {
       backgroundColor: colors.primary,
     },
 
-    dropdownItemText: {
+    currencyOptionText: {
       fontSize: 13,
       fontFamily: "Inter_400Regular",
       color: colors.text,
     },
 
-    dropdownItemTextSelected: {
+    currencyOptionTextSelected: {
       color: colors.primaryText,
       fontFamily: "Inter_600SemiBold",
+    },
+
+    currencyEmptyText: {
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+      color: colors.textFaint,
+      textAlign: "center",
+      paddingVertical: 24,
     },
 
     termsRow: {
