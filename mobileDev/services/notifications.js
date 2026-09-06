@@ -1,7 +1,28 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "./api";
 
-const NOTIFICATIONS_KEY = "budgetiq_notifications";
-const BUDGET_STATUS_KEY = "budgetiq_budget_statuses";
+/*
+|--------------------------------------------------------------------------
+| NOTIFICATIONS SERVICE (backend-backed)
+|--------------------------------------------------------------------------
+|
+| Every function here hits the real backend, scoped by the logged-in
+| user's JWT - no shared local storage, so nothing can leak between
+| accounts on the same device. Field names are mapped at this layer
+| (body -> message, read_at -> read, created_at -> createdAt) so the
+| screens that already consume this service don't need to change.
+|
+*/
+
+function mapNotification(raw) {
+  return {
+    id: raw.id,
+    title: raw.title,
+    message: raw.body,
+    type: raw.type,
+    read: raw.read_at !== null && raw.read_at !== undefined,
+    createdAt: raw.created_at,
+  };
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -11,36 +32,15 @@ const BUDGET_STATUS_KEY = "budgetiq_budget_statuses";
 
 export const getNotifications = async () => {
   try {
-    const data = await AsyncStorage.getItem(NOTIFICATIONS_KEY);
+    const response = await api.get("/notifications");
 
-    if (!data) {
-      return [];
-    }
+    const raw = response.data?.notifications || [];
 
-    const parsed = JSON.parse(data);
-
-    return Array.isArray(parsed) ? parsed : [];
+    return raw.map(mapNotification);
   } catch (error) {
     console.log("Get notifications error:", error);
 
     return [];
-  }
-};
-
-/*
-|--------------------------------------------------------------------------
-| SAVE NOTIFICATIONS
-|--------------------------------------------------------------------------
-*/
-
-const saveNotifications = async (notifications) => {
-  try {
-    await AsyncStorage.setItem(
-      NOTIFICATIONS_KEY,
-      JSON.stringify(notifications),
-    );
-  } catch (error) {
-    console.log("Save notifications error:", error);
   }
 };
 
@@ -57,25 +57,18 @@ export const addNotification = async ({
   budgetId = null,
 }) => {
   try {
-    const notifications = await getNotifications();
-
-    const newNotification = {
-      id: `${Date.now()}-${Math.random()}`,
+    const response = await api.post("/notifications", {
       title,
-      message,
+      body: message,
       type,
       budgetId,
-      read: false,
-      createdAt: new Date().toISOString(),
-    };
+    });
 
-    const updatedNotifications = [newNotification, ...notifications];
+    console.log("NOTIFICATION CREATED:", response.data?.notification);
 
-    await saveNotifications(updatedNotifications.slice(0, 100));
-
-    console.log("NOTIFICATION CREATED:", newNotification);
-
-    return newNotification;
+    return response.data?.notification
+      ? mapNotification(response.data.notification)
+      : null;
   } catch (error) {
     console.log("Add notification error:", error);
 
@@ -91,24 +84,13 @@ export const addNotification = async ({
 
 export const markNotificationAsRead = async (notificationId) => {
   try {
-    const notifications = await getNotifications();
+    await api.patch(`/notifications/${notificationId}/read`);
 
-    const updatedNotifications = notifications.map((notification) =>
-      notification.id === notificationId
-        ? {
-            ...notification,
-            read: true,
-          }
-        : notification,
-    );
-
-    await saveNotifications(updatedNotifications);
-
-    return updatedNotifications;
+    return true;
   } catch (error) {
     console.log("Mark notification read error:", error);
 
-    return [];
+    return false;
   }
 };
 
@@ -120,20 +102,13 @@ export const markNotificationAsRead = async (notificationId) => {
 
 export const markAllNotificationsAsRead = async () => {
   try {
-    const notifications = await getNotifications();
+    await api.post("/notifications/read-all");
 
-    const updatedNotifications = notifications.map((notification) => ({
-      ...notification,
-      read: true,
-    }));
-
-    await saveNotifications(updatedNotifications);
-
-    return updatedNotifications;
+    return true;
   } catch (error) {
     console.log("Mark all notifications read error:", error);
 
-    return [];
+    return false;
   }
 };
 
@@ -145,19 +120,13 @@ export const markAllNotificationsAsRead = async () => {
 
 export const deleteNotification = async (notificationId) => {
   try {
-    const notifications = await getNotifications();
+    await api.delete(`/notifications/${notificationId}`);
 
-    const updatedNotifications = notifications.filter(
-      (notification) => notification.id !== notificationId,
-    );
-
-    await saveNotifications(updatedNotifications);
-
-    return updatedNotifications;
+    return true;
   } catch (error) {
     console.log("Delete notification error:", error);
 
-    return [];
+    return false;
   }
 };
 
@@ -169,25 +138,42 @@ export const deleteNotification = async (notificationId) => {
 
 export const clearNotifications = async () => {
   try {
-    await AsyncStorage.removeItem(NOTIFICATIONS_KEY);
+    await api.delete("/notifications");
 
-    return [];
+    return true;
   } catch (error) {
     console.log("Clear notifications error:", error);
 
-    return [];
+    return false;
   }
 };
 
 /*
 |--------------------------------------------------------------------------
-| GET BUDGET STATUSES
+| BUDGET STATUS CACHE (local, per-device dedupe only)
+|--------------------------------------------------------------------------
+|
+| This is NOT user data - it's just a local memo so the app doesn't
+| re-fire the same "budget exceeded" alert on every refresh. Safe to
+| stay in AsyncStorage since losing/mixing it only risks a duplicate
+| or missed alert, never someone else's financial data.
 |--------------------------------------------------------------------------
 */
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getSavedUser } from "./auth";
+
+const BUDGET_STATUS_KEY_PREFIX = "budgetiq_budget_statuses";
+
+async function getBudgetStatusKey() {
+  const user = await getSavedUser();
+  return `${BUDGET_STATUS_KEY_PREFIX}:${user?.id || "guest"}`;
+}
+
 export const getBudgetStatuses = async () => {
   try {
-    const data = await AsyncStorage.getItem(BUDGET_STATUS_KEY);
+    const key = await getBudgetStatusKey();
+    const data = await AsyncStorage.getItem(key);
 
     if (!data) {
       return {};
@@ -203,15 +189,10 @@ export const getBudgetStatuses = async () => {
   }
 };
 
-/*
-|--------------------------------------------------------------------------
-| SAVE BUDGET STATUSES
-|--------------------------------------------------------------------------
-*/
-
 export const saveBudgetStatuses = async (statuses) => {
   try {
-    await AsyncStorage.setItem(BUDGET_STATUS_KEY, JSON.stringify(statuses));
+    const key = await getBudgetStatusKey();
+    await AsyncStorage.setItem(key, JSON.stringify(statuses));
 
     console.log("Budget statuses saved:", statuses);
   } catch (error) {
@@ -275,24 +256,7 @@ export const checkBudgetNotifications = async (budgets) => {
         currentStatus,
       });
 
-      /*
-      |--------------------------------------------------------------------------
-      | SAVE CURRENT STATUS
-      |--------------------------------------------------------------------------
-      */
-
       updatedStatuses[budget.id] = currentStatus;
-
-      /*
-      |--------------------------------------------------------------------------
-      | FIRST TIME CHECK
-      |--------------------------------------------------------------------------
-      |
-      | IMPORTANT:
-      | If there is no previous status, create a notification when
-      | the budget is already warning/exceeded.
-      |
-      */
 
       if (!previousStatus) {
         if (currentStatus === "exceeded") {
@@ -300,9 +264,9 @@ export const checkBudgetNotifications = async (budgets) => {
             title: "Budget exceeded",
             message: `You have exceeded your ${
               budget.category_name || "category"
-            } budget. You have spent ₦${spent.toLocaleString(
-              "en-NG",
-            )} out of your ₦${limit.toLocaleString("en-NG")} limit.`,
+            } budget. You have spent ${spent.toLocaleString(
+              "en",
+            )} out of your ${limit.toLocaleString("en")} limit.`,
             type: "danger",
             budgetId: budget.id,
           });
@@ -311,8 +275,8 @@ export const checkBudgetNotifications = async (budgets) => {
             title: "Budget limit approaching",
             message: `You have used ${percent}% of your ${
               budget.category_name || "category"
-            } budget. You have ₦${Math.max(limit - spent, 0).toLocaleString(
-              "en-NG",
+            } budget. You have ${Math.max(limit - spent, 0).toLocaleString(
+              "en",
             )} remaining.`,
             type: "warning",
             budgetId: budget.id,
@@ -322,49 +286,31 @@ export const checkBudgetNotifications = async (budgets) => {
         continue;
       }
 
-      /*
-      |--------------------------------------------------------------------------
-      | SAFE → WARNING
-      |--------------------------------------------------------------------------
-      */
-
       if (currentStatus === "warning" && previousStatus === "safe") {
         await addNotification({
           title: "Budget limit approaching",
           message: `You have used ${percent}% of your ${
             budget.category_name || "category"
-          } budget. You have ₦${Math.max(limit - spent, 0).toLocaleString(
-            "en-NG",
+          } budget. You have ${Math.max(limit - spent, 0).toLocaleString(
+            "en",
           )} remaining.`,
           type: "warning",
           budgetId: budget.id,
         });
       }
 
-      /*
-      |--------------------------------------------------------------------------
-      | WARNING → EXCEEDED
-      |--------------------------------------------------------------------------
-      */
-
       if (currentStatus === "exceeded" && previousStatus !== "exceeded") {
         await addNotification({
           title: "Budget exceeded",
           message: `You have exceeded your ${
             budget.category_name || "category"
-          } budget. You have spent ₦${spent.toLocaleString(
-            "en-NG",
-          )} out of your ₦${limit.toLocaleString("en-NG")} limit.`,
+          } budget. You have spent ${spent.toLocaleString(
+            "en",
+          )} out of your ${limit.toLocaleString("en")} limit.`,
           type: "danger",
           budgetId: budget.id,
         });
       }
-
-      /*
-      |--------------------------------------------------------------------------
-      | WARNING/EXCEEDED → SAFE
-      |--------------------------------------------------------------------------
-      */
 
       if (
         currentStatus === "safe" &&
@@ -380,12 +326,6 @@ export const checkBudgetNotifications = async (budgets) => {
         });
       }
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | SAVE ALL CURRENT STATUSES
-    |--------------------------------------------------------------------------
-    */
 
     await saveBudgetStatuses(updatedStatuses);
 
