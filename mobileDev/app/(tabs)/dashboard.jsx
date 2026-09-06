@@ -22,6 +22,7 @@ import { getDashboard } from "../../services/dashboard";
 import { getCurrentUser } from "../../services/auth";
 import { getNotifications } from "../../services/notifications";
 import { useTheme } from "../../contexts/ThemeContext";
+import { formatCurrency } from "../../utils/currency";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -203,6 +204,8 @@ export default function Dashboard() {
 
   const [avatarUrl, setAvatarUrl] = useState(null);
 
+  const [currency, setCurrency] = useState("NGN");
+
   const [loading, setLoading] = useState(true);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -268,6 +271,19 @@ export default function Dashboard() {
         "User";
 
       setUserName(String(fullName).trim().split(" ")[0]);
+
+      /*
+      |--------------------------------------------------------------------------
+      | CURRENCY
+      |--------------------------------------------------------------------------
+      |
+      | Whatever the user picked at signup (or later changes in settings)
+      | drives every amount formatted on this screen.
+      |
+      */
+
+      setCurrency(profile?.currency || "NGN");
+
       const rawAvatarUrl =
         profile?.avatar_url ||
         profile?.avatarUrl ||
@@ -317,13 +333,6 @@ export default function Dashboard() {
       setRefreshing(false);
     }
   }, [loadDashboard, loadUser, loadNotificationCount]);
-
-  const formatCurrency = (amount) => {
-    return `₦${Number(amount || 0).toLocaleString("en-NG", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  };
 
   if (loading) {
     return (
@@ -529,21 +538,21 @@ export default function Dashboard() {
           <StatCard
             colors={colors}
             label="TOTAL INCOME (MONTH)"
-            value={formatCurrency(totalIncome)}
+            value={formatCurrency(totalIncome, currency)}
             valueColor={colors.income}
           />
 
           <StatCard
             colors={colors}
             label="TOTAL EXPENSE (MONTH)"
-            value={formatCurrency(totalExpense)}
+            value={formatCurrency(totalExpense, currency)}
             valueColor={colors.expense}
           />
 
           <StatCard
             colors={colors}
             label="NET BALANCE"
-            value={formatCurrency(netBalance)}
+            value={formatCurrency(netBalance, currency)}
             badge={`${savingsRate}% savings rate`}
           />
 
@@ -578,11 +587,7 @@ export default function Dashboard() {
                 },
               ]}
             >
-              ₦
-              {forecastAmount.toLocaleString("en-NG", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(forecastAmount, currency)}
             </Text>
 
             <View style={styles.forecastPills}>
@@ -762,7 +767,7 @@ export default function Dashboard() {
                       },
                     ]}
                   >
-                    Income : {formatCurrency(tooltip.income)}
+                    Income : {formatCurrency(tooltip.income, currency)}
                   </Text>
 
                   <Text
@@ -773,7 +778,7 @@ export default function Dashboard() {
                       },
                     ]}
                   >
-                    Expense : {formatCurrency(tooltip.expense)}
+                    Expense : {formatCurrency(tooltip.expense, currency)}
                   </Text>
                 </View>
               );
@@ -853,7 +858,7 @@ export default function Dashboard() {
                       },
                     ]}
                   >
-                    {formatCurrency(segment.total)}
+                    {formatCurrency(segment.total, currency)}
                   </Text>
                 </View>
               ))}
