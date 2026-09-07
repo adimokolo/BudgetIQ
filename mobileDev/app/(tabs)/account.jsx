@@ -17,6 +17,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { useFonts } from "expo-font";
 
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
+
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -50,6 +53,14 @@ import {
   deleteAccount as deleteAccountApi,
 } from "../../services/accounts";
 
+import { getCurrentUser } from "../../services/auth";
+
+import {
+  startBankSynchronization,
+  getBankAccounts,
+  refreshBankAccount,
+} from "../../services/bankSync";
+
 export default function Account() {
   const { colors } = useTheme();
 
@@ -67,13 +78,39 @@ export default function Account() {
     JetBrainsMono_500Medium,
   });
 
+  // --------------------------------------------------
+  // MANUAL ACCOUNTS
+  // --------------------------------------------------
+
   const [accounts, setAccounts] = useState([]);
   const [accountsLoading, setAccountsLoading] = useState(false);
   const [savingAccount, setSavingAccount] = useState(false);
 
+  // --------------------------------------------------
+  // BANK SYNCHRONIZATION
+  // --------------------------------------------------
+
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [bankSyncLoading, setBankSyncLoading] = useState(false);
+  const [bankSyncMessage, setBankSyncMessage] = useState("");
+  const [refreshingBankId, setRefreshingBankId] = useState(null);
+
+  // --------------------------------------------------
+  // CURRENT USER
+  // --------------------------------------------------
+
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // --------------------------------------------------
+  // MODALS
+  // --------------------------------------------------
+
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showComingSoon, setShowComingSoon] = useState(false);
   const [showNewAccount, setShowNewAccount] = useState(false);
+
+  // --------------------------------------------------
+  // ACCOUNT FORM
+  // --------------------------------------------------
 
   const [editingAccount, setEditingAccount] = useState(null);
 
@@ -85,43 +122,122 @@ export default function Account() {
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [currencySearch, setCurrencySearch] = useState("");
 
+  // --------------------------------------------------
+  // CURRENCY SYMBOL
+  // --------------------------------------------------
+
   const getCurrencySymbol = (code) => {
     try {
       const formatted = formatCurrency(0, code);
+
       const symbol = formatted.replace(/[\d\s.,-]/g, "").trim();
+
       return symbol || code;
     } catch (error) {
       return code;
     }
   };
 
+  // --------------------------------------------------
+  // LOAD CURRENT USER
+  // --------------------------------------------------
+
+  const loadCurrentUser = async () => {
+    try {
+      const data = await getCurrentUser();
+
+      console.log(
+        "ACCOUNT CURRENT USER RESPONSE:",
+        JSON.stringify(data, null, 2),
+      );
+
+      const profile = data?.user || data?.data?.user || data?.data || data;
+
+      console.log("ACCOUNT USER PROFILE:", JSON.stringify(profile, null, 2));
+
+      setCurrentUser(profile || null);
+
+      return profile;
+    } catch (error) {
+      console.log(
+        "LOAD CURRENT USER ERROR:",
+        error?.response?.data || error?.message || error,
+      );
+
+      setCurrentUser(null);
+
+      return null;
+    }
+  };
+
+  // --------------------------------------------------
+  // LOAD MANUAL ACCOUNTS
+  // --------------------------------------------------
+
   const loadAccounts = async () => {
     try {
       setAccountsLoading(true);
+
       const response = await getAccounts();
+
       console.log("Accounts loaded:", response);
+
       setAccounts(response?.accounts || []);
     } catch (error) {
       console.log("Load accounts error:", error);
+
       setAccounts([]);
     } finally {
       setAccountsLoading(false);
     }
   };
 
+  // --------------------------------------------------
+  // LOAD CONNECTED BANK ACCOUNTS
+  // --------------------------------------------------
+
+  const loadBankAccounts = async () => {
+    try {
+      const response = await getBankAccounts();
+
+      console.log("Bank accounts loaded:", response);
+
+      setBankAccounts(response?.accounts || []);
+    } catch (error) {
+      console.log("Load bank accounts error:", error);
+
+      setBankAccounts([]);
+    }
+  };
+
+  // --------------------------------------------------
+  // REFRESH DATA WHEN SCREEN GETS FOCUS
+  // --------------------------------------------------
+
   useFocusEffect(
     React.useCallback(() => {
       loadAccounts();
+      loadBankAccounts();
+      loadCurrentUser();
     }, []),
   );
 
+  // --------------------------------------------------
+  // FILTER CURRENCIES
+  // --------------------------------------------------
+
   const filteredCurrencies = ALL_CURRENCIES.filter((item) => {
     const search = currencySearch.toLowerCase().trim();
+
     return (
       item.code.toLowerCase().includes(search) ||
       item.name.toLowerCase().includes(search)
     );
   });
+
+  // --------------------------------------------------
+  // ADD ACCOUNT MODAL
+  // --------------------------------------------------
 
   const openAddModal = () => {
     setShowAddModal(true);
@@ -131,12 +247,209 @@ export default function Account() {
     setShowAddModal(false);
   };
 
-  const openBankSynchronization = () => {
-    setShowAddModal(false);
-    setTimeout(() => {
-      setShowComingSoon(true);
-    }, 200);
+  // --------------------------------------------------
+  // BANK SYNCHRONIZATION
+  // --------------------------------------------------
+
+  const openBankSynchronization = async () => {
+    try {
+      setShowAddModal(false);
+
+      setBankSyncLoading(true);
+
+      setBankSyncMessage("Preparing secure bank connection...");
+
+      // --------------------------------------------------
+      // GET CURRENT USER
+      // --------------------------------------------------
+
+      let user = currentUser;
+
+      /*
+       * If the profile has not loaded yet, retrieve it now.
+       */
+      if (!user) {
+        user = await loadCurrentUser();
+      }
+
+      console.log("BANK SYNC USER:", JSON.stringify(user, null, 2));
+
+      // --------------------------------------------------
+      // GET CUSTOMER NAME
+      // --------------------------------------------------
+
+      const customerName =
+        user?.full_name || user?.name || user?.fullName || user?.username;
+
+      // --------------------------------------------------
+      // GET CUSTOMER EMAIL
+      // --------------------------------------------------
+
+      const customerEmail =
+        user?.email || user?.email_address || user?.emailAddress;
+
+      console.log("BANK SYNC CUSTOMER NAME:", customerName);
+
+      console.log("BANK SYNC CUSTOMER EMAIL:", customerEmail);
+
+      // --------------------------------------------------
+      // VALIDATE NAME
+      // --------------------------------------------------
+
+      if (!customerName) {
+        throw new Error(
+          "Your account name could not be found. Please update your profile and try again.",
+        );
+      }
+
+      // --------------------------------------------------
+      // VALIDATE EMAIL
+      // --------------------------------------------------
+
+      if (!customerEmail) {
+        throw new Error(
+          "Your email address could not be found. Please update your profile and try again.",
+        );
+      }
+
+      // --------------------------------------------------
+      // START MONO SYNCHRONIZATION
+      // --------------------------------------------------
+
+      setBankSyncMessage("Creating secure bank connection...");
+
+      const response = await startBankSynchronization({
+        name: String(customerName).trim(),
+        email: String(customerEmail).trim(),
+      });
+
+      console.log(
+        "Bank synchronization initiated:",
+        JSON.stringify(response, null, 2),
+      );
+
+      // --------------------------------------------------
+      // VERIFY MONO LINK
+      // --------------------------------------------------
+
+      if (!response?.link) {
+        throw new Error("Mono did not return a connection link.");
+      }
+
+      setBankSyncMessage("Opening secure bank connection...");
+
+      // --------------------------------------------------
+      // REDIRECT URL
+      // --------------------------------------------------
+
+      const redirectUrl = Linking.createURL("bank-sync");
+
+      console.log("Bank synchronization redirect URL:", redirectUrl);
+
+      // --------------------------------------------------
+      // OPEN MONO
+      // --------------------------------------------------
+
+      const result = await WebBrowser.openAuthSessionAsync(
+        response.link,
+        redirectUrl,
+      );
+
+      console.log("Mono connection result:", JSON.stringify(result, null, 2));
+
+      // --------------------------------------------------
+      // USER CANCELLED
+      // --------------------------------------------------
+
+      if (result.type === "cancel" || result.type === "dismiss") {
+        setBankSyncMessage("");
+
+        return;
+      }
+
+      // --------------------------------------------------
+      // CHECK CONNECTION
+      // --------------------------------------------------
+
+      setBankSyncMessage("Checking your bank connection...");
+
+      /*
+       * Give the backend webhook time to receive
+       * Mono's account_connected event.
+       */
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      // --------------------------------------------------
+      // RELOAD ACCOUNTS
+      // --------------------------------------------------
+
+      await loadBankAccounts();
+
+      await loadAccounts();
+
+      // --------------------------------------------------
+      // SUCCESS
+      // --------------------------------------------------
+
+      setBankSyncMessage("Bank account connected successfully.");
+
+      Alert.alert(
+        "Bank connected",
+        "Your bank account has been connected successfully. Your transactions will now be synchronized.",
+      );
+    } catch (error) {
+      console.log("Bank synchronization error:", error);
+
+      Alert.alert(
+        "Bank synchronization failed",
+        error?.error ||
+          error?.message ||
+          "Unable to connect your bank account. Please try again.",
+      );
+
+      setBankSyncMessage("");
+    } finally {
+      setBankSyncLoading(false);
+    }
   };
+
+  // --------------------------------------------------
+  // REFRESH CONNECTED BANK
+  // --------------------------------------------------
+
+  const handleRefreshBankAccount = async (bankAccount) => {
+    try {
+      setRefreshingBankId(bankAccount.id);
+
+      const response = await refreshBankAccount(bankAccount.id);
+
+      console.log("Bank account refreshed:", response);
+
+      await loadBankAccounts();
+
+      await loadAccounts();
+
+      Alert.alert(
+        "Account synchronized",
+        "Your latest bank balance and transactions have been synchronized.",
+      );
+    } catch (error) {
+      console.log("Refresh bank account error:", error);
+
+      Alert.alert(
+        "Synchronization failed",
+        error?.error ||
+          error?.message ||
+          "Unable to refresh this bank account.",
+      );
+    } finally {
+      setRefreshingBankId(null);
+    }
+  };
+
+  // --------------------------------------------------
+  // RESET MANUAL ACCOUNT FORM
+  // --------------------------------------------------
 
   const resetForm = () => {
     setEditingAccount(null);
@@ -148,48 +461,78 @@ export default function Account() {
     setShowCurrencyPicker(false);
   };
 
+  // --------------------------------------------------
+  // NEW ACCOUNT
+  // --------------------------------------------------
+
   const openNewAccount = () => {
     setShowAddModal(false);
+
     resetForm();
+
     setTimeout(() => {
       setShowNewAccount(true);
     }, 200);
   };
 
+  // --------------------------------------------------
+  // EDIT ACCOUNT
+  // --------------------------------------------------
+
   const openEditAccount = (account) => {
     setEditingAccount(account);
+
     setAccountName(account.name || "");
+
     setCurrency(account.currency || "NGN");
+
     setInitialAmount(String(account.balance ?? ""));
+
     setNotes(account.notes || "");
+
     setCurrencySearch("");
+
     setShowCurrencyPicker(false);
+
     setShowNewAccount(true);
   };
+
+  // --------------------------------------------------
+  // CLOSE ACCOUNT FORM
+  // --------------------------------------------------
 
   const closeNewAccount = () => {
     if (savingAccount) {
       return;
     }
+
     setShowNewAccount(false);
+
     resetForm();
   };
 
+  // --------------------------------------------------
+  // SAVE ACCOUNT
+  // --------------------------------------------------
+
   const handleAddAccount = async () => {
     if (!accountName.trim()) {
-      alert("Please enter an account name.");
+      Alert.alert("Missing account name", "Please enter an account name.");
+
       return;
     }
 
     if (!initialAmount.trim()) {
-      alert("Please enter the initial amount.");
+      Alert.alert("Missing amount", "Please enter the initial amount.");
+
       return;
     }
 
     const amount = Number(initialAmount);
 
     if (Number.isNaN(amount) || amount < 0) {
-      alert("Please enter a valid initial amount.");
+      Alert.alert("Invalid amount", "Please enter a valid initial amount.");
+
       return;
     }
 
@@ -203,10 +546,15 @@ export default function Account() {
         notes: notes.trim() || null,
       };
 
+      // --------------------------------------------------
+      // UPDATE EXISTING ACCOUNT
+      // --------------------------------------------------
+
       if (editingAccount) {
         console.log("Updating account:", editingAccount.id, accountData);
 
         const response = await updateAccount(editingAccount.id, accountData);
+
         console.log("Account updated:", response);
 
         const updatedAccount = response?.account || {
@@ -220,19 +568,29 @@ export default function Account() {
         setAccounts((currentAccounts) =>
           currentAccounts.map((item) =>
             item.id === editingAccount.id
-              ? { ...item, ...updatedAccount }
+              ? {
+                  ...item,
+                  ...updatedAccount,
+                }
               : item,
           ),
         );
 
         setShowNewAccount(false);
+
         resetForm();
+
         return;
       }
+
+      // --------------------------------------------------
+      // CREATE NEW MANUAL ACCOUNT
+      // --------------------------------------------------
 
       console.log("Creating account:", accountData);
 
       const response = await createAccount(accountData);
+
       console.log("Account created:", response);
 
       if (response?.account) {
@@ -243,11 +601,13 @@ export default function Account() {
       }
 
       setShowNewAccount(false);
+
       resetForm();
     } catch (error) {
       console.log("Save account error:", error);
 
-      alert(
+      Alert.alert(
+        "Unable to save account",
         error?.error ||
           error?.message ||
           "Unable to save account. Please try again.",
@@ -256,6 +616,10 @@ export default function Account() {
       setSavingAccount(false);
     }
   };
+
+  // --------------------------------------------------
+  // DELETE MANUAL ACCOUNT
+  // --------------------------------------------------
 
   const deleteAccount = (account) => {
     Alert.alert(
@@ -266,6 +630,7 @@ export default function Account() {
           text: "Cancel",
           style: "cancel",
         },
+
         {
           text: "Delete",
           style: "destructive",
@@ -279,6 +644,7 @@ export default function Account() {
 
             try {
               console.log("Deleting account:", account.id);
+
               await deleteAccountApi(account.id);
             } catch (error) {
               console.log("Delete account error:", error);
@@ -298,9 +664,17 @@ export default function Account() {
     );
   };
 
+  // --------------------------------------------------
+  // FONT LOADING
+  // --------------------------------------------------
+
   if (!fontsLoaded) {
     return null;
   }
+
+  // --------------------------------------------------
+  // UI
+  // --------------------------------------------------
 
   return (
     <SafeAreaView
@@ -315,6 +689,8 @@ export default function Account() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
+        {/* HEADER */}
+
         <View style={styles.header}>
           <View style={styles.headerTextContainer}>
             <Text
@@ -361,6 +737,230 @@ export default function Account() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* BANK SYNC STATUS */}
+
+        {bankSyncLoading && (
+          <View
+            style={[
+              styles.syncStatusCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.syncStatusIcon,
+                {
+                  backgroundColor: colors.chipBg,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.syncStatusIconText,
+                  {
+                    color: colors.primary,
+                  },
+                ]}
+              >
+                ⇄
+              </Text>
+            </View>
+
+            <View style={styles.syncStatusContent}>
+              <Text
+                style={[
+                  styles.syncStatusTitle,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
+                Connecting bank
+              </Text>
+
+              <Text
+                style={[
+                  styles.syncStatusText,
+                  {
+                    color: colors.textFaint,
+                  },
+                ]}
+              >
+                {bankSyncMessage || "Please wait..."}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* CONNECTED BANK ACCOUNTS */}
+
+        {bankAccounts.length > 0 && (
+          <View style={styles.bankAccountsSection}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              Connected Banks
+            </Text>
+
+            {bankAccounts.map((bankAccount) => (
+              <View
+                key={bankAccount.id}
+                style={[
+                  styles.accountCard,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.cardBorder,
+                  },
+                ]}
+              >
+                <View style={styles.accountCardTop}>
+                  <View
+                    style={[
+                      styles.accountIcon,
+                      {
+                        backgroundColor: colors.chipBg,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.accountIconText,
+                        {
+                          color: colors.primary,
+                        },
+                      ]}
+                    >
+                      ⇄
+                    </Text>
+                  </View>
+
+                  <View style={styles.accountInfo}>
+                    <Text
+                      style={[
+                        styles.accountName,
+                        {
+                          color: colors.text,
+                        },
+                      ]}
+                    >
+                      {bankAccount.bank_name || "Connected Bank"}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.accountCurrency,
+                        {
+                          color: colors.textFaint,
+                        },
+                      ]}
+                    >
+                      {bankAccount.account_number_masked ||
+                        "Bank account connected"}
+                    </Text>
+                  </View>
+
+                  <Pressable
+                    onPress={() => handleRefreshBankAccount(bankAccount)}
+                    disabled={refreshingBankId === bankAccount.id}
+                    style={[
+                      styles.editButton,
+                      {
+                        backgroundColor: colors.chipBg,
+                        opacity: refreshingBankId === bankAccount.id ? 0.5 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.editButtonText,
+                        {
+                          color: colors.primary,
+                        },
+                      ]}
+                    >
+                      {refreshingBankId === bankAccount.id
+                        ? "Syncing..."
+                        : "Refresh"}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                <View
+                  style={[
+                    styles.accountDivider,
+                    {
+                      backgroundColor: colors.divider,
+                    },
+                  ]}
+                />
+
+                <View style={styles.accountBalanceRow}>
+                  <View>
+                    <Text
+                      style={[
+                        styles.accountBalanceLabel,
+                        {
+                          color: colors.textFaint,
+                        },
+                      ]}
+                    >
+                      Balance
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.accountBalance,
+                        {
+                          color: colors.text,
+                        },
+                      ]}
+                    >
+                      {formatCurrency(
+                        Number(bankAccount.balance || 0),
+                        bankAccount.currency || "NGN",
+                      )}
+                    </Text>
+                  </View>
+
+                  <View style={styles.accountNotesContainer}>
+                    <Text
+                      style={[
+                        styles.accountBalanceLabel,
+                        {
+                          color: colors.textFaint,
+                        },
+                      ]}
+                    >
+                      Status
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.accountNotes,
+                        {
+                          color: colors.primary,
+                        },
+                      ]}
+                    >
+                      {bankAccount.status || "connected"}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* MANUAL ACCOUNT LOADING */}
 
         {accountsLoading ? (
           <View
@@ -662,7 +1262,9 @@ export default function Account() {
         )}
       </ScrollView>
 
-      {/* ADD ACCOUNT MODAL */}
+      {/* ==================================================
+          ADD ACCOUNT MODAL
+          ================================================== */}
 
       <Modal
         visible={showAddModal}
@@ -725,6 +1327,8 @@ export default function Account() {
               </Pressable>
             </View>
 
+            {/* BANK SYNCHRONIZATION */}
+
             <Pressable
               style={[
                 styles.optionCard,
@@ -732,8 +1336,12 @@ export default function Account() {
                   backgroundColor: colors.background,
                   borderColor: colors.cardBorder,
                 },
+                bankSyncLoading && {
+                  opacity: 0.6,
+                },
               ]}
               onPress={openBankSynchronization}
+              disabled={bankSyncLoading}
             >
               <View
                 style={[
@@ -792,6 +1400,8 @@ export default function Account() {
               </Text>
             </Pressable>
 
+            {/* NEW ACCOUNT */}
+
             <Pressable
               style={[
                 styles.optionCard,
@@ -801,6 +1411,7 @@ export default function Account() {
                 },
               ]}
               onPress={openNewAccount}
+              disabled={bankSyncLoading}
             >
               <View
                 style={[
@@ -861,99 +1472,9 @@ export default function Account() {
         </View>
       </Modal>
 
-      {/* COMING SOON MODAL */}
-
-      <Modal
-        visible={showComingSoon}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowComingSoon(false)}
-      >
-        <View
-          style={[
-            styles.modalOverlay,
-            {
-              backgroundColor: colors.overlay,
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.comingSoonCard,
-              {
-                backgroundColor: colors.card,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.comingSoonIcon,
-                {
-                  backgroundColor: colors.chipBg,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.comingSoonIconText,
-                  {
-                    color: colors.primary,
-                  },
-                ]}
-              >
-                ⇄
-              </Text>
-            </View>
-
-            <Text
-              style={[
-                styles.comingSoonTitle,
-                {
-                  color: colors.text,
-                },
-              ]}
-            >
-              Coming Soon
-            </Text>
-
-            <Text
-              style={[
-                styles.comingSoonText,
-                {
-                  color: colors.textFaint,
-                },
-              ]}
-            >
-              Bank synchronization is currently under development. You'll be
-              able to securely connect your bank accounts and automatically sync
-              transactions soon.
-            </Text>
-
-            <Pressable
-              style={[
-                styles.continueButton,
-                {
-                  backgroundColor: colors.primary,
-                },
-              ]}
-              onPress={() => setShowComingSoon(false)}
-            >
-              <Text
-                style={[
-                  styles.continueButtonText,
-                  {
-                    color: colors.primaryText,
-                  },
-                ]}
-              >
-                Got it
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
-
-      {/* NEW / EDIT ACCOUNT FORM */}
+      {/* ==================================================
+          NEW / EDIT ACCOUNT FORM
+          ================================================== */}
 
       <Modal
         visible={showNewAccount}
@@ -1019,6 +1540,8 @@ export default function Account() {
               </Pressable>
             </View>
 
+            {/* NAME */}
+
             <Text
               style={[
                 styles.inputLabel,
@@ -1046,6 +1569,8 @@ export default function Account() {
               editable={!savingAccount}
             />
 
+            {/* CURRENCY */}
+
             <Text
               style={[
                 styles.inputLabel,
@@ -1064,7 +1589,9 @@ export default function Account() {
                   borderColor: colors.inputBorder,
                   backgroundColor: colors.background,
                 },
-                savingAccount && { opacity: 0.7 },
+                savingAccount && {
+                  opacity: 0.7,
+                },
               ]}
               onPress={() => {
                 if (savingAccount) {
@@ -1072,6 +1599,7 @@ export default function Account() {
                 }
 
                 setCurrencySearch("");
+
                 setShowCurrencyPicker(!showCurrencyPicker);
               }}
             >
@@ -1097,6 +1625,8 @@ export default function Account() {
                 {showCurrencyPicker ? "⌃" : "⌄"}
               </Text>
             </Pressable>
+
+            {/* CURRENCY PICKER */}
 
             {showCurrencyPicker && (
               <View
@@ -1161,7 +1691,9 @@ export default function Account() {
                         ]}
                         onPress={() => {
                           setCurrency(item.code);
+
                           setCurrencySearch("");
+
                           setShowCurrencyPicker(false);
                         }}
                       >
@@ -1219,6 +1751,8 @@ export default function Account() {
               </View>
             )}
 
+            {/* AMOUNT */}
+
             <Text
               style={[
                 styles.inputLabel,
@@ -1266,6 +1800,8 @@ export default function Account() {
               />
             </View>
 
+            {/* NOTES */}
+
             <Text
               style={[
                 styles.inputLabel,
@@ -1303,6 +1839,8 @@ export default function Account() {
               editable={!savingAccount}
             />
 
+            {/* SAVE */}
+
             <Pressable
               style={[
                 styles.saveButton,
@@ -1332,6 +1870,8 @@ export default function Account() {
               </Text>
             </Pressable>
 
+            {/* CANCEL */}
+
             <Pressable
               style={styles.cancelButton}
               onPress={closeNewAccount}
@@ -1354,6 +1894,10 @@ export default function Account() {
     </SafeAreaView>
   );
 }
+
+// ======================================================
+// STYLES
+// ======================================================
 
 const styles = StyleSheet.create({
   screen: {
@@ -1397,6 +1941,63 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: "Inter_600SemiBold",
   },
+
+  // --------------------------------------------------
+  // BANK SYNC
+  // --------------------------------------------------
+
+  syncStatusCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  syncStatusIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 11,
+  },
+
+  syncStatusIconText: {
+    fontSize: 18,
+    fontFamily: "SpaceGrotesk_700Bold",
+  },
+
+  syncStatusContent: {
+    flex: 1,
+  },
+
+  syncStatusTitle: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 3,
+  },
+
+  syncStatusText: {
+    fontSize: 9,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 14,
+  },
+
+  bankAccountsSection: {
+    marginBottom: 20,
+  },
+
+  sectionTitle: {
+    fontSize: 13,
+    fontFamily: "SpaceGrotesk_700Bold",
+    marginBottom: 10,
+  },
+
+  // --------------------------------------------------
+  // EMPTY STATE
+  // --------------------------------------------------
 
   emptyState: {
     borderRadius: 16,
@@ -1446,6 +2047,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
   },
+
+  // --------------------------------------------------
+  // ACCOUNT CARD
+  // --------------------------------------------------
 
   accountCard: {
     borderRadius: 16,
@@ -1553,6 +2158,10 @@ const styles = StyleSheet.create({
     maxWidth: 140,
   },
 
+  // --------------------------------------------------
+  // MODALS
+  // --------------------------------------------------
+
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
@@ -1596,6 +2205,10 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: "Inter_600SemiBold",
   },
+
+  // --------------------------------------------------
+  // ADD ACCOUNT OPTIONS
+  // --------------------------------------------------
 
   optionCard: {
     flexDirection: "row",
@@ -1642,52 +2255,9 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
   },
 
-  comingSoonCard: {
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-  },
-
-  comingSoonIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-  },
-
-  comingSoonIconText: {
-    fontSize: 22,
-    fontFamily: "SpaceGrotesk_700Bold",
-  },
-
-  comingSoonTitle: {
-    fontSize: 16,
-    fontFamily: "SpaceGrotesk_700Bold",
-    marginBottom: 8,
-  },
-
-  comingSoonText: {
-    fontSize: 10,
-    fontFamily: "Inter_400Regular",
-    textAlign: "center",
-    lineHeight: 17,
-    maxWidth: 290,
-  },
-
-  continueButton: {
-    marginTop: 20,
-    width: "100%",
-    borderRadius: 9,
-    paddingVertical: 11,
-    alignItems: "center",
-  },
-
-  continueButtonText: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-  },
+  // --------------------------------------------------
+  // FORM
+  // --------------------------------------------------
 
   inputLabel: {
     fontSize: 10,
