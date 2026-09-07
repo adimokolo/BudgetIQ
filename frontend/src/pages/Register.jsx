@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLogo from '../components/AuthLogo';
 import TermsModal from '../components/TermsModal';
+import { ALL_CURRENCIES } from '../utils/currency';
 
 export default function Register() {
   const { register, loading, error } = useAuth();
@@ -67,10 +68,11 @@ export default function Register() {
           <div className="field">
             <label htmlFor="currency">Currency</label>
             <select id="currency" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              <option value="NGN">NGN — Naira</option>
-              <option value="USD">USD — US Dollar</option>
-              <option value="GBP">GBP — Pound Sterling</option>
-              <option value="EUR">EUR — Euro</option>
+              {ALL_CURRENCIES.map((currencyOption) => (
+                <option key={currencyOption.code} value={currencyOption.code}>
+                  {currencyOption.code} — {currencyOption.name}
+                </option>
+              ))}
             </select>
           </div>
 
