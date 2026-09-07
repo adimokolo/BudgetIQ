@@ -13,6 +13,7 @@ const transactionRoutes = require("./routes/transactions");
 const budgetRoutes = require("./routes/budgets");
 const dashboardRoutes = require("./routes/dashboard");
 const profileRoutes = require("./routes/profile");
+const accountRoutes = require("./routes/accounts");
 
 const app = express();
 app.use(helmet());
@@ -34,6 +35,7 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/accounts", accountRoutes);
 
 // 404 handler
 app.use((req, res) => {

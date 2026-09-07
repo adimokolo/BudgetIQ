@@ -46,8 +46,10 @@ import {
 } from "../../services/budgets";
 
 import { getCategories } from "../../services/categories";
+import { getCurrentUser } from "../../services/auth";
 
 import { useTheme } from "../../contexts/ThemeContext";
+import { formatCurrency, getCurrencySymbol } from "../../utils/currency";
 
 function progressColor(percent, colors) {
   if (percent >= 100) {
@@ -61,16 +63,7 @@ function progressColor(percent, colors) {
   return colors.income;
 }
 
-function formatAmount(amount) {
-  const numericAmount = Number(amount) || 0;
-
-  return numericAmount.toLocaleString("en-NG", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function BudgetCard({ budget, onEdit, onDelete, colors }) {
+function BudgetCard({ budget, currency, onEdit, onDelete, colors }) {
   const spent = Number(budget.spent_this_month || 0);
   const limit = Number(budget.monthly_limit || 0);
 
@@ -194,7 +187,7 @@ function BudgetCard({ budget, onEdit, onDelete, colors }) {
             },
           ]}
         >
-          ₦{formatAmount(spent)}{" "}
+          {formatCurrency(spent, currency)}{" "}
           <Text
             style={[
               styles.budgetOf,
@@ -203,7 +196,7 @@ function BudgetCard({ budget, onEdit, onDelete, colors }) {
               },
             ]}
           >
-            of ₦{formatAmount(limit)}
+            of {formatCurrency(limit, currency)}
           </Text>
         </Text>
 
@@ -280,6 +273,7 @@ export default function Budgets() {
 
   const [budgets, setBudgets] = useState([]);
   const [expenseCategories, setExpenseCategories] = useState([]);
+  const [currency, setCurrency] = useState("NGN");
 
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -298,10 +292,8 @@ export default function Budgets() {
         setLoading(true);
       }
 
-      const [budgetsResponse, categoriesResponse] = await Promise.all([
-        getBudgets(),
-        getCategories(),
-      ]);
+      const [budgetsResponse, categoriesResponse, userResponse] =
+        await Promise.all([getBudgets(), getCategories(), getCurrentUser()]);
 
       console.log("Budgets API response:", budgetsResponse);
 
@@ -309,6 +301,14 @@ export default function Budgets() {
         budgetsResponse?.budgets || budgetsResponse?.data || [];
 
       setBudgets(loadedBudgets);
+
+      const profile =
+        userResponse?.user ||
+        userResponse?.data?.user ||
+        userResponse?.data ||
+        userResponse;
+
+      setCurrency(profile?.currency || "NGN");
 
       try {
         await checkBudgetNotifications(loadedBudgets);
@@ -629,6 +629,7 @@ export default function Budgets() {
               <BudgetCard
                 key={budget.id}
                 budget={budget}
+                currency={currency}
                 onEdit={openEditModal}
                 onDelete={deleteBudget}
                 colors={colors}
@@ -661,7 +662,7 @@ export default function Budgets() {
                   },
                 ]}
               >
-                ₦
+                {getCurrencySymbol(currency)}
               </Text>
             </View>
 
@@ -881,7 +882,7 @@ export default function Budgets() {
                   },
                 ]}
               >
-                ₦
+                {getCurrencySymbol(currency)}
               </Text>
 
               <TextInput
