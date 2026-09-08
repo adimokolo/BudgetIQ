@@ -203,6 +203,65 @@ export function formatCurrency(amount, currencyCode = "NGN") {
 
 /*
 |--------------------------------------------------------------------------
+| CURRENCY SYMBOL ONLY
+|--------------------------------------------------------------------------
+|
+| For UI spots that show the symbol separately from a typed number
+| (e.g. a "₦" prefix beside a raw text input) rather than a fully
+| formatted amount. Falls back to the currency code itself if no
+| distinct symbol is resolvable.
+|
+*/
+
+export function currencySymbolFor(currencyCode = "NGN") {
+  try {
+    const parts = new Intl.NumberFormat("en", {
+      style: "currency",
+      currency: currencyCode,
+      currencyDisplay: "narrowSymbol",
+    }).formatToParts(0);
+
+    const symbolPart = parts.find((part) => part.type === "currency");
+
+    return symbolPart ? symbolPart.value : currencyCode;
+  } catch (error) {
+    console.log("currencySymbolFor fallback for code:", currencyCode, error);
+
+    return currencyCode;
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET CURRENCY SYMBOL
+|--------------------------------------------------------------------------
+|
+| Returns just the symbol (e.g. "₦", "$", "€") for a given ISO code,
+| for places like an empty-state icon or an input prefix where a full
+| formatted amount doesn't make sense. Falls back to the code itself.
+|
+*/
+
+export function getCurrencySymbol(currencyCode = "NGN") {
+  try {
+    const parts = new Intl.NumberFormat("en", {
+      style: "currency",
+      currency: currencyCode,
+      currencyDisplay: "narrowSymbol",
+    }).formatToParts(0);
+
+    const symbolPart = parts.find((part) => part.type === "currency");
+
+    return symbolPart ? symbolPart.value : currencyCode;
+  } catch (error) {
+    console.log("getCurrencySymbol fallback for code:", currencyCode, error);
+
+    return currencyCode;
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
 | FIND CURRENCY LABEL
 |--------------------------------------------------------------------------
 |

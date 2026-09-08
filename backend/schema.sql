@@ -16,6 +16,37 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at    TIMESTAMPTZ DEFAULT now()
 );
 
+
+/*
+|--------------------------------------------------------------------------
+| ACCOUNTS
+|--------------------------------------------------------------------------
+*/
+
+CREATE TABLE IF NOT EXISTS accounts (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  currency VARCHAR(10) NOT NULL DEFAULT 'NGN',
+  balance NUMERIC(15, 2) NOT NULL DEFAULT 0,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_accounts_user_id
+ON accounts(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_accounts_user
+    ON accounts (user_id);
+
+DROP TRIGGER IF EXISTS trg_accounts_updated_at ON accounts;
+
+CREATE TRIGGER trg_accounts_updated_at
+BEFORE UPDATE ON accounts
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
 -- One-time codes emailed to verify a user's address after registration.
 -- code_hash stores sha256(code), never the plaintext code.
 CREATE TABLE IF NOT EXISTS otp_codes (
