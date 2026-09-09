@@ -13,6 +13,7 @@ import ProfileMenu from './components/ProfileMenu';
 import NotificationBell from './components/NotificationBell';
 import FloatingAddButton from './components/FloatingAddButton';
 import ProtectedRoute from './components/ProtectedRoute';
+import Accounts from './pages/Accounts';
 
 function AppLayout({ children }) {
   return (
@@ -38,6 +39,7 @@ export default function App() {
       <Route path="/verify-otp" element={<VerifyOtp />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/accounts" element={<Accounts />} />
 
       <Route
         path="/"
