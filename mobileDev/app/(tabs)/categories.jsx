@@ -15,6 +15,8 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Ionicons } from "@expo/vector-icons";
+
 import {
   getCategories,
   createCategory,
@@ -45,6 +47,9 @@ import {
   JetBrainsMono_500Medium,
 } from "@expo-google-fonts/jetbrains-mono";
 
+// Background color for each category's icon circle. Kept alongside
+// the icon (rather than replaced) since a colored circle is what
+// makes each icon glyph easy to tell apart at a glance.
 const SWATCHES = [
   "#174E78",
   "#2DD4BF",
@@ -56,7 +61,175 @@ const SWATCHES = [
   "#F59E0B",
   "#3B82F6",
   "#EF4444",
+  "#0EA5E9",
+  "#22C55E",
+  "#A855F7",
+  "#F97316",
+  "#84CC16",
 ];
+
+// Pool of icon choices shown in the "New category" picker. Ionicons
+// ships with Expo already, so nothing extra to install.
+const ICON_OPTIONS = [
+  "fast-food-outline",
+  "restaurant-outline",
+  "cafe-outline",
+  "beer-outline",
+  "cart-outline",
+  "basket-outline",
+  "bus-outline",
+  "car-outline",
+  "bicycle-outline",
+  "train-outline",
+  "airplane-outline",
+  "home-outline",
+  "bed-outline",
+  "flash-outline",
+  "water-outline",
+  "wifi-outline",
+  "call-outline",
+  "phone-portrait-outline",
+  "laptop-outline",
+  "medkit-outline",
+  "fitness-outline",
+  "barbell-outline",
+  "school-outline",
+  "book-outline",
+  "film-outline",
+  "musical-notes-outline",
+  "game-controller-outline",
+  "gift-outline",
+  "shirt-outline",
+  "cut-outline",
+  "paw-outline",
+  "diamond-outline",
+  "wallet-outline",
+  "card-outline",
+  "cash-outline",
+  "trending-up-outline",
+  "briefcase-outline",
+  "business-outline",
+  "construct-outline",
+  "heart-outline",
+  "ellipsis-horizontal-outline",
+];
+
+// Expanded preset list so the picker starts with a much longer
+// default set of categories than just "type a name + pick a color".
+// Tapping one fills the form (name/type/icon/color); the person can
+// still tweak it before saving, or type something custom instead.
+const CATEGORY_PRESETS = [
+  {
+    name: "Food & Dining",
+    type: "Expense",
+    icon: "fast-food-outline",
+    color: "#F59E0B",
+  },
+  {
+    name: "Groceries",
+    type: "Expense",
+    icon: "basket-outline",
+    color: "#22C55E",
+  },
+  { name: "Transport", type: "Expense", icon: "bus-outline", color: "#3B82F6" },
+  { name: "Fuel", type: "Expense", icon: "car-outline", color: "#0EA5E9" },
+  { name: "Rent", type: "Expense", icon: "home-outline", color: "#174E78" },
+  {
+    name: "Utilities",
+    type: "Expense",
+    icon: "flash-outline",
+    color: "#EF4444",
+  },
+  {
+    name: "Internet & Airtime",
+    type: "Expense",
+    icon: "wifi-outline",
+    color: "#A855F7",
+  },
+  { name: "Shopping", type: "Expense", icon: "cart-outline", color: "#EC4899" },
+  {
+    name: "Subscriptions",
+    type: "Expense",
+    icon: "card-outline",
+    color: "#7C6FF0",
+  },
+  {
+    name: "Entertainment",
+    type: "Expense",
+    icon: "film-outline",
+    color: "#7C6FF0",
+  },
+  { name: "Health", type: "Expense", icon: "medkit-outline", color: "#16A34A" },
+  {
+    name: "Fitness",
+    type: "Expense",
+    icon: "barbell-outline",
+    color: "#F97316",
+  },
+  {
+    name: "Education",
+    type: "Expense",
+    icon: "school-outline",
+    color: "#3B82F6",
+  },
+  {
+    name: "Travel",
+    type: "Expense",
+    icon: "airplane-outline",
+    color: "#2DD4BF",
+  },
+  {
+    name: "Personal Care",
+    type: "Expense",
+    icon: "cut-outline",
+    color: "#F472B6",
+  },
+  { name: "Pets", type: "Expense", icon: "paw-outline", color: "#84CC16" },
+  {
+    name: "Gifts & Donations",
+    type: "Expense",
+    icon: "gift-outline",
+    color: "#EC4899",
+  },
+  {
+    name: "Repairs",
+    type: "Expense",
+    icon: "construct-outline",
+    color: "#F59E0B",
+  },
+  { name: "Salary", type: "Income", icon: "cash-outline", color: "#16A34A" },
+  {
+    name: "Freelance",
+    type: "Income",
+    icon: "briefcase-outline",
+    color: "#2DD4BF",
+  },
+  {
+    name: "Business",
+    type: "Income",
+    icon: "business-outline",
+    color: "#174E78",
+  },
+  {
+    name: "Investment",
+    type: "Income",
+    icon: "trending-up-outline",
+    color: "#22C55E",
+  },
+  { name: "Gift", type: "Income", icon: "gift-outline", color: "#F472B6" },
+  {
+    name: "Other Income",
+    type: "Income",
+    icon: "wallet-outline",
+    color: "#FBBF24",
+  },
+];
+
+// Fallback icon whenever a category was created before icons existed
+// (or the icon field otherwise comes back empty from the API).
+function fallbackIconFor(type) {
+  return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
+}
 
 function CategoryRow({ category, onDelete, colors }) {
   return (
@@ -71,12 +244,18 @@ function CategoryRow({ category, onDelete, colors }) {
       <View style={styles.categoryLeft}>
         <View
           style={[
-            styles.dot,
+            styles.iconCircle,
             {
               backgroundColor: category.color || colors.primary,
             },
           ]}
-        />
+        >
+          <Ionicons
+            name={category.icon || fallbackIconFor(category.type)}
+            size={16}
+            color="#FFFFFF"
+          />
+        </View>
 
         <Text
           style={[
@@ -192,6 +371,7 @@ export default function Categories() {
 
   const [name, setName] = useState("");
   const [type, setType] = useState("Expense");
+  const [icon, setIcon] = useState(ICON_OPTIONS[0]);
   const [color, setColor] = useState(SWATCHES[0]);
 
   const [fontsLoaded] = useFonts({
@@ -279,7 +459,15 @@ export default function Categories() {
   const resetForm = () => {
     setName("");
     setType("Expense");
+    setIcon(ICON_OPTIONS[0]);
     setColor(SWATCHES[0]);
+  };
+
+  const applyPreset = (preset) => {
+    setName(preset.name);
+    setType(preset.type);
+    setIcon(preset.icon);
+    setColor(preset.color);
   };
 
   const addCategory = async () => {
@@ -292,6 +480,7 @@ export default function Categories() {
       const newCategory = {
         name: name.trim(),
         type: type.toLowerCase(),
+        icon: icon,
         color: color,
       };
 
@@ -492,196 +681,347 @@ export default function Categories() {
               },
             ]}
           >
-            {/* MODAL HEADER */}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* MODAL HEADER */}
 
-            <View style={styles.modalHeader}>
+              <View style={styles.modalHeader}>
+                <Text
+                  style={[
+                    styles.modalTitle,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  New category
+                </Text>
+
+                <Pressable
+                  onPress={() => {
+                    resetForm();
+                    setShowAddModal(false);
+                  }}
+                  hitSlop={8}
+                >
+                  <Text
+                    style={[
+                      styles.closeButton,
+                      {
+                        color: colors.textFaint,
+                      },
+                    ]}
+                  >
+                    ×
+                  </Text>
+                </Pressable>
+              </View>
+
+              {/* QUICK ADD PRESETS */}
+
               <Text
                 style={[
-                  styles.modalTitle,
+                  styles.inputLabel,
                   {
+                    color: colors.textMuted,
+                    marginTop: 0,
+                  },
+                ]}
+              >
+                Quick add
+              </Text>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.presetRow}
+              >
+                {CATEGORY_PRESETS.map((preset) => {
+                  const isActive =
+                    preset.name === name &&
+                    preset.icon === icon &&
+                    preset.color === color;
+
+                  return (
+                    <Pressable
+                      key={preset.name}
+                      onPress={() => applyPreset(preset)}
+                      style={[
+                        styles.presetChip,
+                        {
+                          borderColor: colors.inputBorder,
+                          backgroundColor: colors.inputBg,
+                        },
+                        isActive && {
+                          borderColor: colors.primary,
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.presetChipIcon,
+                          {
+                            backgroundColor: preset.color,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={preset.icon}
+                          size={13}
+                          color="#FFFFFF"
+                        />
+                      </View>
+
+                      <Text
+                        style={[
+                          styles.presetChipText,
+                          {
+                            color: colors.text,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {preset.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              {/* CATEGORY NAME */}
+
+              <Text
+                style={[
+                  styles.inputLabel,
+                  {
+                    color: colors.textMuted,
+                  },
+                ]}
+              >
+                Category name
+              </Text>
+
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    borderColor: colors.inputBorder,
                     color: colors.text,
                   },
                 ]}
-              >
-                New category
-              </Text>
+                placeholder="e.g. Subscriptions"
+                placeholderTextColor={colors.textFaint}
+                value={name}
+                onChangeText={setName}
+              />
 
-              <Pressable
-                onPress={() => {
-                  resetForm();
-                  setShowAddModal(false);
-                }}
-                hitSlop={8}
-              >
-                <Text
-                  style={[
-                    styles.closeButton,
-                    {
-                      color: colors.textFaint,
-                    },
-                  ]}
-                >
-                  ×
-                </Text>
-              </Pressable>
-            </View>
+              {/* CATEGORY TYPE */}
 
-            {/* CATEGORY NAME */}
-
-            <Text
-              style={[
-                styles.inputLabel,
-                {
-                  color: colors.textMuted,
-                },
-              ]}
-            >
-              Category name
-            </Text>
-
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  borderColor: colors.inputBorder,
-                  color: colors.text,
-                },
-              ]}
-              placeholder="e.g. Subscriptions"
-              placeholderTextColor={colors.textFaint}
-              value={name}
-              onChangeText={setName}
-            />
-
-            {/* CATEGORY TYPE */}
-
-            <Text
-              style={[
-                styles.inputLabel,
-                {
-                  color: colors.textMuted,
-                },
-              ]}
-            >
-              Category type
-            </Text>
-
-            <View style={styles.typeButtons}>
-              <Pressable
+              <Text
                 style={[
-                  styles.typeButton,
+                  styles.inputLabel,
                   {
-                    borderColor: colors.inputBorder,
-                  },
-
-                  type === "Income" && {
-                    backgroundColor: colors.incomeBg,
-                    borderColor: colors.income,
+                    color: colors.textMuted,
                   },
                 ]}
-                onPress={() => setType("Income")}
               >
-                <Text
+                Category type
+              </Text>
+
+              <View style={styles.typeButtons}>
+                <Pressable
                   style={[
-                    styles.typeButtonText,
+                    styles.typeButton,
                     {
-                      color: colors.textMuted,
+                      borderColor: colors.inputBorder,
                     },
 
                     type === "Income" && {
-                      color: colors.income,
+                      backgroundColor: colors.incomeBg,
+                      borderColor: colors.income,
                     },
                   ]}
+                  onPress={() => setType("Income")}
                 >
-                  Income
-                </Text>
-              </Pressable>
+                  <Text
+                    style={[
+                      styles.typeButtonText,
+                      {
+                        color: colors.textMuted,
+                      },
 
-              <Pressable
-                style={[
-                  styles.typeButton,
-                  {
-                    borderColor: colors.inputBorder,
-                  },
+                      type === "Income" && {
+                        color: colors.income,
+                      },
+                    ]}
+                  >
+                    Income
+                  </Text>
+                </Pressable>
 
-                  type === "Expense" && {
-                    backgroundColor: colors.expenseBg,
-                    borderColor: colors.expense,
-                  },
-                ]}
-                onPress={() => setType("Expense")}
-              >
-                <Text
+                <Pressable
                   style={[
-                    styles.typeButtonText,
+                    styles.typeButton,
                     {
-                      color: colors.textMuted,
+                      borderColor: colors.inputBorder,
                     },
 
                     type === "Expense" && {
-                      color: colors.expense,
+                      backgroundColor: colors.expenseBg,
+                      borderColor: colors.expense,
                     },
                   ]}
+                  onPress={() => setType("Expense")}
                 >
-                  Expense
-                </Text>
-              </Pressable>
-            </View>
+                  <Text
+                    style={[
+                      styles.typeButtonText,
+                      {
+                        color: colors.textMuted,
+                      },
 
-            {/* COLOR */}
+                      type === "Expense" && {
+                        color: colors.expense,
+                      },
+                    ]}
+                  >
+                    Expense
+                  </Text>
+                </Pressable>
+              </View>
 
-            <Text
-              style={[
-                styles.inputLabel,
-                {
-                  color: colors.textMuted,
-                },
-              ]}
-            >
-              Color
-            </Text>
+              {/* ICON */}
 
-            <View style={styles.swatchRow}>
-              {SWATCHES.map((swatch) => (
-                <Pressable
-                  key={swatch}
-                  onPress={() => setColor(swatch)}
-                  style={[
-                    styles.swatch,
-                    {
-                      backgroundColor: swatch,
-                    },
-
-                    color === swatch && {
-                      borderColor: colors.text,
-                    },
-                  ]}
-                />
-              ))}
-            </View>
-
-            {/* SAVE */}
-
-            <Pressable
-              style={[
-                styles.saveButton,
-                {
-                  backgroundColor: colors.primary,
-                },
-              ]}
-              onPress={addCategory}
-            >
               <Text
                 style={[
-                  styles.saveButtonText,
+                  styles.inputLabel,
                   {
-                    color: colors.primaryText,
+                    color: colors.textMuted,
                   },
                 ]}
               >
-                Add category
+                Icon
               </Text>
-            </Pressable>
+
+              <View
+                style={[
+                  styles.iconPreviewRow,
+                  {
+                    borderColor: colors.inputBorder,
+                    backgroundColor: colors.inputBg,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.iconCircle,
+                    styles.iconPreviewCircle,
+                    {
+                      backgroundColor: color,
+                    },
+                  ]}
+                >
+                  <Ionicons name={icon} size={18} color="#FFFFFF" />
+                </View>
+
+                <Text
+                  style={[
+                    styles.iconPreviewText,
+                    {
+                      color: colors.textMuted,
+                    },
+                  ]}
+                >
+                  This is how {name.trim() || "the category"} will look
+                </Text>
+              </View>
+
+              <View style={styles.iconGrid}>
+                {ICON_OPTIONS.map((iconName) => (
+                  <Pressable
+                    key={iconName}
+                    onPress={() => setIcon(iconName)}
+                    style={[
+                      styles.iconOption,
+                      {
+                        borderColor: colors.inputBorder,
+                        backgroundColor: colors.inputBg,
+                      },
+
+                      icon === iconName && {
+                        borderColor: colors.primary,
+                        backgroundColor: colors.incomeBg,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={iconName}
+                      size={17}
+                      color={
+                        icon === iconName ? colors.primary : colors.textMuted
+                      }
+                    />
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* COLOR */}
+
+              <Text
+                style={[
+                  styles.inputLabel,
+                  {
+                    color: colors.textMuted,
+                  },
+                ]}
+              >
+                Color
+              </Text>
+
+              <View style={styles.swatchRow}>
+                {SWATCHES.map((swatch) => (
+                  <Pressable
+                    key={swatch}
+                    onPress={() => setColor(swatch)}
+                    style={[
+                      styles.swatch,
+                      {
+                        backgroundColor: swatch,
+                      },
+
+                      color === swatch && {
+                        borderColor: colors.text,
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+
+              {/* SAVE */}
+
+              <Pressable
+                style={[
+                  styles.saveButton,
+                  {
+                    backgroundColor: colors.primary,
+                  },
+                ]}
+                onPress={addCategory}
+              >
+                <Text
+                  style={[
+                    styles.saveButtonText,
+                    {
+                      color: colors.primaryText,
+                    },
+                  ]}
+                >
+                  Add category
+                </Text>
+              </Pressable>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -760,10 +1100,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
-  dot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
+  // Icon replaces the old plain color "dot" indicator - a small
+  // circle in the category's color, with the chosen Ionicons glyph
+  // centered inside it (white, so it reads on any swatch color).
+  iconCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   categoryName: {
@@ -803,6 +1148,7 @@ const styles = StyleSheet.create({
   modalCard: {
     borderRadius: 16,
     padding: 20,
+    maxHeight: "85%",
   },
 
   modalHeader: {
@@ -839,6 +1185,39 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
   },
 
+  // QUICK ADD PRESETS
+
+  presetRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 2,
+    paddingRight: 6,
+  },
+
+  presetChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    gap: 6,
+  },
+
+  presetChipIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  presetChipText: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    maxWidth: 90,
+  },
+
   typeButtons: {
     flexDirection: "row",
     gap: 8,
@@ -856,6 +1235,48 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
   },
+
+  // ICON PICKER
+
+  iconPreviewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+
+  iconPreviewCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+  },
+
+  iconPreviewText: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+    flex: 1,
+  },
+
+  iconGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+
+  iconOption: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // COLOR SWATCHES
 
   swatchRow: {
     flexDirection: "row",

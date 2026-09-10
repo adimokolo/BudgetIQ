@@ -387,8 +387,8 @@ const createStyles = (colors) =>
       fontFamily: "Inter_600SemiBold",
     },
     container: {
-      padding: 20,
-      paddingBottom: 40,
+      padding: 16,
+      paddingBottom: 35,
     },
     loadingState: {
       alignItems: "center",

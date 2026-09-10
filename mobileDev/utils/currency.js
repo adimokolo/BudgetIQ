@@ -1,14 +1,3 @@
-/*
-|--------------------------------------------------------------------------
-| WORLD CURRENCIES (ISO 4217)
-|--------------------------------------------------------------------------
-|
-| A near-complete list of active ISO 4217 currency codes with their
-| common English names. Used to populate currency pickers anywhere
-| in the app (signup, settings, etc).
-|
-*/
-
 export const ALL_CURRENCIES = [
   { code: "AED", name: "UAE Dirham" },
   { code: "AFN", name: "Afghan Afghani" },
