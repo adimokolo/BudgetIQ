@@ -19,6 +19,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import DateTimePicker from "@react-native-community/datetimepicker";
 
+import { Ionicons } from "@expo/vector-icons";
+
 import { useFonts } from "expo-font";
 import {
   SpaceGrotesk_400Regular,
@@ -53,8 +55,15 @@ import {
   exportTransactionsToPdf,
 } from "../../services/exportTransactions";
 
+import { convertCurrency } from "../../services/convertCurrency";
+
 import { useTheme } from "../../contexts/ThemeContext";
-import { formatCurrency } from "../../utils/currency";
+
+import {
+  formatCurrency,
+  ALL_CURRENCIES,
+  currencyLabel,
+} from "../../utils/currency";
 
 const TYPES = ["Expense", "Income"];
 
@@ -73,6 +82,125 @@ const fonts = {
   monoRegular: "JetBrainsMono_400Regular",
   monoMedium: "JetBrainsMono_500Medium",
 };
+
+const CURRENCY_DROPDOWN_OPTIONS = ALL_CURRENCIES.map((c) => ({
+  id: c.code,
+  name: `${c.code} — ${c.name}`,
+}));
+
+const ICON_OPTIONS = [
+  "fast-food-outline",
+  "restaurant-outline",
+  "cafe-outline",
+  "beer-outline",
+  "cart-outline",
+  "basket-outline",
+  "bus-outline",
+  "car-outline",
+  "bicycle-outline",
+  "train-outline",
+  "airplane-outline",
+  "home-outline",
+  "bed-outline",
+  "flash-outline",
+  "water-outline",
+  "wifi-outline",
+  "call-outline",
+  "phone-portrait-outline",
+  "laptop-outline",
+  "medkit-outline",
+  "fitness-outline",
+  "barbell-outline",
+  "school-outline",
+  "book-outline",
+  "film-outline",
+  "musical-notes-outline",
+  "game-controller-outline",
+  "gift-outline",
+  "shirt-outline",
+  "cut-outline",
+  "paw-outline",
+  "diamond-outline",
+  "wallet-outline",
+  "card-outline",
+  "cash-outline",
+  "trending-up-outline",
+  "briefcase-outline",
+  "business-outline",
+  "construct-outline",
+  "heart-outline",
+  "ellipsis-horizontal-outline",
+];
+
+const SWATCHES = [
+  "#174E78",
+  "#2DD4BF",
+  "#7C6FF0",
+  "#F472B6",
+  "#EC4899",
+  "#FBBF24",
+  "#16A34A",
+  "#F59E0B",
+  "#3B82F6",
+  "#EF4444",
+  "#0EA5E9",
+  "#22C55E",
+  "#A855F7",
+  "#F97316",
+  "#84CC16",
+];
+
+function fallbackIconFor(type) {
+  return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
+}
+
+/*
+|--------------------------------------------------------------------------
+| LOCAL DATE HELPERS
+|--------------------------------------------------------------------------
+|
+| Important:
+| Do not use toISOString().slice(0, 10) for date-only financial
+| transactions because UTC conversion can move the date backwards/forwards.
+|
+*/
+
+function getLocalDateString(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function formatCalendarBalance(amount, currency) {
+  if (amount === 0) {
+    return "0";
+  }
+
+  const absolute = Math.abs(amount);
+
+  const formatted = formatCurrency(absolute, currency);
+
+  /*
+   * Keep the amount compact enough to fit inside a calendar cell.
+   *
+   * Examples:
+   * ₦25,000       -> +₦25k
+   * ₦1,250,000    -> +₦1.25m
+   */
+
+  const compact = formatted
+    .replace(/(\d+),(\d{3}),(\d{3})/, "$1.$2m")
+    .replace(/(\d+),(\d{3})/, "$1.$2k");
+
+  return amount > 0 ? `+${compact}` : `-${compact}`;
+}
+
+/*
+|--------------------------------------------------------------------------
+| DROPDOWN
+|--------------------------------------------------------------------------
+*/
 
 function Dropdown({ label, value, options, onSelect, placeholder, styles }) {
   const [open, setOpen] = useState(false);
@@ -137,13 +265,227 @@ function Dropdown({ label, value, options, onSelect, placeholder, styles }) {
 
 /*
 |--------------------------------------------------------------------------
+| CATEGORY PICKER MODAL
+|--------------------------------------------------------------------------
+*/
+
+function CategoryPickerModal({
+  visible,
+  onClose,
+  categories,
+  selectedCategory,
+  onSelect,
+  type,
+  colors,
+  styles,
+}) {
+  const [name, setName] = useState("");
+  const [icon, setIcon] = useState(ICON_OPTIONS[0]);
+  const [color, setColor] = useState(SWATCHES[0]);
+
+  useEffect(() => {
+    if (visible) {
+      setName(selectedCategory?.name || "");
+      setIcon(selectedCategory?.icon || ICON_OPTIONS[0]);
+      setColor(selectedCategory?.color || SWATCHES[0]);
+    }
+  }, [visible, selectedCategory]);
+
+  const iconFor = (category) => category.icon || fallbackIconFor(category.type);
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalCard}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select category</Text>
+
+              <Pressable onPress={onClose} hitSlop={8}>
+                <Text style={styles.closeButton}>×</Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.inputLabel}>
+              Your {type.toLowerCase()} categories
+            </Text>
+
+            {categories.length > 0 ? (
+              <View style={styles.categoryPickGrid}>
+                {categories.map((category) => {
+                  const isActive = selectedCategory?.id === category.id;
+
+                  return (
+                    <Pressable
+                      key={category.id}
+                      onPress={() => {
+                        onSelect(category);
+                        onClose();
+                      }}
+                      style={[
+                        styles.categoryPickChip,
+                        {
+                          borderColor: isActive
+                            ? colors.primary
+                            : colors.inputBorder,
+                          backgroundColor: isActive
+                            ? colors.incomeBg
+                            : colors.inputBg,
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.iconCircle,
+                          {
+                            backgroundColor: category.color || colors.primary,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={iconFor(category)}
+                          size={14}
+                          color="#FFFFFF"
+                        />
+                      </View>
+
+                      <Text
+                        style={[
+                          styles.categoryPickChipText,
+                          {
+                            color: isActive ? colors.primary : colors.text,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {category.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={styles.categoryPickEmpty}>
+                <Text style={styles.categoryPickEmptyText}>
+                  No {type.toLowerCase()} categories yet.
+                </Text>
+              </View>
+            )}
+
+            <Text style={styles.inputLabel}>Icon</Text>
+
+            <View
+              style={[
+                styles.iconPreviewRow,
+                {
+                  borderColor: colors.inputBorder,
+                  backgroundColor: colors.inputBg,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.iconCircle,
+                  styles.iconPreviewCircle,
+                  {
+                    backgroundColor: color,
+                  },
+                ]}
+              >
+                <Ionicons name={icon} size={18} color="#FFFFFF" />
+              </View>
+
+              <Text
+                style={[
+                  styles.iconPreviewText,
+                  {
+                    color: colors.textMuted,
+                  },
+                ]}
+              >
+                Preview{name.trim() ? ` for ${name.trim()}` : ""}
+              </Text>
+            </View>
+
+            <View style={styles.iconGrid}>
+              {ICON_OPTIONS.map((iconName) => (
+                <Pressable
+                  key={iconName}
+                  onPress={() => setIcon(iconName)}
+                  style={[
+                    styles.iconOption,
+                    {
+                      borderColor: colors.inputBorder,
+                      backgroundColor: colors.inputBg,
+                    },
+                    icon === iconName && {
+                      borderColor: colors.primary,
+                      backgroundColor: colors.incomeBg,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={iconName}
+                    size={17}
+                    color={
+                      icon === iconName ? colors.primary : colors.textMuted
+                    }
+                  />
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.inputLabel}>Color</Text>
+
+            <View style={styles.swatchRow}>
+              {SWATCHES.map((swatch) => (
+                <Pressable
+                  key={swatch}
+                  onPress={() => setColor(swatch)}
+                  style={[
+                    styles.swatch,
+                    {
+                      backgroundColor: swatch,
+                    },
+                    color === swatch && {
+                      borderColor: colors.text,
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+
+            <Pressable onPress={onClose} style={styles.calcCancelButton}>
+              <Text
+                style={[
+                  styles.calcCancelText,
+                  {
+                    color: colors.textMuted,
+                  },
+                ]}
+              >
+                Close
+              </Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
 | CALCULATOR MODAL
 |--------------------------------------------------------------------------
-|
-| A simple popup calculator: + - × ÷, clear, backspace, decimal, equals.
-| Pressing "✓" finalizes any pending operation and sends the result to
-| the parent via onApply, which fills the amount input automatically.
-|
 */
 
 function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
@@ -274,10 +616,6 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
   const handleApply = () => {
     let finalValue = display;
 
-    /*
-     * Finalize any pending operation.
-     * Example: 5 + 3 then ✓ without pressing =
-     */
     if (accumulator !== null && operator !== null && !waitingForOperand) {
       const result = compute(accumulator, parseFloat(display), operator);
 
@@ -295,7 +633,9 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
     <Pressable
       style={[styles.calcKey, keyStyle]}
       onPress={onPress}
-      android_ripple={{ color: colors.divider }}
+      android_ripple={{
+        color: colors.divider,
+      }}
     >
       <Text style={[styles.calcKeyText, textStyle]}>{label}</Text>
     </Pressable>
@@ -318,8 +658,6 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
             },
           ]}
         >
-          {/* CALCULATOR HEADER */}
-
           <View style={styles.calcHeader}>
             <View style={styles.calcHeaderTitle}>
               <Text style={styles.calcHeaderIcon}>🔢</Text>
@@ -353,8 +691,6 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
               </Text>
             </Pressable>
           </View>
-
-          {/* DISPLAY */}
 
           <View
             style={[
@@ -391,8 +727,6 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
               </Text>
             )}
           </View>
-
-          {/* KEYPAD */}
 
           <View style={styles.calcRow}>
             {renderKey(
@@ -442,9 +776,7 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
 
           <View style={styles.calcRow}>
             {renderKey("7", () => inputDigit("7"))}
-
             {renderKey("8", () => inputDigit("8"))}
-
             {renderKey("9", () => inputDigit("9"))}
 
             {renderKey(
@@ -461,9 +793,7 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
 
           <View style={styles.calcRow}>
             {renderKey("4", () => inputDigit("4"))}
-
             {renderKey("5", () => inputDigit("5"))}
-
             {renderKey("6", () => inputDigit("6"))}
 
             {renderKey(
@@ -480,9 +810,7 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
 
           <View style={styles.calcRow}>
             {renderKey("1", () => inputDigit("1"))}
-
             {renderKey("2", () => inputDigit("2"))}
-
             {renderKey("3", () => inputDigit("3"))}
 
             {renderKey(
@@ -514,8 +842,6 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
             )}
           </View>
 
-          {/* CANCEL */}
-
           <Pressable onPress={onClose} style={styles.calcCancelButton}>
             <Text
               style={[
@@ -536,6 +862,191 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
 
 /*
 |--------------------------------------------------------------------------
+| CURRENCY CONVERTER
+|--------------------------------------------------------------------------
+*/
+
+function CurrencyConverterCard({ colors, styles, defaultCurrency }) {
+  const [amount, setAmount] = useState("");
+  const [fromCurrency, setFromCurrency] = useState(defaultCurrency || "NGN");
+  const [toCurrency, setToCurrency] = useState("USD");
+
+  const [result, setResult] = useState(null);
+  const [converting, setConverting] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (defaultCurrency) {
+      setFromCurrency(defaultCurrency);
+    }
+  }, [defaultCurrency]);
+
+  const handleAmountChange = (text) => {
+    setAmount(text);
+    setResult(null);
+    setError(null);
+  };
+
+  const handleSelectFrom = (opt) => {
+    setFromCurrency(opt.id);
+    setResult(null);
+    setError(null);
+  };
+
+  const handleSelectTo = (opt) => {
+    setToCurrency(opt.id);
+    setResult(null);
+    setError(null);
+  };
+
+  const handleSwap = () => {
+    setFromCurrency(toCurrency);
+    setToCurrency(fromCurrency);
+    setResult(null);
+    setError(null);
+  };
+
+  const handleConvert = async () => {
+    const numericAmount = Number(amount);
+
+    if (!amount.trim() || Number.isNaN(numericAmount)) {
+      setError("Enter a valid amount.");
+      setResult(null);
+      return;
+    }
+
+    setConverting(true);
+    setError(null);
+
+    try {
+      const converted = await convertCurrency(
+        numericAmount,
+        fromCurrency,
+        toCurrency,
+      );
+
+      setResult(converted);
+    } catch (err) {
+      console.log("Currency convert error:", err);
+
+      setError(err.message || "Unable to convert currency.");
+
+      setResult(null);
+    } finally {
+      setConverting(false);
+    }
+  };
+
+  return (
+    <View
+      style={[
+        styles.converterCard,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.cardBorder,
+        },
+      ]}
+    >
+      <Text style={styles.converterTitle}>Currency Converter</Text>
+
+      <Text style={styles.inputLabel}>Amount</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="0.00"
+        placeholderTextColor={colors.textFaint}
+        value={amount}
+        onChangeText={handleAmountChange}
+        keyboardType="numeric"
+      />
+
+      <View style={styles.converterRow}>
+        <View style={{ flex: 1 }}>
+          <Dropdown
+            label="From"
+            value={currencyLabel(fromCurrency)}
+            options={CURRENCY_DROPDOWN_OPTIONS}
+            onSelect={handleSelectFrom}
+            styles={styles}
+          />
+        </View>
+
+        <Pressable
+          onPress={handleSwap}
+          hitSlop={8}
+          style={[
+            styles.converterSwapButton,
+            {
+              backgroundColor: colors.chipBg,
+              borderColor: colors.inputBorder,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.converterSwapText,
+              {
+                color: colors.primary,
+              },
+            ]}
+          >
+            ⇄
+          </Text>
+        </Pressable>
+
+        <View style={{ flex: 1 }}>
+          <Dropdown
+            label="To"
+            value={currencyLabel(toCurrency)}
+            options={CURRENCY_DROPDOWN_OPTIONS}
+            onSelect={handleSelectTo}
+            styles={styles}
+          />
+        </View>
+      </View>
+
+      <Pressable
+        style={[styles.saveButton, converting && styles.saveButtonDisabled]}
+        onPress={handleConvert}
+        disabled={converting}
+      >
+        {converting ? (
+          <ActivityIndicator color={colors.primaryText} />
+        ) : (
+          <Text style={styles.saveButtonText}>Convert</Text>
+        )}
+      </Pressable>
+
+      {error && <Text style={styles.converterError}>{error}</Text>}
+
+      {result !== null && !error && (
+        <View
+          style={[
+            styles.converterResult,
+            {
+              backgroundColor: colors.chipBg,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.converterResultText,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
+            {formatCurrency(Number(amount), fromCurrency)} ={" "}
+            {formatCurrency(result, toCurrency)}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
 | BUILD MONTH GRID
 |--------------------------------------------------------------------------
 */
@@ -545,7 +1056,9 @@ function buildMonthGrid(viewDate) {
   const month = viewDate.getMonth();
 
   const firstDayWeekday = new Date(year, month, 1).getDay();
+
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+
   const daysInPrevMonth = new Date(year, month, 0).getDate();
 
   const cells = [];
@@ -560,10 +1073,9 @@ function buildMonthGrid(viewDate) {
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const dateString = `${year}-${String(month + 1).padStart(
-      2,
-      "0",
-    )}-${String(day).padStart(2, "0")}`;
+    const dateString = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+      day,
+    ).padStart(2, "0")}`;
 
     cells.push({
       key: dateString,
@@ -589,16 +1101,18 @@ function buildMonthGrid(viewDate) {
 
 /*
 |--------------------------------------------------------------------------
-| FULL CALENDAR
+| FULL COLORFUL CALENDAR
 |--------------------------------------------------------------------------
 */
 
 function FullCalendar({
   viewDate,
   onChangeMonth,
-  transactionDates,
+  dailyBalances,
   selectedDate,
   onSelectDate,
+  currentDate,
+  currency,
   colors,
   styles,
 }) {
@@ -617,6 +1131,14 @@ function FullCalendar({
     onChangeMonth(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
   };
 
+  const goToToday = () => {
+    const today = new Date();
+
+    onChangeMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+
+    onSelectDate(currentDate);
+  };
+
   return (
     <View
       style={[
@@ -627,30 +1149,41 @@ function FullCalendar({
         },
       ]}
     >
-      <View style={styles.calendarHeaderRow}>
-        <Text style={styles.calendarTitle}>Calendar</Text>
+      {/* HEADER */}
 
-        {selectedDate && (
-          <TouchableOpacity onPress={() => onSelectDate(null)}>
-            <Text
-              style={[
-                styles.calendarClear,
-                {
-                  color: colors.primary,
-                },
-              ]}
-            >
-              Show all
-            </Text>
-          </TouchableOpacity>
-        )}
+      <View style={styles.calendarHeaderRow}>
+        <View>
+          <Text style={styles.calendarTitle}>Calendar</Text>
+
+          <Text style={styles.calendarSubtitle}>Daily net balance</Text>
+        </View>
+
+        <TouchableOpacity onPress={goToToday} activeOpacity={0.7}>
+          <Text
+            style={[
+              styles.calendarTodayButton,
+              {
+                color: colors.primary,
+              },
+            ]}
+          >
+            Today
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      {/* MONTH NAVIGATION */}
 
       <View style={styles.calendarNavRow}>
         <TouchableOpacity
           onPress={goToPrevMonth}
           hitSlop={10}
-          style={styles.calendarNavButton}
+          style={[
+            styles.calendarNavButton,
+            {
+              backgroundColor: colors.chipBg,
+            },
+          ]}
         >
           <Text
             style={[
@@ -678,7 +1211,12 @@ function FullCalendar({
         <TouchableOpacity
           onPress={goToNextMonth}
           hitSlop={10}
-          style={styles.calendarNavButton}
+          style={[
+            styles.calendarNavButton,
+            {
+              backgroundColor: colors.chipBg,
+            },
+          ]}
         >
           <Text
             style={[
@@ -693,14 +1231,19 @@ function FullCalendar({
         </TouchableOpacity>
       </View>
 
+      {/* WEEKDAYS */}
+
       <View style={styles.weekdayRow}>
-        {WEEKDAY_LABELS.map((label) => (
+        {WEEKDAY_LABELS.map((label, index) => (
           <Text
             key={label}
             style={[
               styles.weekdayText,
               {
-                color: colors.textFaint,
+                color:
+                  index === 0 || index === 6
+                    ? colors.primary
+                    : colors.textFaint,
               },
             ]}
           >
@@ -709,54 +1252,146 @@ function FullCalendar({
         ))}
       </View>
 
+      {/* CALENDAR GRID */}
+
       <View style={styles.calendarGrid}>
         {cells.map((cell) => {
-          const isSelected =
-            cell.inCurrentMonth && cell.dateString === selectedDate;
+          if (!cell.inCurrentMonth) {
+            return (
+              <View key={cell.key} style={styles.calendarDayCell}>
+                <Text
+                  style={[
+                    styles.calendarDayText,
+                    {
+                      color: colors.textFaint,
+                      opacity: 0.2,
+                    },
+                  ]}
+                >
+                  {cell.day}
+                </Text>
+              </View>
+            );
+          }
 
-          const hasTransactions =
-            cell.inCurrentMonth && transactionDates.has(cell.dateString);
+          const balance = dailyBalances[cell.dateString] || 0;
+
+          const hasActivity = Object.prototype.hasOwnProperty.call(
+            dailyBalances,
+            cell.dateString,
+          );
+
+          const isToday = cell.dateString === currentDate;
+
+          const isSelected = cell.dateString === selectedDate;
+
+          let balanceColor = colors.textFaint;
+
+          if (balance > 0) {
+            balanceColor = colors.income;
+          } else if (balance < 0) {
+            balanceColor = colors.expense;
+          }
+
+          let backgroundColor = colors.inputBg;
+
+          if (balance > 0) {
+            backgroundColor = colors.incomeBg;
+          } else if (balance < 0) {
+            backgroundColor = colors.expenseBg;
+          }
+
+          /*
+           * The current system date gets the strongest
+           * visual treatment.
+           */
+
+          if (isToday) {
+            backgroundColor = colors.primary;
+          }
+
+          if (isSelected && !isToday) {
+            backgroundColor = colors.chipBg;
+          }
 
           return (
             <TouchableOpacity
               key={cell.key}
-              activeOpacity={cell.inCurrentMonth ? 0.7 : 1}
-              disabled={!cell.inCurrentMonth}
+              activeOpacity={0.75}
               onPress={() => onSelectDate(isSelected ? null : cell.dateString)}
               style={[
                 styles.calendarDayCell,
-                isSelected && {
-                  backgroundColor: colors.primary,
-                  borderRadius: 10,
+                styles.calendarBalanceCell,
+                {
+                  backgroundColor,
                 },
+                isToday && styles.calendarTodayCell,
+                isSelected && !isToday && styles.calendarSelectedCell,
               ]}
             >
-              <Text
+              {/* DATE */}
+
+              <View
                 style={[
-                  styles.calendarDayText,
-                  {
-                    color: !cell.inCurrentMonth
-                      ? colors.textFaint
-                      : isSelected
-                        ? colors.primaryText
-                        : colors.text,
-                  },
-                  !cell.inCurrentMonth && {
-                    opacity: 0.35,
+                  styles.calendarDateCircle,
+                  isToday && {
+                    backgroundColor: colors.primaryText,
                   },
                 ]}
               >
-                {cell.day}
-              </Text>
+                <Text
+                  style={[
+                    styles.calendarDayText,
+                    {
+                      color: isToday ? colors.primary : colors.text,
+                    },
+                    isSelected &&
+                      !isToday && {
+                        color: colors.primary,
+                        fontFamily: fonts.displayBold,
+                      },
+                  ]}
+                >
+                  {cell.day}
+                </Text>
+              </View>
 
-              {hasTransactions && (
+              {/* DAILY NET BALANCE */}
+
+              {hasActivity ? (
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  style={[
+                    styles.calendarBalanceText,
+                    {
+                      color: isToday ? colors.primaryText : balanceColor,
+                    },
+                  ]}
+                >
+                  {formatCalendarBalance(balance, currency)}
+                </Text>
+              ) : (
+                <View style={styles.calendarBalancePlaceholder}>
+                  <View
+                    style={[
+                      styles.calendarEmptyDot,
+                      {
+                        backgroundColor: colors.divider,
+                      },
+                    ]}
+                  />
+                </View>
+              )}
+
+              {/* TODAY INDICATOR */}
+
+              {isToday && (
                 <View
                   style={[
-                    styles.calendarDot,
+                    styles.calendarTodayIndicator,
                     {
-                      backgroundColor: isSelected
-                        ? colors.primaryText
-                        : colors.primary,
+                      backgroundColor: colors.primaryText,
                     },
                   ]}
                 />
@@ -765,9 +1400,58 @@ function FullCalendar({
           );
         })}
       </View>
+
+      {/* LEGEND */}
+
+      <View style={styles.calendarLegend}>
+        <View style={styles.calendarLegendItem}>
+          <View
+            style={[
+              styles.calendarLegendDot,
+              {
+                backgroundColor: colors.income,
+              },
+            ]}
+          />
+
+          <Text style={styles.calendarLegendText}>Positive</Text>
+        </View>
+
+        <View style={styles.calendarLegendItem}>
+          <View
+            style={[
+              styles.calendarLegendDot,
+              {
+                backgroundColor: colors.expense,
+              },
+            ]}
+          />
+
+          <Text style={styles.calendarLegendText}>Negative</Text>
+        </View>
+
+        <View style={styles.calendarLegendItem}>
+          <View
+            style={[
+              styles.calendarLegendDot,
+              {
+                backgroundColor: colors.primary,
+              },
+            ]}
+          />
+
+          <Text style={styles.calendarLegendText}>Today</Text>
+        </View>
+      </View>
     </View>
   );
 }
+
+/*
+|--------------------------------------------------------------------------
+| TRANSACTION CARD
+|--------------------------------------------------------------------------
+*/
 
 function TransactionCard({ transaction, currency, onDelete, styles }) {
   const isIncome = transaction.type === "Income";
@@ -825,6 +1509,12 @@ function TransactionCard({ transaction, currency, onDelete, styles }) {
   );
 }
 
+/*
+|--------------------------------------------------------------------------
+| MAP TRANSACTION
+|--------------------------------------------------------------------------
+*/
+
 function mapTransaction(raw) {
   return {
     id: raw.id,
@@ -851,6 +1541,12 @@ function mapTransaction(raw) {
   };
 }
 
+/*
+|--------------------------------------------------------------------------
+| MAIN SCREEN
+|--------------------------------------------------------------------------
+*/
+
 export default function Transactions() {
   const { colors } = useTheme();
 
@@ -870,13 +1566,26 @@ export default function Transactions() {
 
   const styles = createStyles(colors);
 
+  const currentSystemDate = useMemo(() => getLocalDateString(new Date()), []);
+
+  /*
+   * Automatically select today's date when the
+   * screen opens.
+   */
+
+  const [selectedDate, setSelectedDate] = useState(currentSystemDate);
+
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const today = new Date();
+
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
+
   const [filter, setFilter] = useState("All types");
 
-  const [selectedDate, setSelectedDate] = useState(null);
-
-  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
-
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const [showConverter, setShowConverter] = useState(false);
 
   const [showCalculator, setShowCalculator] = useState(false);
 
@@ -907,6 +1616,8 @@ export default function Transactions() {
   const [date, setDate] = useState(new Date());
 
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -969,16 +1680,39 @@ export default function Transactions() {
     (c) => c.type?.toLowerCase() === type.toLowerCase(),
   );
 
-  const transactionDates = useMemo(() => {
-    const set = new Set();
+  /*
+   |--------------------------------------------------------------------------
+   | DAILY NET BALANCE
+   |--------------------------------------------------------------------------
+   |
+   | Income  = positive
+   | Expense = negative
+   |
+   | Example:
+   | Income  ₦100,000
+   | Expense  ₦30,000
+   | Net     +₦70,000
+   |
+   */
+
+  const dailyBalances = useMemo(() => {
+    const balances = {};
 
     for (const transaction of transactions) {
-      if (transaction.rawDate) {
-        set.add(transaction.rawDate);
+      if (!transaction.rawDate) {
+        continue;
       }
+
+      const amount =
+        transaction.type === "Income"
+          ? transaction.amount
+          : -transaction.amount;
+
+      balances[transaction.rawDate] =
+        (balances[transaction.rawDate] || 0) + amount;
     }
 
-    return set;
+    return balances;
   }, [transactions]);
 
   const filteredTransactions = transactions.filter((transaction) => {
@@ -1021,17 +1755,29 @@ export default function Transactions() {
       return;
     }
 
+    const numericAmount = Number(amount);
+
+    if (Number.isNaN(numericAmount) || numericAmount <= 0) {
+      Alert.alert("Invalid amount", "Please enter a valid amount.");
+
+      return;
+    }
+
     setSaving(true);
 
     try {
       const payload = {
         type: type.toLowerCase(),
 
-        amount: Number(amount),
+        amount: numericAmount,
 
         description: description.trim() || null,
 
-        occurredOn: date.toISOString().slice(0, 10),
+        /*
+         * Use LOCAL date instead of UTC.
+         */
+
+        occurredOn: getLocalDateString(date),
 
         categoryId: selectedCategory?.id || null,
       };
@@ -1161,6 +1907,8 @@ export default function Transactions() {
           />
         }
       >
+        {/* HEADER */}
+
         <View style={styles.header}>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.heading}>Transactions</Text>
@@ -1178,6 +1926,17 @@ export default function Transactions() {
               activeOpacity={0.8}
             >
               <Text style={styles.addButtonText}>+ Add transaction</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.convertButton}
+              onPress={() => setShowConverter((current) => !current)}
+              disabled={exporting}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.convertButtonText}>
+                {showConverter ? "Hide converter" : "⇄ Convert"}
+              </Text>
             </TouchableOpacity>
 
             <View style={styles.exportMenuContainer}>
@@ -1219,6 +1978,18 @@ export default function Transactions() {
           </View>
         </View>
 
+        {/* CONVERTER */}
+
+        {showConverter && (
+          <CurrencyConverterCard
+            colors={colors}
+            styles={styles}
+            defaultCurrency={currency}
+          />
+        )}
+
+        {/* SUMMARY */}
+
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>TOTAL INCOME</Text>
@@ -1236,6 +2007,8 @@ export default function Transactions() {
             </Text>
           </View>
         </View>
+
+        {/* FILTER */}
 
         <View style={styles.filterContainer}>
           <Text style={styles.filterLabel}>Filter transactions</Text>
@@ -1263,6 +2036,8 @@ export default function Transactions() {
           </View>
         </View>
 
+        {/* TRANSACTION LIST */}
+
         <View style={styles.listCard}>
           {filteredTransactions.length > 0 ? (
             filteredTransactions.map((transaction) => (
@@ -1287,12 +2062,16 @@ export default function Transactions() {
           )}
         </View>
 
+        {/* COLORFUL CALENDAR */}
+
         <FullCalendar
           viewDate={calendarMonth}
           onChangeMonth={setCalendarMonth}
-          transactionDates={transactionDates}
+          dailyBalances={dailyBalances}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
+          currentDate={currentSystemDate}
+          currency={currency}
           colors={colors}
           styles={styles}
         />
@@ -1329,8 +2108,6 @@ export default function Transactions() {
             <Text style={styles.inputLabel}>Amount</Text>
 
             <View style={styles.amountRow}>
-              {/* AMOUNT INPUT FIRST */}
-
               <TextInput
                 style={[styles.input, styles.amountInput]}
                 placeholder={formatCurrency(0, currency)}
@@ -1339,8 +2116,6 @@ export default function Transactions() {
                 onChangeText={setAmount}
                 keyboardType="numeric"
               />
-
-              {/* CALCULATOR BUTTON ON THE RIGHT */}
 
               <Pressable
                 style={[
@@ -1368,18 +2143,64 @@ export default function Transactions() {
               </Pressable>
             </View>
 
-            <Dropdown
-              label="Category"
-              value={selectedCategory?.name}
-              options={categoryOptions}
-              onSelect={setSelectedCategory}
-              placeholder={
-                categoryOptions.length > 0
-                  ? "Select a category"
-                  : `No ${type.toLowerCase()} categories yet`
-              }
-              styles={styles}
-            />
+            {/* CATEGORY */}
+
+            <Text style={styles.inputLabel}>Category</Text>
+
+            <Pressable
+              style={[
+                styles.categoryField,
+                {
+                  borderColor: colors.inputBorder,
+                  backgroundColor: colors.inputBg,
+                },
+              ]}
+              onPress={() => setShowCategoryPicker(true)}
+            >
+              {selectedCategory ? (
+                <View style={styles.categoryFieldContent}>
+                  <View
+                    style={[
+                      styles.iconCircle,
+                      {
+                        backgroundColor:
+                          selectedCategory.color || colors.primary,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={
+                        selectedCategory.icon ||
+                        fallbackIconFor(selectedCategory.type)
+                      }
+                      size={14}
+                      color="#FFFFFF"
+                    />
+                  </View>
+
+                  <Text style={styles.categoryFieldText}>
+                    {selectedCategory.name}
+                  </Text>
+                </View>
+              ) : (
+                <Text
+                  style={[
+                    styles.categoryFieldText,
+                    {
+                      color: colors.textFaint,
+                    },
+                  ]}
+                >
+                  {categoryOptions.length > 0
+                    ? "Select a category"
+                    : `No ${type.toLowerCase()} categories yet`}
+                </Text>
+              )}
+
+              <Text style={styles.dropdownArrow}>⌄</Text>
+            </Pressable>
+
+            {/* DESCRIPTION */}
 
             <Text style={styles.inputLabel}>Description</Text>
 
@@ -1390,6 +2211,8 @@ export default function Transactions() {
               value={description}
               onChangeText={setDescription}
             />
+
+            {/* DATE */}
 
             <Text style={styles.inputLabel}>Date</Text>
 
@@ -1436,7 +2259,20 @@ export default function Transactions() {
         </View>
       </Modal>
 
-      {/* CALCULATOR MODAL */}
+      {/* CATEGORY PICKER */}
+
+      <CategoryPickerModal
+        visible={showCategoryPicker}
+        onClose={() => setShowCategoryPicker(false)}
+        categories={categoryOptions}
+        selectedCategory={selectedCategory}
+        onSelect={setSelectedCategory}
+        type={type}
+        colors={colors}
+        styles={styles}
+      />
+
+      {/* CALCULATOR */}
 
       <CalculatorModal
         visible={showCalculator}
@@ -1448,6 +2284,12 @@ export default function Transactions() {
     </SafeAreaView>
   );
 }
+
+/*
+|--------------------------------------------------------------------------
+| STYLES
+|--------------------------------------------------------------------------
+*/
 
 const createStyles = (colors) =>
   StyleSheet.create({
@@ -1500,6 +2342,8 @@ const createStyles = (colors) =>
       flexDirection: "row",
       alignItems: "center",
       marginTop: 18,
+      flexWrap: "wrap",
+      gap: 10,
     },
 
     addButton: {
@@ -1516,9 +2360,25 @@ const createStyles = (colors) =>
       fontFamily: fonts.bodySemiBold,
     },
 
+    convertButton: {
+      backgroundColor: colors.chipBg,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 10,
+      alignSelf: "flex-start",
+    },
+
+    convertButtonText: {
+      color: colors.text,
+      fontSize: 10,
+      fontFamily: fonts.bodySemiBold,
+    },
+
     exportMenuContainer: {
       position: "relative",
-      marginLeft: 215,
+      marginLeft: "auto",
       zIndex: 50,
     },
 
@@ -1581,6 +2441,7 @@ const createStyles = (colors) =>
     summaryContainer: {
       flexDirection: "row",
       gap: 12,
+      marginTop: 15,
       marginBottom: 15,
     },
 
@@ -1779,30 +2640,38 @@ const createStyles = (colors) =>
 
     /*
     |--------------------------------------------------------------------------
-    | FULL CALENDAR
+    | COLORFUL CALENDAR
     |--------------------------------------------------------------------------
     */
 
     calendarWrap: {
-      borderRadius: 16,
+      borderRadius: 18,
       borderWidth: 1,
       padding: 16,
+      marginTop: 4,
     },
 
     calendarHeaderRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginBottom: 4,
+      marginBottom: 2,
     },
 
     calendarTitle: {
-      fontSize: 13,
-      fontFamily: fonts.displaySemiBold,
+      fontSize: 14,
+      fontFamily: fonts.displayBold,
       color: colors.text,
     },
 
-    calendarClear: {
+    calendarSubtitle: {
+      fontSize: 9,
+      fontFamily: fonts.bodyRegular,
+      color: colors.textFaint,
+      marginTop: 3,
+    },
+
+    calendarTodayButton: {
       fontSize: 10,
       fontFamily: fonts.bodySemiBold,
     },
@@ -1811,30 +2680,32 @@ const createStyles = (colors) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginTop: 10,
+      marginTop: 12,
       marginBottom: 12,
     },
 
     calendarNavButton: {
-      width: 32,
-      height: 32,
+      width: 34,
+      height: 34,
+      borderRadius: 10,
       alignItems: "center",
       justifyContent: "center",
     },
 
     calendarNavArrow: {
-      fontSize: 20,
+      fontSize: 21,
+      lineHeight: 25,
       fontFamily: fonts.bodySemiBold,
     },
 
     calendarMonthLabel: {
-      fontSize: 13,
+      fontSize: 14,
       fontFamily: fonts.displaySemiBold,
     },
 
     weekdayRow: {
       flexDirection: "row",
-      marginBottom: 6,
+      marginBottom: 7,
     },
 
     weekdayText: {
@@ -1852,26 +2723,99 @@ const createStyles = (colors) =>
 
     calendarDayCell: {
       width: `${100 / 7}%`,
-      aspectRatio: 1,
+      aspectRatio: 0.82,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 4,
+    },
+
+    calendarBalanceCell: {
+      borderRadius: 12,
+      marginVertical: 2,
+    },
+
+    calendarTodayCell: {
+      borderWidth: 2,
+      borderColor: colors.primary,
+    },
+
+    calendarSelectedCell: {
+      borderWidth: 1,
+      borderColor: colors.primary,
+    },
+
+    calendarDateCircle: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
       alignItems: "center",
       justifyContent: "center",
     },
 
     calendarDayText: {
-      fontSize: 12,
+      fontSize: 11,
       fontFamily: fonts.monoRegular,
     },
 
-    calendarDot: {
+    calendarBalanceText: {
+      fontSize: 15,
+      fontFamily: fonts.monoMedium,
+      marginTop: 2,
+      maxWidth: "90%",
+    },
+
+    calendarBalancePlaceholder: {
+      height: 11,
+      marginTop: 2,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    calendarEmptyDot: {
+      width: 3,
+      height: 3,
+      borderRadius: 2,
+    },
+
+    calendarTodayIndicator: {
       width: 4,
       height: 4,
       borderRadius: 2,
-      marginTop: 3,
+      marginTop: 2,
+    },
+
+    calendarLegend: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 14,
+      marginTop: 14,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+
+    calendarLegendItem: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+    calendarLegendDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      marginRight: 5,
+    },
+
+    calendarLegendText: {
+      fontSize: 8,
+      fontFamily: fonts.bodyMedium,
+      color: colors.textFaint,
     },
 
     /*
     |--------------------------------------------------------------------------
-    | ADD TRANSACTION MODAL
+    | MODAL
     |--------------------------------------------------------------------------
     */
 
@@ -1888,6 +2832,7 @@ const createStyles = (colors) =>
       padding: 18,
       borderWidth: 1,
       borderColor: colors.cardBorder,
+      maxHeight: "90%",
     },
 
     modalHeader: {
@@ -1931,12 +2876,8 @@ const createStyles = (colors) =>
 
     /*
     |--------------------------------------------------------------------------
-    | AMOUNT ROW
+    | AMOUNT
     |--------------------------------------------------------------------------
-    |
-    | Calculator button is now positioned on the RIGHT side of the
-    | amount input.
-    |
     */
 
     amountRow: {
@@ -1965,7 +2906,7 @@ const createStyles = (colors) =>
 
     /*
     |--------------------------------------------------------------------------
-    | CALCULATOR MODAL
+    | CALCULATOR
     |--------------------------------------------------------------------------
     */
 
@@ -1981,12 +2922,6 @@ const createStyles = (colors) =>
       borderWidth: 1,
       padding: 14,
     },
-
-    /*
-    |--------------------------------------------------------------------------
-    | CALCULATOR HEADER
-    |--------------------------------------------------------------------------
-    */
 
     calcHeader: {
       flexDirection: "row",
@@ -2091,6 +3026,134 @@ const createStyles = (colors) =>
       fontFamily: fonts.bodyRegular,
     },
 
+    /*
+    |--------------------------------------------------------------------------
+    | CATEGORY
+    |--------------------------------------------------------------------------
+    */
+
+    categoryField: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderWidth: 1,
+      borderRadius: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 13,
+    },
+
+    categoryFieldContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      flex: 1,
+    },
+
+    categoryFieldText: {
+      fontSize: 12,
+      fontFamily: fonts.bodyRegular,
+      color: colors.text,
+    },
+
+    iconCircle: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    categoryPickGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+
+    categoryPickChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      borderWidth: 1,
+      borderRadius: 20,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+    },
+
+    categoryPickChipText: {
+      fontSize: 11,
+      fontFamily: fonts.bodySemiBold,
+      maxWidth: 110,
+    },
+
+    categoryPickEmpty: {
+      paddingVertical: 16,
+      alignItems: "center",
+    },
+
+    categoryPickEmptyText: {
+      fontSize: 11,
+      fontFamily: fonts.bodyRegular,
+      color: colors.textFaint,
+    },
+
+    iconPreviewRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      borderWidth: 1,
+      borderRadius: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+    },
+
+    iconPreviewCircle: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+    },
+
+    iconPreviewText: {
+      fontSize: 10,
+      fontFamily: fonts.bodyRegular,
+      flex: 1,
+    },
+
+    iconGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginTop: 10,
+    },
+
+    iconOption: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      borderWidth: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    swatchRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+    },
+
+    swatch: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      borderWidth: 2,
+      borderColor: "transparent",
+    },
+
+    /*
+    |--------------------------------------------------------------------------
+    | DROPDOWN
+    |--------------------------------------------------------------------------
+    */
+
     dropdownField: {
       flexDirection: "row",
       alignItems: "center",
@@ -2150,6 +3213,12 @@ const createStyles = (colors) =>
       color: colors.primary,
     },
 
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE BUTTON
+    |--------------------------------------------------------------------------
+    */
+
     saveButton: {
       marginTop: 20,
       backgroundColor: colors.primary,
@@ -2166,5 +3235,69 @@ const createStyles = (colors) =>
       color: colors.primaryText,
       fontSize: 12,
       fontFamily: fonts.bodySemiBold,
+    },
+
+    /*
+    |--------------------------------------------------------------------------
+    | CONVERTER
+    |--------------------------------------------------------------------------
+    */
+
+    converterCard: {
+      borderRadius: 16,
+      borderWidth: 1,
+      padding: 16,
+      marginTop: 15,
+    },
+
+    converterTitle: {
+      fontSize: 13,
+      fontFamily: fonts.displaySemiBold,
+      color: colors.text,
+      marginBottom: 4,
+    },
+
+    converterRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: 8,
+      marginTop: 4,
+    },
+
+    converterSwapButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      borderWidth: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 6,
+    },
+
+    converterSwapText: {
+      fontSize: 16,
+      fontFamily: fonts.bodySemiBold,
+    },
+
+    converterResult: {
+      marginTop: 14,
+      borderRadius: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      alignItems: "center",
+    },
+
+    converterResultText: {
+      fontSize: 13,
+      fontFamily: fonts.monoMedium,
+      textAlign: "center",
+    },
+
+    converterError: {
+      marginTop: 10,
+      fontSize: 10,
+      fontFamily: fonts.bodyMedium,
+      color: colors.expense,
+      textAlign: "center",
     },
   });

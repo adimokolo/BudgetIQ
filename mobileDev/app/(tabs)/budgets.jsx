@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 
 import {
@@ -50,6 +51,11 @@ import { getCurrentUser } from "../../services/auth";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency, getCurrencySymbol } from "../../utils/currency";
+
+// Fallback icon whenever a category predates icons (same logic as Categories).
+function fallbackIconFor(type) {
+  return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
+}
 
 function progressColor(percent, colors) {
   if (percent >= 100) {
@@ -92,12 +98,18 @@ function BudgetCard({ budget, currency, onEdit, onDelete, colors }) {
         <View style={styles.budgetLeft}>
           <View
             style={[
-              styles.dot,
+              styles.iconCircle,
               {
-                backgroundColor: budget.category_color || colors.textFaint,
+                backgroundColor: budget.category_color || colors.primary,
               },
             ]}
-          />
+          >
+            <Ionicons
+              name={budget.category_icon || fallbackIconFor("expense")}
+              size={13}
+              color="#FFFFFF"
+            />
+          </View>
 
           <Text
             style={[
@@ -376,6 +388,8 @@ export default function Budgets() {
       id: budget.category_id,
       name: budget.category_name || "Uncategorized",
       color: budget.category_color || colors.textFaint,
+      icon: budget.category_icon,
+      type: "expense",
     });
 
     setLimit(String(budget.monthly_limit ?? ""));
@@ -817,12 +831,18 @@ export default function Budgets() {
                     >
                       <View
                         style={[
-                          styles.chipDot,
+                          styles.iconCircleSmall,
                           {
                             backgroundColor: categoryColor,
                           },
                         ]}
-                      />
+                      >
+                        <Ionicons
+                          name={category.icon || fallbackIconFor(category.type)}
+                          size={11}
+                          color="#FFFFFF"
+                        />
+                      </View>
 
                       <Text
                         style={[
@@ -1064,10 +1084,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 5,
+  // Icon replaces the old plain color "dot" indicator - a small
+  // circle in the category's color, with the Ionicons glyph
+  // centered inside it (white, so it reads on any swatch color).
+  // Same as the Categories screen.
+  iconCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  iconCircleSmall: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   budgetName: {
@@ -1213,17 +1247,11 @@ const styles = StyleSheet.create({
   categoryChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
     borderWidth: 1,
     borderRadius: 20,
-    paddingVertical: 7,
+    paddingVertical: 6,
     paddingHorizontal: 12,
-  },
-
-  chipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 4,
   },
 
   categoryChipText: {

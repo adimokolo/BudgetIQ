@@ -2065,8 +2065,8 @@ const styles = StyleSheet.create({
   },
 
   accountIcon: {
-    width: 44,
-    height: 44,
+    width: 35,
+    height: 35,
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
@@ -2074,7 +2074,7 @@ const styles = StyleSheet.create({
   },
 
   accountIconText: {
-    fontSize: 16,
+    fontSize: 11,
     fontFamily: "JetBrainsMono_500Medium",
   },
 
@@ -2083,12 +2083,12 @@ const styles = StyleSheet.create({
   },
 
   accountName: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: "SpaceGrotesk_600SemiBold",
   },
 
   accountCurrency: {
-    fontSize: 9,
+    fontSize: 8,
     fontFamily: "Inter_400Regular",
     marginTop: 3,
   },
@@ -2106,20 +2106,20 @@ const styles = StyleSheet.create({
   },
 
   editButtonText: {
-    fontSize: 9,
+    fontSize: 8,
     fontFamily: "Inter_600SemiBold",
   },
 
   deleteButton: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
   },
 
   deleteButtonText: {
-    fontSize: 13,
+    fontSize: 12,
     lineHeight: 13,
     fontFamily: "Inter_600SemiBold",
   },
@@ -2136,13 +2136,13 @@ const styles = StyleSheet.create({
   },
 
   accountBalanceLabel: {
-    fontSize: 8.5,
+    fontSize: 8,
     fontFamily: "Inter_400Regular",
     marginBottom: 4,
   },
 
   accountBalance: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: "JetBrainsMono_500Medium",
   },
 
@@ -2157,10 +2157,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     maxWidth: 140,
   },
-
-  // --------------------------------------------------
-  // MODALS
-  // --------------------------------------------------
 
   modalOverlay: {
     flex: 1,
@@ -2206,10 +2202,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
 
-  // --------------------------------------------------
-  // ADD ACCOUNT OPTIONS
-  // --------------------------------------------------
-
   optionCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -2254,10 +2246,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: "Inter_400Regular",
   },
-
-  // --------------------------------------------------
-  // FORM
-  // --------------------------------------------------
 
   inputLabel: {
     fontSize: 10,

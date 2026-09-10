@@ -5,7 +5,6 @@ import {
   Image,
   StyleSheet,
   ScrollView,
-  Dimensions,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -15,16 +14,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { LineChart } from "react-native-chart-kit";
 import Svg, { Circle } from "react-native-svg";
 
 import { getDashboard } from "../../services/dashboard";
+import { getTransactions } from "../../services/transactions";
+import { getCategories } from "../../services/categories";
 import { getCurrentUser } from "../../services/auth";
 import { getNotifications } from "../../services/notifications";
 import { useTheme } from "../../contexts/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
-
-const screenWidth = Dimensions.get("window").width;
 
 function StatCard({
   label,
@@ -167,7 +165,7 @@ function Donut({ segments, colors, size = 160, strokeWidth = 24 }) {
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke={segment.color || colors.textFaint}
+            stroke={segment.color || colors.primary}
             strokeWidth={strokeWidth}
             strokeDasharray={`${dash} ${gap}`}
             strokeLinecap="butt"
@@ -179,6 +177,171 @@ function Donut({ segments, colors, size = 160, strokeWidth = 24 }) {
       })}
     </Svg>
   );
+}
+
+// Custom grouped bar chart: income and expense render as two distinct
+// bars, side by side, sharing the same baseline/month position - unlike
+// react-native-chart-kit's BarChart, which overlaps multi-dataset bars
+// instead of placing them next to each other.
+function GroupedBarChart({
+  labels,
+  incomeData,
+  expenseData,
+  colors,
+  currency,
+  formatCurrency,
+  chartHeight = 150,
+}) {
+  const [selectedIndex, setSelectedIndex] = useState(null);
+
+  const maxValue = Math.max(1, ...incomeData, ...expenseData);
+
+  const barHeightFor = (value) => {
+    const height = (Number(value || 0) / maxValue) * chartHeight;
+
+    return Math.max(value > 0 ? 3 : 0, height);
+  };
+
+  return (
+    <View>
+      <View style={styles.groupedChartBody}>
+        <View style={styles.groupedYAxis}>
+          <Text style={[styles.groupedYAxisLabel, { color: colors.textFaint }]}>
+            {formatCurrency(maxValue, currency)}
+          </Text>
+
+          <Text style={[styles.groupedYAxisLabel, { color: colors.textFaint }]}>
+            {formatCurrency(maxValue / 2, currency)}
+          </Text>
+
+          <Text style={[styles.groupedYAxisLabel, { color: colors.textFaint }]}>
+            {formatCurrency(0, currency)}
+          </Text>
+        </View>
+
+        <View style={[styles.groupedBarsArea, { height: chartHeight }]}>
+          <View
+            style={[
+              styles.groupedGridLine,
+              { top: 0, backgroundColor: colors.divider || colors.cardBorder },
+            ]}
+          />
+
+          <View
+            style={[
+              styles.groupedGridLine,
+              {
+                top: chartHeight / 2,
+                backgroundColor: colors.divider || colors.cardBorder,
+              },
+            ]}
+          />
+
+          <View
+            style={[
+              styles.groupedGridLine,
+              {
+                bottom: 0,
+                backgroundColor: colors.divider || colors.cardBorder,
+              },
+            ]}
+          />
+
+          <View style={styles.groupedColumnsRow}>
+            {labels.map((label, index) => {
+              const isActive = selectedIndex === index;
+
+              return (
+                <TouchableOpacity
+                  key={`${label}-${index}`}
+                  style={styles.groupedColumn}
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    setSelectedIndex((current) =>
+                      current === index ? null : index,
+                    )
+                  }
+                >
+                  <View style={styles.groupedBarPair}>
+                    <View
+                      style={[
+                        styles.groupedBar,
+                        {
+                          height: barHeightFor(incomeData[index]),
+                          backgroundColor: colors.income,
+                          opacity:
+                            isActive || selectedIndex === null ? 1 : 0.35,
+                        },
+                      ]}
+                    />
+
+                    <View
+                      style={[
+                        styles.groupedBar,
+                        {
+                          height: barHeightFor(expenseData[index]),
+                          backgroundColor: colors.expense,
+                          opacity:
+                            isActive || selectedIndex === null ? 1 : 0.35,
+                        },
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.groupedLabelsRow}>
+        <View style={styles.groupedYAxisSpacer} />
+
+        {labels.map((label, index) => (
+          <Text
+            key={`${label}-label-${index}`}
+            style={[
+              styles.groupedMonthLabel,
+              {
+                color: selectedIndex === index ? colors.text : colors.textFaint,
+              },
+            ]}
+          >
+            {label}
+          </Text>
+        ))}
+      </View>
+
+      {selectedIndex !== null && (
+        <View
+          style={[
+            styles.groupedTooltip,
+            {
+              backgroundColor: colors.chipBg,
+              borderColor: colors.cardBorder,
+            },
+          ]}
+        >
+          <Text style={[styles.tooltipMonth, { color: colors.text }]}>
+            {labels[selectedIndex]}
+          </Text>
+
+          <Text style={[styles.tooltipRow, { color: colors.income }]}>
+            Income : {formatCurrency(incomeData[selectedIndex], currency)}
+          </Text>
+
+          <Text style={[styles.tooltipRow, { color: colors.expense }]}>
+            Expense : {formatCurrency(expenseData[selectedIndex], currency)}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// Fallback icon whenever a category predates icons (same logic as Categories).
+function fallbackIconFor(type) {
+  return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
 }
 
 function monthLabel(monthKey) {
@@ -200,6 +363,10 @@ export default function Dashboard() {
 
   const [dashboard, setDashboard] = useState(null);
 
+  const [transactions, setTransactions] = useState([]);
+
+  const [categories, setCategories] = useState([]);
+
   const [userName, setUserName] = useState("User");
 
   const [avatarUrl, setAvatarUrl] = useState(null);
@@ -211,16 +378,6 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-
-  const [tooltip, setTooltip] = useState({
-    visible: false,
-    index: null,
-    x: 0,
-    y: 0,
-    monthLabel: "",
-    income: 0,
-    expense: 0,
-  });
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -236,6 +393,50 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  }, []);
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD TRANSACTIONS
+  |--------------------------------------------------------------------------
+  |
+  | The dashboard's categoryBreakdown is budget-based, so "Where it went"
+  | is computed client-side from real expense transactions instead -
+  | same source of truth as the Transactions screen.
+  |
+  */
+
+  const loadTransactions = useCallback(async () => {
+    try {
+      const data = await getTransactions();
+
+      const list = data.transactions || [];
+
+      setTransactions(list);
+    } catch (error) {
+      console.log("Dashboard transactions error:", error);
+    }
+  }, []);
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD CATEGORIES
+  |--------------------------------------------------------------------------
+  |
+  | Same source of truth as the Transactions screen's category picker -
+  | gives us each category's real icon/color instead of whatever (or
+  | nothing) came back embedded on the transaction row itself.
+  |
+  */
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await getCategories();
+
+      setCategories(data.categories || []);
+    } catch (error) {
+      console.log("Dashboard categories error:", error);
     }
   }, []);
 
@@ -313,6 +514,8 @@ export default function Dashboard() {
 
         await Promise.all([
           loadDashboard(),
+          loadTransactions(),
+          loadCategories(),
           loadUser(),
           loadNotificationCount(),
         ]);
@@ -322,17 +525,35 @@ export default function Dashboard() {
     };
 
     loadData();
-  }, [loadDashboard, loadUser, loadNotificationCount]);
+  }, [
+    loadDashboard,
+    loadTransactions,
+    loadCategories,
+    loadUser,
+    loadNotificationCount,
+  ]);
 
   const onRefresh = useCallback(async () => {
     try {
       setRefreshing(true);
 
-      await Promise.all([loadDashboard(), loadUser(), loadNotificationCount()]);
+      await Promise.all([
+        loadDashboard(),
+        loadTransactions(),
+        loadCategories(),
+        loadUser(),
+        loadNotificationCount(),
+      ]);
     } finally {
       setRefreshing(false);
     }
-  }, [loadDashboard, loadUser, loadNotificationCount]);
+  }, [
+    loadDashboard,
+    loadTransactions,
+    loadCategories,
+    loadUser,
+    loadNotificationCount,
+  ]);
 
   if (loading) {
     return (
@@ -366,7 +587,74 @@ export default function Dashboard() {
 
   const monthlyTrend = dashboard?.monthlyTrend || [];
 
-  const categoryBreakdown = dashboard?.categoryBreakdown || [];
+  /*
+  |--------------------------------------------------------------------------
+  | WHERE IT WENT - computed from real transactions
+  |--------------------------------------------------------------------------
+  |
+  | Groups this month's EXPENSE transactions by category (same data the
+  | Transactions screen shows) instead of the budget-based breakdown.
+  |
+  */
+
+  const now = new Date();
+
+  const currentMonthKey = `${now.getFullYear()}-${String(
+    now.getMonth() + 1,
+  ).padStart(2, "0")}`;
+
+  // Lookup by id into the real Categories list - same source the
+  // Transactions screen's category picker uses - so "Where it went"
+  // always shows each category's actual icon and color, not whatever
+  // (or nothing) happened to be embedded on the transaction row.
+  const categoryById = new Map(
+    categories.map((category) => [category.id, category]),
+  );
+
+  const categoryBreakdown = (() => {
+    const grouped = new Map();
+
+    for (const transaction of transactions) {
+      const isExpense =
+        String(transaction.type || "").toLowerCase() === "expense";
+
+      const occurredOn = transaction.occurred_on || transaction.occurredOn;
+
+      const inCurrentMonth =
+        typeof occurredOn === "string" &&
+        occurredOn.slice(0, 7) === currentMonthKey;
+
+      if (!isExpense || !inCurrentMonth) {
+        continue;
+      }
+
+      const key =
+        transaction.category_id ?? transaction.category_name ?? "uncategorized";
+
+      const amount = Number(transaction.amount || 0);
+
+      const matchedCategory = categoryById.get(transaction.category_id);
+
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          category_id: transaction.category_id ?? key,
+          name:
+            matchedCategory?.name ||
+            transaction.category_name ||
+            "Uncategorized",
+          color: matchedCategory?.color || colors.primary,
+          icon: matchedCategory?.icon || fallbackIconFor("expense"),
+          total: 0,
+        });
+      }
+
+      const entry = grouped.get(key);
+
+      entry.total += amount;
+    }
+
+    return [...grouped.values()].sort((a, b) => b.total - a.total);
+  })();
 
   const forecast = dashboard?.forecast || {};
 
@@ -684,105 +972,36 @@ export default function Dashboard() {
             Last six months
           </Text>
 
-          <LineChart
-            data={{
-              labels: chartLabels,
-              datasets: [
-                {
-                  data: incomeData,
-                  color: () => colors.income,
-                  strokeWidth: 2,
-                },
-                {
-                  data: expenseData,
-                  color: () => colors.expense,
-                  strokeWidth: 2,
-                },
-              ],
-            }}
-            width={screenWidth - 72}
-            height={220}
-            withInnerLines={false}
-            withOuterLines={false}
-            bezier
-            chartConfig={{
-              backgroundGradientFrom: colors.card,
-              backgroundGradientTo: colors.card,
-              decimalPlaces: 0,
-              color: () => colors.textFaint,
-              labelColor: () => colors.textFaint,
-              propsForDots: {
-                r: "4",
-              },
-            }}
-            style={{
-              marginLeft: -12,
-            }}
-            onDataPointClick={({ index, x, y }) => {
-              setTooltip((current) => {
-                const isSameDot = current.visible && current.index === index;
+          {/* COMBINED INCOME + SPENDING BARS */}
 
-                return {
-                  visible: !isSameDot,
-                  index,
-                  x,
-                  y,
-                  monthLabel: chartLabels[index],
-                  income: incomeData[index],
-                  expense: expenseData[index],
-                };
-              });
-            }}
-            decorator={() => {
-              if (!tooltip.visible) return null;
+          <View style={styles.barChartHeader}>
+            <View
+              style={[styles.barLegendDot, { backgroundColor: colors.income }]}
+            />
 
-              return (
-                <View
-                  style={[
-                    styles.tooltipBox,
-                    {
-                      left: tooltip.x - 60,
-                      top: tooltip.y - 90,
-                      backgroundColor: colors.card,
-                      borderColor: colors.cardBorder,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.tooltipMonth,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    {tooltip.monthLabel}
-                  </Text>
+            <Text style={[styles.barChartLabel, { color: colors.textMuted }]}>
+              Income
+            </Text>
 
-                  <Text
-                    style={[
-                      styles.tooltipRow,
-                      {
-                        color: colors.income,
-                      },
-                    ]}
-                  >
-                    Income : {formatCurrency(tooltip.income, currency)}
-                  </Text>
+            <View
+              style={[
+                styles.barLegendDot,
+                { backgroundColor: colors.expense, marginLeft: 14 },
+              ]}
+            />
 
-                  <Text
-                    style={[
-                      styles.tooltipRow,
-                      {
-                        color: colors.expense,
-                      },
-                    ]}
-                  >
-                    Expense : {formatCurrency(tooltip.expense, currency)}
-                  </Text>
-                </View>
-              );
-            }}
+            <Text style={[styles.barChartLabel, { color: colors.textMuted }]}>
+              Spending
+            </Text>
+          </View>
+
+          <GroupedBarChart
+            labels={chartLabels}
+            incomeData={incomeData}
+            expenseData={expenseData}
+            colors={colors}
+            currency={currency}
+            formatCurrency={formatCurrency}
           />
         </View>
 
@@ -831,12 +1050,18 @@ export default function Dashboard() {
                   <View style={styles.legendLeft}>
                     <View
                       style={[
-                        styles.legendDot,
+                        styles.iconCircle,
                         {
-                          backgroundColor: segment.color || colors.textFaint,
+                          backgroundColor: segment.color || colors.primary,
                         },
                       ]}
-                    />
+                    >
+                      <Ionicons
+                        name={segment.icon || fallbackIconFor("expense")}
+                        size={11}
+                        color="#FFFFFF"
+                      />
+                    </View>
 
                     <Text
                       style={[
@@ -1038,6 +1263,105 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     lineHeight: 13,
   },
+  barChartHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    marginBottom: 6,
+  },
+
+  barLegendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 4,
+  },
+
+  barChartLabel: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+  },
+
+  groupedChartBody: {
+    flexDirection: "row",
+    marginTop: 4,
+  },
+
+  groupedYAxis: {
+    width: 46,
+    justifyContent: "space-between",
+    paddingRight: 6,
+    paddingBottom: 0,
+  },
+
+  groupedYAxisSpacer: {
+    width: 46,
+  },
+
+  groupedYAxisLabel: {
+    fontSize: 8,
+    fontFamily: "Inter_400Regular",
+    textAlign: "right",
+  },
+
+  groupedBarsArea: {
+    flex: 1,
+    position: "relative",
+  },
+
+  groupedGridLine: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 1,
+    opacity: 0.5,
+  },
+
+  groupedColumnsRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-around",
+  },
+
+  groupedColumn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    height: "100%",
+  },
+
+  groupedBarPair: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+  },
+
+  groupedBar: {
+    width: 36,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+  },
+
+  groupedLabelsRow: {
+    flexDirection: "row",
+    marginTop: 8,
+  },
+
+  groupedMonthLabel: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 8,
+    fontFamily: "Inter_400Regular",
+  },
+
+  groupedTooltip: {
+    marginTop: 12,
+    alignSelf: "center",
+    minWidth: 160,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
 
   tooltipBox: {
     position: "absolute",
@@ -1110,10 +1434,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+
+  iconCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
   },
   legendLabel: {
     fontSize: 11,
