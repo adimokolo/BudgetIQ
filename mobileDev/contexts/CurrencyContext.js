@@ -11,8 +11,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { formatCurrency, currencySymbolFor } from "../utils/currency";
 
-import { getCurrentUser } from "../services/auth";
-
 const BASE_CURRENCY_STORAGE_KEY = "base_currency";
 const DEFAULT_CURRENCY = "NGN";
 
@@ -24,179 +22,53 @@ const CurrencyContext = createContext({
   currencySymbol: currencySymbolFor(DEFAULT_CURRENCY),
 });
 
+/*
+|--------------------------------------------------------------------------
+| CURRENCY PROVIDER
+|--------------------------------------------------------------------------
+|
+| Wrap the app (e.g. in app/_layout.js, alongside your ThemeProvider)
+| with this so every screen shares the same base currency and updates
+| the moment it changes - no per-screen AsyncStorage reads needed.
+|
+*/
+
 export function CurrencyProvider({ children }) {
   const [baseCurrency, setBaseCurrencyState] = useState(DEFAULT_CURRENCY);
-
   const [currencyReady, setCurrencyReady] = useState(false);
 
-  /*
-  |--------------------------------------------------------------------------
-  | LOAD CURRENCY
-  |--------------------------------------------------------------------------
-  |
-  | Local storage gives us a fast value.
-  |
-  | The user's profile is then checked so the currency selected during
-  | registration remains the source of truth.
-  |
-  */
-
   useEffect(() => {
-    let mounted = true;
-
-    const loadCurrency = async () => {
-      try {
-        /*
-        |--------------------------------------------------------------------------
-        | 1. LOAD LOCAL CACHED CURRENCY
-        |--------------------------------------------------------------------------
-        */
-
-        const storedCurrency = await AsyncStorage.getItem(
-          BASE_CURRENCY_STORAGE_KEY,
-        );
-
-        if (mounted && storedCurrency && typeof storedCurrency === "string") {
-          setBaseCurrencyState(storedCurrency.toUpperCase());
+    AsyncStorage.getItem(BASE_CURRENCY_STORAGE_KEY)
+      .then((stored) => {
+        if (stored) {
+          setBaseCurrencyState(stored);
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | 2. LOAD USER PROFILE
-        |--------------------------------------------------------------------------
-        |
-        | This checks the currency saved to the user's account.
-        |
-        */
-
-        try {
-          const data = await getCurrentUser();
-
-          const profile = data?.user || data?.data?.user || data?.data || data;
-
-          const profileCurrency =
-            profile?.currency ||
-            profile?.base_currency ||
-            profile?.baseCurrency ||
-            null;
-
-          if (
-            mounted &&
-            profileCurrency &&
-            typeof profileCurrency === "string"
-          ) {
-            const normalizedCurrency = profileCurrency.toUpperCase();
-
-            setBaseCurrencyState(normalizedCurrency);
-
-            /*
-            |--------------------------------------------------------------------------
-            | 3. KEEP LOCAL STORAGE IN SYNC
-            |--------------------------------------------------------------------------
-            */
-
-            await AsyncStorage.setItem(
-              BASE_CURRENCY_STORAGE_KEY,
-              normalizedCurrency,
-            );
-          }
-        } catch (profileError) {
-          /*
-          |--------------------------------------------------------------------------
-          | PROFILE FAILURE
-          |--------------------------------------------------------------------------
-          |
-          | If the profile request fails, continue using the locally cached
-          | currency instead of breaking the application.
-          |
-          */
-
-          console.log(
-            "Failed to load user currency from profile:",
-            profileError?.response?.data ||
-              profileError?.message ||
-              profileError,
-          );
-        }
-      } catch (error) {
-        console.log("Failed to load stored base currency:", error);
-      } finally {
-        if (mounted) {
-          setCurrencyReady(true);
-        }
-      }
-    };
-
-    loadCurrency();
-
-    return () => {
-      mounted = false;
-    };
+      })
+      .catch((error) => {
+        console.log("Failed to read stored base currency:", error);
+      })
+      .finally(() => {
+        setCurrencyReady(true);
+      });
   }, []);
 
-  /*
-  |--------------------------------------------------------------------------
-  | SET BASE CURRENCY
-  |--------------------------------------------------------------------------
-  |
-  | Call this when the user changes their currency from Settings.
-  |
-  */
-
   const setBaseCurrency = useCallback(async (code) => {
-    if (!code) {
-      return;
-    }
-
-    const normalizedCode = String(code).toUpperCase();
-
-    /*
-      |--------------------------------------------------------------------------
-      | UPDATE UI IMMEDIATELY
-      |--------------------------------------------------------------------------
-      */
-
-    setBaseCurrencyState(normalizedCode);
-
-    /*
-      |--------------------------------------------------------------------------
-      | SAVE LOCALLY
-      |--------------------------------------------------------------------------
-      */
+    setBaseCurrencyState(code);
 
     try {
-      await AsyncStorage.setItem(BASE_CURRENCY_STORAGE_KEY, normalizedCode);
+      await AsyncStorage.setItem(BASE_CURRENCY_STORAGE_KEY, code);
     } catch (error) {
       console.log("Failed to persist base currency:", error);
     }
 
-    /*
-      |--------------------------------------------------------------------------
-      | BACKEND
-      |--------------------------------------------------------------------------
-      |
-      | Do not add a backend update here until we confirm the exact
-      | update-profile function used by your application.
-      |
-      */
+    // TODO: if your backend tracks base currency per-user, sync it here,
+    // e.g. await updateProfile({ base_currency: code });
   }, []);
-
-  /*
-  |--------------------------------------------------------------------------
-  | FORMAT AMOUNT
-  |--------------------------------------------------------------------------
-  */
 
   const formatAmount = useCallback(
     (amount) => formatCurrency(amount, baseCurrency),
     [baseCurrency],
   );
-
-  /*
-  |--------------------------------------------------------------------------
-  | CONTEXT VALUE
-  |--------------------------------------------------------------------------
-  */
 
   const value = useMemo(
     () => ({
@@ -220,6 +92,12 @@ export function CurrencyProvider({ children }) {
 |--------------------------------------------------------------------------
 | USE CURRENCY
 |--------------------------------------------------------------------------
+|
+| import { useCurrency } from "../contexts/CurrencyContext";
+| const { baseCurrency, formatAmount, currencySymbol } = useCurrency();
+|
+| formatAmount(1234.5) -> "₦1,234.50" (using whatever the user picked)
+|
 */
 
 export function useCurrency() {

@@ -47,8 +47,7 @@ import {
 } from "../../services/transactions";
 
 import { getCategories } from "../../services/categories";
-
-import { getCurrentUser } from "../../services/auth";
+import { getAccounts } from "../../services/accounts";
 
 import {
   exportTransactionsToCsv,
@@ -58,6 +57,7 @@ import {
 import { convertCurrency } from "../../services/convertCurrency";
 
 import { useTheme } from "../../contexts/ThemeContext";
+import { useCurrency } from "../../contexts/CurrencyContext";
 
 import {
   formatCurrency,
@@ -202,8 +202,33 @@ function formatCalendarBalance(amount, currency) {
 |--------------------------------------------------------------------------
 */
 
-function Dropdown({ label, value, options, onSelect, placeholder, styles }) {
+function Dropdown({
+  label,
+  value,
+  options,
+  onSelect,
+  placeholder,
+  styles,
+  searchable = false,
+  searchPlaceholder = "Search...",
+}) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredOptions = useMemo(() => {
+    if (!searchable || !search.trim()) return options;
+    const query = search.trim().toLowerCase();
+    return options.filter((opt) => {
+      const id = String(opt.id ?? opt).toLowerCase();
+      const name = String(opt.name ?? opt).toLowerCase();
+      return id.includes(query) || name.includes(query);
+    });
+  }, [options, search, searchable]);
+
+  const closeDropdown = () => {
+    setOpen(false);
+    setSearch("");
+  };
 
   return (
     <View style={{ marginTop: 12 }}>
@@ -223,39 +248,64 @@ function Dropdown({ label, value, options, onSelect, placeholder, styles }) {
         visible={open}
         transparent
         animationType="fade"
-        onRequestClose={() => setOpen(false)}
+        onRequestClose={closeDropdown}
       >
-        <Pressable
-          style={styles.dropdownOverlay}
-          onPress={() => setOpen(false)}
-        >
+        <Pressable style={styles.dropdownOverlay} onPress={closeDropdown}>
           <View style={styles.dropdownMenu}>
-            {options.length > 0 ? (
-              options.map((opt) => (
-                <Pressable
-                  key={opt.id ?? opt}
-                  style={styles.dropdownOption}
-                  onPress={() => {
-                    onSelect(opt);
-                    setOpen(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.dropdownOptionText,
-                      (opt.id ?? opt) === (value?.id ?? value) &&
-                        styles.dropdownOptionTextActive,
-                    ]}
-                  >
-                    {opt.name ?? opt}
-                  </Text>
-                </Pressable>
-              ))
-            ) : (
-              <View style={styles.dropdownOption}>
-                <Text style={styles.dropdownOptionText}>No categories yet</Text>
+            {searchable && (
+              <View style={styles.dropdownSearchContainer}>
+                <Text style={styles.dropdownSearchIcon}>⌕</Text>
+                <TextInput
+                  style={styles.dropdownSearchInput}
+                  placeholder={searchPlaceholder}
+                  placeholderTextColor="#8A94A6"
+                  value={search}
+                  onChangeText={setSearch}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoFocus
+                />
               </View>
             )}
+
+            <ScrollView
+              style={styles.dropdownScrollList}
+              contentContainerStyle={styles.dropdownScrollContent}
+              showsVerticalScrollIndicator
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+            >
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((opt) => (
+                  <Pressable
+                    key={opt.id ?? opt}
+                    style={styles.dropdownOption}
+                    onPress={() => {
+                      onSelect(opt);
+                      closeDropdown();
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.dropdownOptionText,
+                        (opt.id ?? opt) === (value?.id ?? value) &&
+                          styles.dropdownOptionTextActive,
+                      ]}
+                    >
+                      {opt.name ?? opt}
+                    </Text>
+                  </Pressable>
+                ))
+              ) : (
+                <View style={styles.dropdownOption}>
+                  <Text style={styles.dropdownOptionText}>
+                    {searchable && search.trim()
+                      ? "No currencies found"
+                      : "No options available"}
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
           </View>
         </Pressable>
       </Modal>
@@ -866,7 +916,12 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
 |--------------------------------------------------------------------------
 */
 
-function CurrencyConverterCard({ colors, styles, defaultCurrency }) {
+function CurrencyConverterCard({
+  colors,
+  styles,
+  defaultCurrency,
+  onAddResult,
+}) {
   const [amount, setAmount] = useState("");
   const [fromCurrency, setFromCurrency] = useState(defaultCurrency || "NGN");
   const [toCurrency, setToCurrency] = useState("USD");
@@ -968,6 +1023,8 @@ function CurrencyConverterCard({ colors, styles, defaultCurrency }) {
             options={CURRENCY_DROPDOWN_OPTIONS}
             onSelect={handleSelectFrom}
             styles={styles}
+            searchable
+            searchPlaceholder="Search currency..."
           />
         </View>
 
@@ -1001,6 +1058,8 @@ function CurrencyConverterCard({ colors, styles, defaultCurrency }) {
             options={CURRENCY_DROPDOWN_OPTIONS}
             onSelect={handleSelectTo}
             styles={styles}
+            searchable
+            searchPlaceholder="Search currency..."
           />
         </View>
       </View>
@@ -1020,26 +1079,56 @@ function CurrencyConverterCard({ colors, styles, defaultCurrency }) {
       {error && <Text style={styles.converterError}>{error}</Text>}
 
       {result !== null && !error && (
-        <View
-          style={[
-            styles.converterResult,
-            {
-              backgroundColor: colors.chipBg,
-            },
-          ]}
-        >
-          <Text
+        <>
+          <View
             style={[
-              styles.converterResultText,
+              styles.converterResult,
               {
-                color: colors.text,
+                backgroundColor: colors.chipBg,
               },
             ]}
           >
-            {formatCurrency(Number(amount), fromCurrency)} ={" "}
-            {formatCurrency(result, toCurrency)}
-          </Text>
-        </View>
+            <Text
+              style={[
+                styles.converterResultText,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              {formatCurrency(Number(amount), fromCurrency)} ={" "}
+              {formatCurrency(result, toCurrency)}
+            </Text>
+          </View>
+
+          <Pressable
+            style={[
+              styles.converterAddButton,
+              {
+                backgroundColor: colors.primary,
+              },
+            ]}
+            onPress={() =>
+              onAddResult?.({
+                amount: Number(result),
+                currency: toCurrency,
+                fromAmount: Number(amount),
+                fromCurrency,
+              })
+            }
+          >
+            <Text
+              style={[
+                styles.converterAddButtonText,
+                {
+                  color: colors.primaryText,
+                },
+              ]}
+            >
+              + Add
+            </Text>
+          </Pressable>
+        </>
       )}
     </View>
   );
@@ -1550,6 +1639,11 @@ function mapTransaction(raw) {
 export default function Transactions() {
   const { colors } = useTheme();
 
+  // Base currency now comes from the shared CurrencyContext, which is
+  // populated from Profile (or the currency picked at signup) and stays
+  // in sync everywhere it's used - no separate fetch needed here.
+  const { baseCurrency: currency, currencyReady } = useCurrency();
+
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,
     SpaceGrotesk_500Medium,
@@ -1594,8 +1688,12 @@ export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
 
   const [allCategories, setAllCategories] = useState([]);
-
-  const [currency, setCurrency] = useState("NGN");
+  const [accounts, setAccounts] = useState([]);
+  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [showConverterAccountPicker, setShowConverterAccountPicker] =
+    useState(false);
+  const [pendingConvertedResult, setPendingConvertedResult] = useState(null);
+  const [selectedAccount, setSelectedAccount] = useState(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -1650,30 +1748,33 @@ export default function Transactions() {
     }
   }, []);
 
-  const loadCurrency = useCallback(async () => {
+  const loadAccounts = useCallback(async () => {
     try {
-      const data = await getCurrentUser();
+      setAccountsLoading(true);
+      const data = await getAccounts();
 
-      const profile = data?.user || data?.data?.user || data?.data || data;
-
-      setCurrency(profile?.currency || "NGN");
+      console.log("Transactions screen accounts response:", data);
+      setAccounts(data?.accounts || []);
     } catch (error) {
-      console.log("Load currency error:", error);
+      console.log("Get accounts error:", error);
+      setAccounts([]);
+    } finally {
+      setAccountsLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadTransactions();
     loadCategories();
-    loadCurrency();
-  }, [loadTransactions, loadCategories, loadCurrency]);
+    loadAccounts();
+  }, [loadTransactions, loadCategories, loadAccounts]);
 
   const onRefresh = () => {
     setRefreshing(true);
 
     loadTransactions();
     loadCategories();
-    loadCurrency();
+    loadAccounts();
   };
 
   const categoryOptions = allCategories.filter(
@@ -1741,6 +1842,33 @@ export default function Transactions() {
     setSelectedCategory(null);
     setDescription("");
     setDate(new Date());
+    setSelectedAccount(null);
+    setPendingConvertedResult(null);
+  };
+
+  const handleConverterAdd = (convertedResult) => {
+    if (!convertedResult || !Number.isFinite(Number(convertedResult.amount))) {
+      return;
+    }
+
+    if (accounts.length === 0) {
+      Alert.alert(
+        "No accounts available",
+        "Please add an account from the Account tab first.",
+      );
+      return;
+    }
+
+    setPendingConvertedResult(convertedResult);
+    setShowConverterAccountPicker(true);
+  };
+
+  const handleConverterAccountSelect = (account) => {
+    setSelectedAccount(account);
+    setAmount(String(pendingConvertedResult?.amount ?? ""));
+    setType("Expense");
+    setShowConverterAccountPicker(false);
+    setShowAddModal(true);
   };
 
   const handleTypeChange = (newType) => {
@@ -1780,6 +1908,7 @@ export default function Transactions() {
         occurredOn: getLocalDateString(date),
 
         categoryId: selectedCategory?.id || null,
+        accountId: selectedAccount?.id || null,
       };
 
       console.log("Sending transaction:", payload);
@@ -1880,7 +2009,7 @@ export default function Transactions() {
     }
   };
 
-  if (!fontsLoaded || loading) {
+  if (!fontsLoaded || loading || !currencyReady) {
     return (
       <SafeAreaView style={styles.screen}>
         <View style={styles.loadingContainer}>
@@ -1985,6 +2114,7 @@ export default function Transactions() {
             colors={colors}
             styles={styles}
             defaultCurrency={currency}
+            onAddResult={handleConverterAdd}
           />
         )}
 
@@ -2077,6 +2207,188 @@ export default function Transactions() {
         />
       </ScrollView>
 
+      {/* CONVERTER ACCOUNT PICKER */}
+
+      <Modal
+        visible={showConverterAccountPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowConverterAccountPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.accountPickerCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Add to account</Text>
+                <Text style={styles.accountPickerSubtitle}>
+                  {pendingConvertedResult
+                    ? `${formatCurrency(
+                        Number(pendingConvertedResult.amount),
+                        pendingConvertedResult.currency,
+                      )} converted amount`
+                    : "Choose the account for this transaction."}
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={() => setShowConverterAccountPicker(false)}
+                hitSlop={10}
+              >
+                <Text style={styles.closeButton}>×</Text>
+              </Pressable>
+            </View>
+
+            {accountsLoading ? (
+              <View style={styles.accountPickerLoading}>
+                <ActivityIndicator color={colors.primary} />
+                <Text
+                  style={[
+                    styles.accountPickerLoadingText,
+                    { color: colors.textFaint },
+                  ]}
+                >
+                  Loading accounts...
+                </Text>
+              </View>
+            ) : accounts.length === 0 ? (
+              <View style={styles.accountPickerEmpty}>
+                <View
+                  style={[
+                    styles.accountPickerEmptyIcon,
+                    { backgroundColor: colors.chipBg },
+                  ]}
+                >
+                  <Ionicons
+                    name="wallet-outline"
+                    size={22}
+                    color={colors.primary}
+                  />
+                </View>
+
+                <Text
+                  style={[
+                    styles.accountPickerEmptyTitle,
+                    { color: colors.text },
+                  ]}
+                >
+                  No accounts yet
+                </Text>
+
+                <Text
+                  style={[
+                    styles.accountPickerEmptyText,
+                    { color: colors.textFaint },
+                  ]}
+                >
+                  Add an account from the Account tab first.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                style={styles.accountPickerList}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {accounts.map((account) => {
+                  const isSelected = selectedAccount?.id === account.id;
+
+                  return (
+                    <Pressable
+                      key={account.id}
+                      onPress={() => handleConverterAccountSelect(account)}
+                      style={[
+                        styles.accountPickerItem,
+                        {
+                          backgroundColor: isSelected
+                            ? colors.incomeBg
+                            : colors.inputBg,
+                          borderColor: isSelected
+                            ? colors.primary
+                            : colors.inputBorder,
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.accountPickerIcon,
+                          {
+                            backgroundColor: isSelected
+                              ? colors.primary
+                              : colors.chipBg,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="wallet-outline"
+                          size={16}
+                          color={
+                            isSelected ? colors.primaryText : colors.primary
+                          }
+                        />
+                      </View>
+
+                      <View style={styles.accountPickerInfo}>
+                        <Text
+                          style={[
+                            styles.accountPickerName,
+                            { color: colors.text },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {account.name}
+                        </Text>
+
+                        <Text
+                          style={[
+                            styles.accountPickerCurrency,
+                            { color: colors.textFaint },
+                          ]}
+                        >
+                          {currencyLabel(account.currency || "NGN")}
+                        </Text>
+                      </View>
+
+                      <View style={styles.accountPickerBalanceWrap}>
+                        <Text
+                          style={[
+                            styles.accountPickerBalance,
+                            { color: colors.text },
+                          ]}
+                        >
+                          {formatCurrency(
+                            Number(account.balance || 0),
+                            account.currency || "NGN",
+                          )}
+                        </Text>
+
+                        <Ionicons
+                          name={
+                            isSelected ? "checkmark-circle" : "chevron-forward"
+                          }
+                          size={18}
+                          color={isSelected ? colors.primary : colors.textFaint}
+                        />
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            <Pressable
+              onPress={() => setShowConverterAccountPicker(false)}
+              style={styles.accountPickerCancelButton}
+            >
+              <Text
+                style={[styles.calcCancelText, { color: colors.textMuted }]}
+              >
+                Cancel
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
       {/* ADD TRANSACTION MODAL */}
 
       <Modal
@@ -2102,6 +2414,70 @@ export default function Transactions() {
               onSelect={handleTypeChange}
               styles={styles}
             />
+
+            {/* ACCOUNT */}
+
+            <Text style={styles.inputLabel}>Account</Text>
+
+            <Pressable
+              style={[
+                styles.accountSelectField,
+                {
+                  borderColor: colors.inputBorder,
+                  backgroundColor: colors.inputBg,
+                },
+              ]}
+              onPress={() => setShowConverterAccountPicker(true)}
+            >
+              <View style={styles.accountSelectContent}>
+                <View
+                  style={[
+                    styles.accountSelectIcon,
+                    {
+                      backgroundColor: colors.chipBg,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="wallet-outline"
+                    size={15}
+                    color={colors.primary}
+                  />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.accountSelectName,
+                      {
+                        color: selectedAccount ? colors.text : colors.textFaint,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {selectedAccount?.name || "Select an account"}
+                  </Text>
+
+                  {selectedAccount ? (
+                    <Text
+                      style={[
+                        styles.accountSelectBalance,
+                        {
+                          color: colors.textFaint,
+                        },
+                      ]}
+                    >
+                      {formatCurrency(
+                        Number(selectedAccount.balance || 0),
+                        selectedAccount.currency || currency,
+                      )}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+
+              <Text style={styles.dropdownArrow}>⌄</Text>
+            </Pressable>
 
             {/* AMOUNT */}
 
@@ -3192,9 +3568,46 @@ const createStyles = (colors) =>
       backgroundColor: colors.card,
       borderRadius: 12,
       paddingVertical: 6,
-      maxHeight: 300,
+      width: "100%",
+      maxHeight: "78%",
       borderWidth: 1,
       borderColor: colors.cardBorder,
+      overflow: "hidden",
+    },
+
+    dropdownScrollList: {
+      flexGrow: 0,
+      maxHeight: 220,
+    },
+
+    dropdownScrollContent: {
+      paddingBottom: 4,
+    },
+
+    dropdownSearchContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      margin: 10,
+      paddingHorizontal: 12,
+      minHeight: 42,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      backgroundColor: colors.background,
+    },
+
+    dropdownSearchIcon: {
+      fontSize: 20,
+      marginRight: 8,
+      color: colors.textFaint,
+    },
+
+    dropdownSearchInput: {
+      flex: 1,
+      fontSize: 12,
+      fontFamily: fonts.bodyRegular,
+      color: colors.text,
+      paddingVertical: 8,
     },
 
     dropdownOption: {
@@ -3235,6 +3648,162 @@ const createStyles = (colors) =>
       color: colors.primaryText,
       fontSize: 12,
       fontFamily: fonts.bodySemiBold,
+    },
+
+    /*
+    |--------------------------------------------------------------------------
+    | ACCOUNT PICKER
+    |--------------------------------------------------------------------------
+    */
+
+    accountSelectField: {
+      minHeight: 48,
+      borderWidth: 1,
+      borderRadius: 10,
+      paddingVertical: 7,
+      paddingHorizontal: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+
+    accountSelectContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+
+    accountSelectIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 9,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 10,
+    },
+
+    accountSelectName: {
+      fontSize: 12,
+      fontFamily: fonts.bodyMedium,
+    },
+
+    accountSelectBalance: {
+      fontSize: 10,
+      fontFamily: fonts.monoRegular,
+      marginTop: 2,
+    },
+
+    accountPickerCard: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      padding: 18,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      maxHeight: "82%",
+    },
+
+    accountPickerSubtitle: {
+      fontSize: 10,
+      fontFamily: fonts.bodyRegular,
+      color: colors.textFaint,
+      marginTop: 3,
+      paddingRight: 15,
+    },
+
+    accountPickerList: {
+      marginTop: 12,
+    },
+
+    accountPickerItem: {
+      minHeight: 68,
+      borderRadius: 12,
+      borderWidth: 1,
+      padding: 10,
+      marginBottom: 9,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+    accountPickerIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 11,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 10,
+    },
+
+    accountPickerInfo: {
+      flex: 1,
+      minWidth: 0,
+    },
+
+    accountPickerName: {
+      fontSize: 12,
+      fontFamily: fonts.bodySemiBold,
+    },
+
+    accountPickerCurrency: {
+      fontSize: 9,
+      fontFamily: fonts.bodyRegular,
+      marginTop: 3,
+    },
+
+    accountPickerBalanceWrap: {
+      alignItems: "flex-end",
+      marginLeft: 8,
+    },
+
+    accountPickerBalance: {
+      fontSize: 11,
+      fontFamily: fonts.monoMedium,
+      marginBottom: 5,
+    },
+
+    accountPickerLoading: {
+      minHeight: 140,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    accountPickerLoadingText: {
+      marginTop: 8,
+      fontSize: 10,
+      fontFamily: fonts.bodyRegular,
+    },
+
+    accountPickerEmpty: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 35,
+      paddingHorizontal: 15,
+    },
+
+    accountPickerEmptyIcon: {
+      width: 50,
+      height: 50,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 12,
+    },
+
+    accountPickerEmptyTitle: {
+      fontSize: 13,
+      fontFamily: fonts.displaySemiBold,
+    },
+
+    accountPickerEmptyText: {
+      fontSize: 10,
+      fontFamily: fonts.bodyRegular,
+      textAlign: "center",
+      marginTop: 6,
+    },
+
+    accountPickerCancelButton: {
+      marginTop: 8,
+      alignItems: "center",
+      paddingVertical: 10,
     },
 
     /*
@@ -3291,6 +3860,19 @@ const createStyles = (colors) =>
       fontSize: 13,
       fontFamily: fonts.monoMedium,
       textAlign: "center",
+    },
+
+    converterAddButton: {
+      marginTop: 10,
+      borderRadius: 10,
+      paddingVertical: 11,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    converterAddButtonText: {
+      fontSize: 12,
+      fontFamily: fonts.bodySemiBold,
     },
 
     converterError: {
