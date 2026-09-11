@@ -47,9 +47,9 @@ import {
 } from "../../services/budgets";
 
 import { getCategories } from "../../services/categories";
-import { getCurrentUser } from "../../services/auth";
 
 import { useTheme } from "../../contexts/ThemeContext";
+import { useCurrency } from "../../contexts/CurrencyContext";
 import { formatCurrency, getCurrencySymbol } from "../../utils/currency";
 
 // Fallback icon whenever a category predates icons (same logic as Categories).
@@ -269,6 +269,11 @@ function BudgetCard({ budget, currency, onEdit, onDelete, colors }) {
 export default function Budgets() {
   const { colors } = useTheme();
 
+  // Base currency now comes from the shared CurrencyContext (populated
+  // from Profile / signup) instead of a separate getCurrentUser() call
+  // here, so it stays in sync with every other screen.
+  const { baseCurrency: currency, currencyReady } = useCurrency();
+
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -285,7 +290,6 @@ export default function Budgets() {
 
   const [budgets, setBudgets] = useState([]);
   const [expenseCategories, setExpenseCategories] = useState([]);
-  const [currency, setCurrency] = useState("NGN");
 
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -304,8 +308,10 @@ export default function Budgets() {
         setLoading(true);
       }
 
-      const [budgetsResponse, categoriesResponse, userResponse] =
-        await Promise.all([getBudgets(), getCategories(), getCurrentUser()]);
+      const [budgetsResponse, categoriesResponse] = await Promise.all([
+        getBudgets(),
+        getCategories(),
+      ]);
 
       console.log("Budgets API response:", budgetsResponse);
 
@@ -313,14 +319,6 @@ export default function Budgets() {
         budgetsResponse?.budgets || budgetsResponse?.data || [];
 
       setBudgets(loadedBudgets);
-
-      const profile =
-        userResponse?.user ||
-        userResponse?.data?.user ||
-        userResponse?.data ||
-        userResponse;
-
-      setCurrency(profile?.currency || "NGN");
 
       try {
         await checkBudgetNotifications(loadedBudgets);
@@ -614,7 +612,7 @@ export default function Budgets() {
           </TouchableOpacity>
         </View>
 
-        {loading ? (
+        {loading || !currencyReady ? (
           <View
             style={[
               styles.loadingContainer,
