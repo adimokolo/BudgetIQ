@@ -21,8 +21,9 @@ import { getTransactions } from "../../services/transactions";
 import { getCategories } from "../../services/categories";
 import { getCurrentUser } from "../../services/auth";
 import { getNotifications } from "../../services/notifications";
+
 import { useTheme } from "../../contexts/ThemeContext";
-import { formatCurrency } from "../../utils/currency";
+import { useCurrency } from "../../contexts/CurrencyContext";
 
 function StatCard({
   label,
@@ -179,17 +180,12 @@ function Donut({ segments, colors, size = 160, strokeWidth = 24 }) {
   );
 }
 
-// Custom grouped bar chart: income and expense render as two distinct
-// bars, side by side, sharing the same baseline/month position - unlike
-// react-native-chart-kit's BarChart, which overlaps multi-dataset bars
-// instead of placing them next to each other.
 function GroupedBarChart({
   labels,
   incomeData,
   expenseData,
   colors,
-  currency,
-  formatCurrency,
+  formatAmount,
   chartHeight = 150,
 }) {
   const [selectedIndex, setSelectedIndex] = useState(null);
@@ -206,16 +202,37 @@ function GroupedBarChart({
     <View>
       <View style={styles.groupedChartBody}>
         <View style={styles.groupedYAxis}>
-          <Text style={[styles.groupedYAxisLabel, { color: colors.textFaint }]}>
-            {formatCurrency(maxValue, currency)}
+          <Text
+            style={[
+              styles.groupedYAxisLabel,
+              {
+                color: colors.textFaint,
+              },
+            ]}
+          >
+            {formatAmount(maxValue)}
           </Text>
 
-          <Text style={[styles.groupedYAxisLabel, { color: colors.textFaint }]}>
-            {formatCurrency(maxValue / 2, currency)}
+          <Text
+            style={[
+              styles.groupedYAxisLabel,
+              {
+                color: colors.textFaint,
+              },
+            ]}
+          >
+            {formatAmount(maxValue / 2)}
           </Text>
 
-          <Text style={[styles.groupedYAxisLabel, { color: colors.textFaint }]}>
-            {formatCurrency(0, currency)}
+          <Text
+            style={[
+              styles.groupedYAxisLabel,
+              {
+                color: colors.textFaint,
+              },
+            ]}
+          >
+            {formatAmount(0)}
           </Text>
         </View>
 
@@ -223,7 +240,10 @@ function GroupedBarChart({
           <View
             style={[
               styles.groupedGridLine,
-              { top: 0, backgroundColor: colors.divider || colors.cardBorder },
+              {
+                top: 0,
+                backgroundColor: colors.divider || colors.cardBorder,
+              },
             ]}
           />
 
@@ -322,16 +342,37 @@ function GroupedBarChart({
             },
           ]}
         >
-          <Text style={[styles.tooltipMonth, { color: colors.text }]}>
+          <Text
+            style={[
+              styles.tooltipMonth,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
             {labels[selectedIndex]}
           </Text>
 
-          <Text style={[styles.tooltipRow, { color: colors.income }]}>
-            Income : {formatCurrency(incomeData[selectedIndex], currency)}
+          <Text
+            style={[
+              styles.tooltipRow,
+              {
+                color: colors.income,
+              },
+            ]}
+          >
+            Income: {formatAmount(incomeData[selectedIndex])}
           </Text>
 
-          <Text style={[styles.tooltipRow, { color: colors.expense }]}>
-            Expense : {formatCurrency(expenseData[selectedIndex], currency)}
+          <Text
+            style={[
+              styles.tooltipRow,
+              {
+                color: colors.expense,
+              },
+            ]}
+          >
+            Expense: {formatAmount(expenseData[selectedIndex])}
           </Text>
         </View>
       )}
@@ -339,7 +380,6 @@ function GroupedBarChart({
   );
 }
 
-// Fallback icon whenever a category predates icons (same logic as Categories).
 function fallbackIconFor(type) {
   return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
 }
@@ -361,6 +401,27 @@ export default function Dashboard() {
 
   const { colors } = useTheme();
 
+  /*
+  |--------------------------------------------------------------------------
+  | CURRENCY
+  |--------------------------------------------------------------------------
+  |
+  | The dashboard no longer keeps its own currency state.
+  |
+  | CurrencyContext is now the single source of truth.
+  |
+  | formatAmount(1000)
+  | -> ₦1,000.00
+  | -> $1,000.00
+  | -> €1,000.00
+  |
+  | depending on the currency selected by the user.
+  |
+  */
+
+  const { formatAmount, baseCurrency, currencyReady, setBaseCurrency } =
+    useCurrency();
+
   const [dashboard, setDashboard] = useState(null);
 
   const [transactions, setTransactions] = useState([]);
@@ -370,8 +431,6 @@ export default function Dashboard() {
   const [userName, setUserName] = useState("User");
 
   const [avatarUrl, setAvatarUrl] = useState(null);
-
-  const [currency, setCurrency] = useState("NGN");
 
   const [loading, setLoading] = useState(true);
 
@@ -396,17 +455,6 @@ export default function Dashboard() {
     }
   }, []);
 
-  /*
-  |--------------------------------------------------------------------------
-  | LOAD TRANSACTIONS
-  |--------------------------------------------------------------------------
-  |
-  | The dashboard's categoryBreakdown is budget-based, so "Where it went"
-  | is computed client-side from real expense transactions instead -
-  | same source of truth as the Transactions screen.
-  |
-  */
-
   const loadTransactions = useCallback(async () => {
     try {
       const data = await getTransactions();
@@ -418,17 +466,6 @@ export default function Dashboard() {
       console.log("Dashboard transactions error:", error);
     }
   }, []);
-
-  /*
-  |--------------------------------------------------------------------------
-  | LOAD CATEGORIES
-  |--------------------------------------------------------------------------
-  |
-  | Same source of truth as the Transactions screen's category picker -
-  | gives us each category's real icon/color instead of whatever (or
-  | nothing) came back embedded on the transaction row itself.
-  |
-  */
 
   const loadCategories = useCallback(async () => {
     try {
@@ -475,15 +512,34 @@ export default function Dashboard() {
 
       /*
       |--------------------------------------------------------------------------
-      | CURRENCY
+      | IMPORTANT: SYNC USER CURRENCY
       |--------------------------------------------------------------------------
       |
-      | Whatever the user picked at signup (or later changes in settings)
-      | drives every amount formatted on this screen.
+      | Registration saves the selected currency to the user profile.
+      |
+      | When the dashboard loads, we read that same profile currency and
+      | sync it into CurrencyContext.
+      |
+      | This means the dashboard will respect the currency selected during
+      | registration.
       |
       */
 
-      setCurrency(profile?.currency || "NGN");
+      const profileCurrency =
+        profile?.currency ||
+        profile?.base_currency ||
+        profile?.baseCurrency ||
+        null;
+
+      if (profileCurrency) {
+        const normalizedCurrency = String(profileCurrency).toUpperCase();
+
+        console.log("USER PROFILE CURRENCY:", normalizedCurrency);
+
+        if (normalizedCurrency !== baseCurrency) {
+          await setBaseCurrency(normalizedCurrency);
+        }
+      }
 
       const rawAvatarUrl =
         profile?.avatar_url ||
@@ -505,7 +561,7 @@ export default function Dashboard() {
 
       setAvatarUrl(null);
     }
-  }, []);
+  }, [baseCurrency, setBaseCurrency]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -555,7 +611,17 @@ export default function Dashboard() {
     loadNotificationCount,
   ]);
 
-  if (loading) {
+  /*
+  |--------------------------------------------------------------------------
+  | WAIT FOR CURRENCY
+  |--------------------------------------------------------------------------
+  |
+  | Prevents the dashboard from briefly displaying NGN before the user's
+  | saved currency has been loaded from AsyncStorage.
+  |
+  */
+
+  if (loading || !currencyReady) {
     return (
       <SafeAreaView
         style={[
@@ -589,12 +655,8 @@ export default function Dashboard() {
 
   /*
   |--------------------------------------------------------------------------
-  | WHERE IT WENT - computed from real transactions
+  | WHERE IT WENT
   |--------------------------------------------------------------------------
-  |
-  | Groups this month's EXPENSE transactions by category (same data the
-  | Transactions screen shows) instead of the budget-based breakdown.
-  |
   */
 
   const now = new Date();
@@ -603,10 +665,6 @@ export default function Dashboard() {
     now.getMonth() + 1,
   ).padStart(2, "0")}`;
 
-  // Lookup by id into the real Categories list - same source the
-  // Transactions screen's category picker uses - so "Where it went"
-  // always shows each category's actual icon and color, not whatever
-  // (or nothing) happened to be embedded on the transaction row.
   const categoryById = new Map(
     categories.map((category) => [category.id, category]),
   );
@@ -638,12 +696,16 @@ export default function Dashboard() {
       if (!grouped.has(key)) {
         grouped.set(key, {
           category_id: transaction.category_id ?? key,
+
           name:
             matchedCategory?.name ||
             transaction.category_name ||
             "Uncategorized",
+
           color: matchedCategory?.color || colors.primary,
+
           icon: matchedCategory?.icon || fallbackIconFor("expense"),
+
           total: 0,
         });
       }
@@ -728,6 +790,8 @@ export default function Dashboard() {
           />
         }
       >
+        {/* HEADER */}
+
         <View style={styles.headerRow}>
           <TouchableOpacity
             onPress={() => router.push("/profile")}
@@ -738,6 +802,7 @@ export default function Dashboard() {
                 styles.avatarLarge,
                 {
                   backgroundColor: colors.chipBg,
+
                   borderColor: colors.cardBorder,
                 },
               ]}
@@ -814,6 +879,7 @@ export default function Dashboard() {
                   styles.notificationBadge,
                   {
                     backgroundColor: colors.danger,
+
                     borderColor: colors.card,
                   },
                 ]}
@@ -822,37 +888,39 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
+        {/* STAT CARDS */}
+
         <View style={styles.cardsWrap}>
           <StatCard
             colors={colors}
             label="TOTAL INCOME (MONTH)"
-            value={formatCurrency(totalIncome, currency)}
+            value={formatAmount(totalIncome)}
             valueColor={colors.income}
           />
 
           <StatCard
             colors={colors}
             label="TOTAL EXPENSE (MONTH)"
-            value={formatCurrency(totalExpense, currency)}
+            value={formatAmount(totalExpense)}
             valueColor={colors.expense}
           />
 
           <StatCard
             colors={colors}
             label="NET BALANCE"
-            value={formatCurrency(netBalance, currency)}
+            value={formatAmount(netBalance)}
             badge={`${savingsRate}% savings rate`}
           />
+
+          {/* FORECAST */}
 
           <View
             style={[
               styles.forecastCard,
               {
                 backgroundColor: colors.card,
+
                 borderColor: colors.cardBorder,
-                borderWidth: 1,
-                borderRadius: 14,
-                padding: 16,
               },
             ]}
           >
@@ -875,7 +943,7 @@ export default function Dashboard() {
                 },
               ]}
             >
-              {formatCurrency(forecastAmount, currency)}
+              {formatAmount(forecastAmount)}
             </Text>
 
             <View style={styles.forecastPills}>
@@ -941,11 +1009,14 @@ export default function Dashboard() {
           </View>
         </View>
 
+        {/* INCOME VS SPENDING */}
+
         <View
           style={[
             styles.sectionCard,
             {
               backgroundColor: colors.card,
+
               borderColor: colors.cardBorder,
             },
           ]}
@@ -972,25 +1043,46 @@ export default function Dashboard() {
             Last six months
           </Text>
 
-          {/* COMBINED INCOME + SPENDING BARS */}
-
           <View style={styles.barChartHeader}>
             <View
-              style={[styles.barLegendDot, { backgroundColor: colors.income }]}
+              style={[
+                styles.barLegendDot,
+                {
+                  backgroundColor: colors.income,
+                },
+              ]}
             />
 
-            <Text style={[styles.barChartLabel, { color: colors.textMuted }]}>
+            <Text
+              style={[
+                styles.barChartLabel,
+                {
+                  color: colors.textMuted,
+                },
+              ]}
+            >
               Income
             </Text>
 
             <View
               style={[
                 styles.barLegendDot,
-                { backgroundColor: colors.expense, marginLeft: 14 },
+                {
+                  backgroundColor: colors.expense,
+
+                  marginLeft: 14,
+                },
               ]}
             />
 
-            <Text style={[styles.barChartLabel, { color: colors.textMuted }]}>
+            <Text
+              style={[
+                styles.barChartLabel,
+                {
+                  color: colors.textMuted,
+                },
+              ]}
+            >
               Spending
             </Text>
           </View>
@@ -1000,16 +1092,18 @@ export default function Dashboard() {
             incomeData={incomeData}
             expenseData={expenseData}
             colors={colors}
-            currency={currency}
-            formatCurrency={formatCurrency}
+            formatAmount={formatAmount}
           />
         </View>
+
+        {/* WHERE IT WENT */}
 
         <View
           style={[
             styles.sectionCard,
             {
               backgroundColor: colors.card,
+
               borderColor: colors.cardBorder,
             },
           ]}
@@ -1083,7 +1177,7 @@ export default function Dashboard() {
                       },
                     ]}
                   >
-                    {formatCurrency(segment.total, currency)}
+                    {formatAmount(segment.total)}
                   </Text>
                 </View>
               ))}
@@ -1110,24 +1204,29 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+
   container: {
     padding: 20,
     paddingBottom: 40,
   },
+
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
+
   loadingText: {
     marginTop: 12,
     fontSize: 12,
     fontFamily: "Inter_400Regular",
   },
+
   heading: {
     fontSize: 18,
     fontFamily: "SpaceGrotesk_700Bold",
   },
+
   subheading: {
     fontSize: 10,
     fontFamily: "Inter_400Regular",
@@ -1145,6 +1244,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+
   avatarLarge: {
     width: 55,
     height: 55,
@@ -1155,11 +1255,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: "hidden",
   },
+
   avatarImage: {
     width: 55,
     height: 55,
     borderRadius: 32,
   },
+
   notificationButton: {
     width: 33,
     height: 33,
@@ -1169,6 +1271,7 @@ const styles = StyleSheet.create({
     position: "relative",
     borderWidth: 1,
   },
+
   notificationBadge: {
     position: "absolute",
     top: 8,
@@ -1176,28 +1279,33 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    borderWidth: 1.0,
+    borderWidth: 1,
   },
+
   cardsWrap: {
     gap: 12,
     marginBottom: 10,
   },
+
   card: {
     borderRadius: 14,
     padding: 13,
     borderWidth: 1,
     marginBottom: -5,
   },
+
   cardLabel: {
     fontSize: 9,
     fontFamily: "Inter_600SemiBold",
     letterSpacing: 0.5,
     marginBottom: 5,
   },
+
   cardValue: {
     fontSize: 15,
     fontFamily: "JetBrainsMono_500Medium",
   },
+
   badge: {
     alignSelf: "flex-start",
     borderRadius: 20,
@@ -1205,31 +1313,40 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     marginTop: 8,
   },
+
   badgeText: {
     fontSize: 8,
     fontFamily: "Inter_600SemiBold",
   },
+
   cardFooter: {
     fontSize: 9,
     fontFamily: "Inter_400Regular",
     marginTop: 8,
     lineHeight: 16,
   },
+
   forecastCard: {
     position: "relative",
     overflow: "hidden",
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 16,
   },
+
   forecastLabel: {
     fontSize: 9,
     fontFamily: "Inter_600SemiBold",
     letterSpacing: 0.8,
     lineHeight: 18,
   },
+
   forecastAmount: {
     marginTop: 8,
     fontSize: 16,
     fontFamily: "JetBrainsMono_500Medium",
   },
+
   forecastPills: {
     flexDirection: "row",
     alignItems: "center",
@@ -1237,15 +1354,18 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 10,
   },
+
   forecastPill: {
     paddingVertical: 3,
     paddingHorizontal: 14,
     borderRadius: 14,
   },
+
   forecastPillText: {
     fontSize: 8,
     fontFamily: "Inter_600SemiBold",
   },
+
   forecastConfidencePill: {
     paddingVertical: 3,
     paddingHorizontal: 14,
@@ -1263,6 +1383,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     lineHeight: 13,
   },
+
   barChartHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1363,50 +1484,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
 
-  tooltipBox: {
-    position: "absolute",
-    minWidth: 130,
-    padding: 12,
-    borderRadius: 12,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-  },
   tooltipMonth: {
     fontSize: 10,
     fontFamily: "Inter_600SemiBold",
     marginBottom: 2,
   },
+
   tooltipRow: {
     fontSize: 9,
     fontFamily: "Inter_500Medium",
     marginTop: 2,
   },
+
   sectionCard: {
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
     borderWidth: 1,
   },
+
   sectionTitle: {
     fontSize: 12,
     fontFamily: "SpaceGrotesk_600SemiBold",
   },
+
   sectionSubtitle: {
     fontSize: 9,
     fontFamily: "Inter_400Regular",
     marginTop: 2,
     marginBottom: 12,
   },
+
   donutRow: {
     alignItems: "center",
     marginVertical: 12,
   },
+
   emptyDonut: {
     borderWidth: 23,
     alignItems: "center",
@@ -1442,6 +1555,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
   legendLabel: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
@@ -1451,6 +1565,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "JetBrainsMono_500Medium",
   },
+
   noDataText: {
     textAlign: "center",
     marginVertical: 20,
