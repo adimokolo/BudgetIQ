@@ -20,6 +20,7 @@ import {
 } from "@expo-google-fonts/jetbrains-mono";
 import SplashScreenView from "../components/SplashScreenView";
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext";
+import { CurrencyProvider } from "../contexts/CurrencyContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -80,7 +81,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <RootStack />
+      <CurrencyProvider>
+        <RootStack />
+      </CurrencyProvider>
     </ThemeProvider>
   );
 }

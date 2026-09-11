@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+
 import {
   View,
   Image,
@@ -16,16 +17,21 @@ import {
   FlatList,
 } from "react-native";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { Ionicons } from "@expo/vector-icons";
 
 import { Link, useRouter } from "expo-router";
+
 import { registerUser } from "../services/auth";
+
 import { useTheme } from "../contexts/ThemeContext";
+
 import { ALL_CURRENCIES } from "../utils/currency";
 
 /*
 |--------------------------------------------------------------------------
-| CURRENCY DROPDOWN (searchable - 170+ currencies)
+| CURRENCY DROPDOWN
 |--------------------------------------------------------------------------
 */
 
@@ -40,7 +46,9 @@ function CurrencyDropdown({ value, onChange, colors, styles }) {
   const filteredCurrencies = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) return ALL_CURRENCIES;
+    if (!query) {
+      return ALL_CURRENCIES;
+    }
 
     return ALL_CURRENCIES.filter(
       (currency) =>
@@ -136,34 +144,53 @@ export default function SignupScreen() {
   const router = useRouter();
 
   const { colors } = useTheme();
+
   const styles = createStyles(colors);
 
   const [fullName, setFullName] = useState("");
+
   const [email, setEmail] = useState("");
+
   const [password, setPassword] = useState("");
+
+  /*
+  |--------------------------------------------------------------------------
+  | DEFAULT CURRENCY
+  |--------------------------------------------------------------------------
+  */
+
   const [currency, setCurrency] = useState("NGN");
 
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
-  // Password visibility
   const [showPassword, setShowPassword] = useState(false);
 
   const handleTermsToggle = () => {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
 
     setTermsAccepted((current) => !current);
   };
 
   const handleSignup = async () => {
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
     if (!fullName.trim()) {
       Alert.alert("Full Name Required", "Please enter your full name.");
+
       return;
     }
 
     if (!email.trim()) {
       Alert.alert("Email Required", "Please enter your email address.");
+
       return;
     }
 
@@ -173,11 +200,13 @@ export default function SignupScreen() {
 
     if (!emailRegex.test(cleanEmail)) {
       Alert.alert("Invalid Email", "Please enter a valid email address.");
+
       return;
     }
 
     if (!password.trim()) {
       Alert.alert("Password Required", "Please enter a password.");
+
       return;
     }
 
@@ -186,6 +215,7 @@ export default function SignupScreen() {
         "Password Too Short",
         "Your password must be at least 6 characters.",
       );
+
       return;
     }
 
@@ -194,22 +224,57 @@ export default function SignupScreen() {
         "Agreement Required",
         "Please agree to the Terms of Service and Privacy Policy before creating your account.",
       );
+
       return;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | REGISTER
+    |--------------------------------------------------------------------------
+    */
 
     try {
       setLoading(true);
 
       console.log("Creating account for:", cleanEmail);
 
+      console.log("Selected currency:", currency);
+
       const response = await registerUser({
         fullName: fullName.trim(),
         email: cleanEmail,
         password: password,
+
+        /*
+          |--------------------------------------------------------------------------
+          | THIS IS THE USER'S SELECTED CURRENCY
+          |--------------------------------------------------------------------------
+          */
+
         currency: currency,
       });
 
       console.log("Registration successful:", response);
+
+      /*
+      |--------------------------------------------------------------------------
+      | SAVE SELECTED CURRENCY LOCALLY
+      |--------------------------------------------------------------------------
+      |
+      | CurrencyContext will use this immediately.
+      |
+      */
+
+      await AsyncStorage.setItem("base_currency", currency);
+
+      console.log("Saved base currency:", currency);
+
+      /*
+      |--------------------------------------------------------------------------
+      | SUCCESS
+      |--------------------------------------------------------------------------
+      */
 
       Alert.alert(
         "Account Created",
@@ -217,9 +282,11 @@ export default function SignupScreen() {
         [
           {
             text: "Verify Email",
+
             onPress: () => {
               router.push({
                 pathname: "/verify-otp",
+
                 params: {
                   email: cleanEmail,
                   purpose: "signup",
@@ -299,7 +366,6 @@ export default function SignupScreen() {
 
           <Text style={styles.label}>Password</Text>
 
-          {/* Password input with eye toggle */}
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
@@ -416,7 +482,9 @@ const createStyles = (colors) =>
         width: 0,
         height: 4,
       },
+
       shadowOpacity: colors.mode === "dark" ? 0.25 : 0.08,
+
       shadowRadius: 12,
       elevation: 3,
 
@@ -483,7 +551,6 @@ const createStyles = (colors) =>
       marginBottom: 16,
     },
 
-    // Password field
     passwordContainer: {
       width: "100%",
       flexDirection: "row",
@@ -546,12 +613,6 @@ const createStyles = (colors) =>
       color: colors.textMuted,
       marginLeft: 8,
     },
-
-    /*
-    |--------------------------------------------------------------------------
-    | SEARCHABLE CURRENCY MODAL
-    |--------------------------------------------------------------------------
-    */
 
     currencyOverlay: {
       flex: 1,
