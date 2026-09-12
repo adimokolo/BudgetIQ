@@ -1,5 +1,6 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../utils/format';
+import { getIcon } from '../utils/categoryIcons';
 
 export default function CategoryBreakdownChart({ data, currency }) {
   const hasData = data && data.length > 0;
@@ -35,7 +36,7 @@ export default function CategoryBreakdownChart({ data, currency }) {
                   borderRadius: 10,
                   fontSize: 13,
                 }}
-                formatter={(value) => formatCurrency(value, currency)}
+                formatter={(value, name) => [formatCurrency(value, currency), name]}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -43,8 +44,15 @@ export default function CategoryBreakdownChart({ data, currency }) {
           <div style={{ marginTop: 6 }}>
             {data.map((entry) => (
               <div className="list-row" key={entry.category_id}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13.5 }}>
-                  <span className="cat-dot" style={{ background: entry.color }} />
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5 }}>
+                  <span style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: entry.color || '#B9C3D4',
+                    display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', fontSize: 15, flexShrink: 0,
+                  }}>
+                    {getIcon(entry.icon)}
+                  </span>
                   {entry.name}
                 </span>
                 <span className="mono" style={{ fontSize: 13.5 }}>

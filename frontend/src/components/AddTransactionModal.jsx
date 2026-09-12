@@ -1,3 +1,4 @@
+import CustomSelect from './CustomSelect';
 import { useEffect, useState, useRef } from 'react';
 import apiClient from '../api/client';
 import Modal from './Modal';
@@ -21,8 +22,8 @@ function safeEval(expr) {
 
 function InlineCalculator({ onResult, onClose }) {
   const [expression, setExpression] = useState('');
-  const [result, setResult]         = useState(null);
-  const [error, setError]           = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
@@ -127,10 +128,10 @@ function InlineCalculator({ onResult, onClose }) {
 
 export default function AddTransactionModal({ onClose }) {
   const [categories, setCategories] = useState([]);
-  const [form, setForm]             = useState(EMPTY_FORM);
-  const [error, setError]           = useState(null);
-  const [saving, setSaving]         = useState(false);
-  const [showCalc, setShowCalc]     = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [showCalc, setShowCalc] = useState(false);
 
   useEffect(() => {
     apiClient.get('/categories').then((res) => setCategories(res.data.categories));
@@ -143,7 +144,7 @@ export default function AddTransactionModal({ onClose }) {
     try {
       await apiClient.post('/transactions', {
         ...form,
-        amount:     Number(form.amount),
+        amount: Number(form.amount),
         categoryId: form.categoryId || null,
       });
       window.dispatchEvent(new CustomEvent(TRANSACTION_CREATED_EVENT));
@@ -162,17 +163,16 @@ export default function AddTransactionModal({ onClose }) {
       <form onSubmit={handleSubmit}>
 
         <div className="field">
-          <label htmlFor="txType">Type</label>
-          <select
-            id="txType"
+          <label>Type</label>
+          <CustomSelect
             value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value, categoryId: '' })}
-          >
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </select>
+            onChange={(val) => setForm({ ...form, type: val, categoryId: '' })}
+            options={[
+              { value: 'expense', label: 'Expense' },
+              { value: 'income', label: 'Income' },
+            ]}
+          />
         </div>
-
         <div className="field" style={{ position: 'relative' }}>
           <label htmlFor="txAmount">Amount</label>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -209,19 +209,16 @@ export default function AddTransactionModal({ onClose }) {
         </div>
 
         <div className="field">
-          <label htmlFor="txCategory">Category</label>
-          <select
-            id="txCategory"
+          <label>Category</label>
+          <CustomSelect
             value={form.categoryId}
-            onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-          >
-            <option value="">Uncategorized</option>
-            {filteredCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setForm({ ...form, categoryId: val })}
+            options={[
+              { value: '', label: 'Uncategorized' },
+              ...filteredCategories.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+            placeholder="Uncategorized"
+          />
         </div>
 
         <div className="field">
