@@ -17,9 +17,12 @@
   --ink-soft: #445067;
   --ink-faint: #7E8CA3;
 
-  --prism-1: #38C6FF; /* cyan facet   */
-  --prism-2: #8C6BFF; /* violet facet */
-  --prism-3: #35E6C0; /* mint facet   */
+  --prism-1: #38C6FF;
+  /* cyan facet   */
+  --prism-2: #8C6BFF;
+  /* violet facet */
+  --prism-3: #35E6C0;
+  /* mint facet   */
   --prism-gradient: linear-gradient(115deg, var(--prism-1) 0%, var(--prism-2) 50%, var(--prism-3) 100%);
 
   /* Brand blues sampled directly from the BudgetIQ logo, used for primary actions
@@ -41,7 +44,8 @@
   --font-body: 'Inter', 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'SFMono-Regular', monospace;
 
-  --facet: 18px;      /* corner clip size for facet cards */
+  --facet: 18px;
+  /* corner clip size for facet cards */
   --radius-lg: 22px;
   --radius-md: 14px;
   --radius-sm: 9px;
@@ -79,9 +83,25 @@
   color-scheme: dark;
 }
 
-* { box-sizing: border-box; }
+[data-theme='dark'] select option {
+  background-color: #060B14;
+  color: #EAF2FF;
+}
 
-html, body, #root { height: 100%; }
+[data-theme='dark'] select {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #EAF2FF;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
 
 body {
   margin: 0;
@@ -93,23 +113,42 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-family: var(--font-display);
   color: var(--ink);
   margin: 0;
   letter-spacing: -0.01em;
 }
 
-.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
 
-a { color: inherit; }
+a {
+  color: inherit;
+}
 
-button, input, select {
+button,
+input,
+select,
+option {
   font-family: var(--font-body);
   color: var(--ink);
 }
 
-::selection { background: var(--prism-2); color: white; }
+select option {
+  background-color: #1a1f2e;
+  color: #e2e8f0;
+}
+
+::selection {
+  background: var(--prism-2);
+  color: white;
+}
 
 /* Visible focus ring for keyboard navigation, respected everywhere */
 :focus-visible {
@@ -119,7 +158,10 @@ button, input, select {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
@@ -137,9 +179,7 @@ button, input, select {
   background: var(--surface);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-lg);
-  clip-path: polygon(
-    var(--facet) 0%, 100% 0%, 100% calc(100% - var(--facet)), calc(100% - var(--facet)) 100%, 0% 100%, 0% var(--facet)
-  );
+  clip-path: polygon(var(--facet) 0%, 100% 0%, 100% calc(100% - var(--facet)), calc(100% - var(--facet)) 100%, 0% 100%, 0% var(--facet));
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   box-shadow: var(--surface-shadow);
@@ -163,10 +203,18 @@ button, input, select {
   pointer-events: none;
 }
 
-.facet-card:hover::before { opacity: 0.9; }
-.facet-card:hover { transform: translateY(-2px); }
+.facet-card:hover::before {
+  opacity: 0.9;
+}
 
-.facet-card--flush { padding: 0; overflow: hidden; }
+.facet-card:hover {
+  transform: translateY(-2px);
+}
+
+.facet-card--flush {
+  padding: 0;
+  overflow: hidden;
+}
 
 /* Prism divider used as a section rule where it means something (a boundary
    between periods / categories), not as decoration everywhere. */
@@ -188,9 +236,21 @@ button, input, select {
   padding: 4px 10px;
   border-radius: 999px;
 }
-.pill--income { background: var(--income-soft); color: var(--income); }
-.pill--expense { background: var(--expense-soft); color: var(--expense); }
-.pill--warning { background: var(--warning-soft); color: var(--warning); }
+
+.pill--income {
+  background: var(--income-soft);
+  color: var(--income);
+}
+
+.pill--expense {
+  background: var(--expense-soft);
+  color: var(--expense);
+}
+
+.pill--warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
 
 /* Buttons */
 .btn {
@@ -203,14 +263,20 @@ button, input, select {
   padding: 11px 20px;
   transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
 }
-.btn:active { transform: scale(0.97); }
+
+.btn:active {
+  transform: scale(0.97);
+}
 
 .btn--primary {
   color: #FFFFFF;
   background: var(--brand-gradient);
   box-shadow: 0 6px 20px rgba(11, 76, 130, 0.28);
 }
-.btn--primary:hover { box-shadow: 0 8px 26px rgba(11, 76, 130, 0.4); }
+
+.btn--primary:hover {
+  box-shadow: 0 8px 26px rgba(11, 76, 130, 0.4);
+}
 
 .btn--ghost {
   background: var(--surface-strong);
@@ -223,12 +289,27 @@ button, input, select {
   color: var(--expense);
 }
 
-.btn--block { width: 100%; }
+.btn--block {
+  width: 100%;
+}
 
 /* Inputs */
-.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-.field label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
-.field input, .field select, .field textarea {
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.field input,
+.field select,
+.field textarea {
   background: var(--surface-strong);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm);
@@ -236,12 +317,28 @@ button, input, select {
   font-size: 14.5px;
   color: var(--ink);
 }
-.field input:focus, .field select:focus, .field textarea:focus {
+
+.field input:focus,
+.field select:focus,
+.field select option {
+  background: var(--surface-strong);
+  color: var(--ink);
+}
+
+.field textarea:focus {
   border-color: var(--prism-1);
 }
 
-.helper-text { font-size: 12.5px; color: var(--ink-faint); }
-.error-text { font-size: 12.5px; color: var(--expense); font-weight: 600; }
+.helper-text {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+
+.error-text {
+  font-size: 12.5px;
+  color: var(--expense);
+  font-weight: 600;
+}
 
 .checkbox-row {
   display: flex;
@@ -253,6 +350,7 @@ button, input, select {
   margin: 4px 0 18px;
   line-height: 1.4;
 }
+
 .checkbox-row input[type='checkbox'] {
   margin-top: 2px;
   width: 15px;

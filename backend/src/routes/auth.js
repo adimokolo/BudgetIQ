@@ -122,5 +122,15 @@ router.post(
 */
 
 router.patch("/avatar", requireAuth, authController.updateAvatar);
+/*
+|--------------------------------------------------------------------------
+| SETTINGS PAGE — WEB
+|--------------------------------------------------------------------------
+*/
 
+router.patch("/change-password", requireAuth, authController.changePassword);
+
+router.patch("/currency", requireAuth, authController.updateCurrency);
+
+router.delete("/account", requireAuth, authController.deleteAccount);
 module.exports = router;
