@@ -1,5 +1,6 @@
-const pool = require('../config/db');
-const asyncHandler = require('../utils/asyncHandler');
+const pool = require("../config/db");
+const asyncHandler = require("../utils/asyncHandler");
+const { sendNotificationEmail } = require("../utils/mailer");
 
 const listNotifications = asyncHandler(async (req, res) => {
   const [notificationsResult, unreadResult] = await Promise.all([
@@ -7,11 +8,11 @@ const listNotifications = asyncHandler(async (req, res) => {
       `SELECT id, type, title, body, read_at, created_at
        FROM notifications WHERE user_id = $1
        ORDER BY created_at DESC LIMIT 30`,
-      [req.user.id]
+      [req.user.id],
     ),
     pool.query(
       `SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND read_at IS NULL`,
-      [req.user.id]
+      [req.user.id],
     ),
   ]);
 
@@ -21,16 +22,57 @@ const listNotifications = asyncHandler(async (req, res) => {
   });
 });
 
+const createNotification = asyncHandler(async (req, res) => {
+  const { title, body, type = "info", budgetId = null } = req.body;
+
+  if (!title || !body) {
+    return res.status(400).json({ error: "title and body are required." });
+  }
+
+  const insertResult = await pool.query(
+    `INSERT INTO notifications (user_id, type, title, body, budget_id)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, type, title, body, read_at, created_at`,
+    [req.user.id, type, title, body, budgetId],
+  );
+
+  const notification = insertResult.rows[0];
+
+  // Resolve the recipient's email — use it if the auth middleware already
+  // attached it, otherwise look it up. Adjust the column/table name if
+  // your schema is different.
+  let recipientEmail = req.user.email;
+
+  if (!recipientEmail) {
+    const userResult = await pool.query(
+      `SELECT email FROM users WHERE id = $1`,
+      [req.user.id],
+    );
+
+    recipientEmail = userResult.rows[0]?.email;
+  }
+
+  // Fire-and-forget so a slow/unreachable SMTP server never delays the
+  // API response. sendNotificationEmail catches its own errors internally.
+  sendNotificationEmail({
+    to: recipientEmail,
+    title: notification.title,
+    body: notification.body,
+  });
+
+  res.status(201).json({ notification });
+});
+
 const markRead = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const result = await pool.query(
     `UPDATE notifications SET read_at = now()
      WHERE id = $1 AND user_id = $2 AND read_at IS NULL
      RETURNING id`,
-    [id, req.user.id]
+    [id, req.user.id],
   );
   if (result.rows.length === 0) {
-    return res.status(404).json({ error: 'Notification not found.' });
+    return res.status(404).json({ error: "Notification not found." });
   }
   res.status(204).send();
 });
@@ -38,9 +80,14 @@ const markRead = asyncHandler(async (req, res) => {
 const markAllRead = asyncHandler(async (req, res) => {
   await pool.query(
     `UPDATE notifications SET read_at = now() WHERE user_id = $1 AND read_at IS NULL`,
-    [req.user.id]
+    [req.user.id],
   );
   res.status(204).send();
 });
 
-module.exports = { listNotifications, markRead, markAllRead };
+module.exports = {
+  listNotifications,
+  createNotification,
+  markRead,
+  markAllRead,
+};

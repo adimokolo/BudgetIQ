@@ -172,30 +172,6 @@ function getLocalDateString(date = new Date()) {
   )}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function formatCalendarBalance(amount, currency) {
-  if (amount === 0) {
-    return "0";
-  }
-
-  const absolute = Math.abs(amount);
-
-  const formatted = formatCurrency(absolute, currency);
-
-  /*
-   * Keep the amount compact enough to fit inside a calendar cell.
-   *
-   * Examples:
-   * ₦25,000       -> +₦25k
-   * ₦1,250,000    -> +₦1.25m
-   */
-
-  const compact = formatted
-    .replace(/(\d+),(\d{3}),(\d{3})/, "$1.$2m")
-    .replace(/(\d+),(\d{3})/, "$1.$2k");
-
-  return amount > 0 ? `+${compact}` : `-${compact}`;
-}
-
 /*
 |--------------------------------------------------------------------------
 | DROPDOWN
@@ -710,7 +686,12 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
         >
           <View style={styles.calcHeader}>
             <View style={styles.calcHeaderTitle}>
-              <Text style={styles.calcHeaderIcon}>🔢</Text>
+              <Ionicons
+                name="calculator-outline"
+                size={20}
+                color={colors.text}
+                style={styles.calcHeaderIcon}
+              />
 
               <Text
                 style={[
@@ -1202,10 +1183,21 @@ function FullCalendar({
   onSelectDate,
   currentDate,
   currency,
+  totalIncome,
+  totalExpense,
   colors,
   styles,
 }) {
   const cells = useMemo(() => buildMonthGrid(viewDate), [viewDate]);
+
+  const activeBalanceDate = selectedDate || currentDate;
+
+  const todayBalance = dailyBalances[activeBalanceDate] || 0;
+
+  const todayBalanceLabel = `${todayBalance > 0 ? "+" : todayBalance < 0 ? "-" : ""}${formatCurrency(
+    Math.abs(todayBalance),
+    currency,
+  )}`;
 
   const monthLabel = viewDate.toLocaleDateString("en-US", {
     month: "long",
@@ -1365,22 +1357,9 @@ function FullCalendar({
 
           const balance = dailyBalances[cell.dateString] || 0;
 
-          const hasActivity = Object.prototype.hasOwnProperty.call(
-            dailyBalances,
-            cell.dateString,
-          );
-
           const isToday = cell.dateString === currentDate;
 
           const isSelected = cell.dateString === selectedDate;
-
-          let balanceColor = colors.textFaint;
-
-          if (balance > 0) {
-            balanceColor = colors.income;
-          } else if (balance < 0) {
-            balanceColor = colors.expense;
-          }
 
           let backgroundColor = colors.inputBg;
 
@@ -1445,34 +1424,6 @@ function FullCalendar({
                 </Text>
               </View>
 
-              {/* DAILY NET BALANCE */}
-
-              {hasActivity ? (
-                <Text
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  style={[
-                    styles.calendarBalanceText,
-                    {
-                      color: isToday ? colors.primaryText : balanceColor,
-                    },
-                  ]}
-                >
-                  {formatCalendarBalance(balance, currency)}
-                </Text>
-              ) : (
-                <View style={styles.calendarBalancePlaceholder}>
-                  <View
-                    style={[
-                      styles.calendarEmptyDot,
-                      {
-                        backgroundColor: colors.divider,
-                      },
-                    ]}
-                  />
-                </View>
-              )}
-
               {/* TODAY INDICATOR */}
 
               {isToday && (
@@ -1503,7 +1454,9 @@ function FullCalendar({
             ]}
           />
 
-          <Text style={styles.calendarLegendText}>Positive</Text>
+          <Text style={[styles.calendarLegendText, { color: colors.income }]}>
+            {formatCurrency(totalIncome, currency)}
+          </Text>
         </View>
 
         <View style={styles.calendarLegendItem}>
@@ -1516,7 +1469,9 @@ function FullCalendar({
             ]}
           />
 
-          <Text style={styles.calendarLegendText}>Negative</Text>
+          <Text style={[styles.calendarLegendText, { color: colors.expense }]}>
+            -{formatCurrency(totalExpense, currency)}
+          </Text>
         </View>
 
         <View style={styles.calendarLegendItem}>
@@ -1529,7 +1484,9 @@ function FullCalendar({
             ]}
           />
 
-          <Text style={styles.calendarLegendText}>Today</Text>
+          <Text style={[styles.calendarLegendText, { color: colors.primary }]}>
+            {todayBalanceLabel}
+          </Text>
         </View>
       </View>
     </View>
@@ -1876,6 +1833,24 @@ export default function Transactions() {
     setSelectedCategory(null);
   };
 
+  /*
+   * FILTER TABS ("All types" / "Income" / "Expense")
+   *
+   * Switching to "All types" clears whatever day is selected on the
+   * calendar, so it truly shows every transaction rather than only
+   * the ones on the previously-selected day. Switching to "Income" or
+   * "Expense" leaves the current date selection alone, so the two
+   * filters (type + day) keep composing the way they already did.
+   */
+
+  const handleFilterChange = (nextFilter) => {
+    setFilter(nextFilter);
+
+    if (nextFilter === "All types") {
+      setSelectedDate(null);
+    }
+  };
+
   const addTransaction = async () => {
     if (!amount.trim()) {
       Alert.alert("Missing information", "Please enter an amount.");
@@ -2151,7 +2126,7 @@ export default function Transactions() {
                   styles.filterButton,
                   filter === item && styles.activeFilter,
                 ]}
-                onPress={() => setFilter(item)}
+                onPress={() => handleFilterChange(item)}
               >
                 <Text
                   style={[
@@ -2202,6 +2177,8 @@ export default function Transactions() {
           onSelectDate={setSelectedDate}
           currentDate={currentSystemDate}
           currency={currency}
+          totalIncome={totalIncome}
+          totalExpense={totalExpense}
           colors={colors}
           styles={styles}
         />
@@ -2312,19 +2289,27 @@ export default function Transactions() {
                         style={[
                           styles.accountPickerIcon,
                           {
-                            backgroundColor: isSelected
-                              ? colors.primary
-                              : colors.chipBg,
+                            backgroundColor:
+                              account.color ||
+                              (isSelected ? colors.primary : colors.chipBg),
                           },
                         ]}
                       >
-                        <Ionicons
-                          name="wallet-outline"
-                          size={16}
-                          color={
-                            isSelected ? colors.primaryText : colors.primary
-                          }
-                        />
+                        {/*
+                         * Accounts with a saved color show a solid
+                         * swatch here instead of the wallet icon.
+                         * Accounts without one (older accounts, or
+                         * bank-synced accounts) keep the wallet icon.
+                         */}
+                        {!account.color && (
+                          <Ionicons
+                            name="wallet-outline"
+                            size={16}
+                            color={
+                              isSelected ? colors.primaryText : colors.primary
+                            }
+                          />
+                        )}
                       </View>
 
                       <View style={styles.accountPickerInfo}>
@@ -2434,15 +2419,23 @@ export default function Transactions() {
                   style={[
                     styles.accountSelectIcon,
                     {
-                      backgroundColor: colors.chipBg,
+                      backgroundColor: selectedAccount?.color || colors.chipBg,
                     },
                   ]}
                 >
-                  <Ionicons
-                    name="wallet-outline"
-                    size={15}
-                    color={colors.primary}
-                  />
+                  {/*
+                   * Once an account with a saved color is picked, this
+                   * shows a solid swatch instead of the wallet icon.
+                   * Before anything is picked (or for accounts with no
+                   * color), the wallet icon still shows.
+                   */}
+                  {!selectedAccount?.color && (
+                    <Ionicons
+                      name="wallet-outline"
+                      size={15}
+                      color={colors.primary}
+                    />
+                  )}
                 </View>
 
                 <View style={{ flex: 1 }}>
@@ -2506,16 +2499,11 @@ export default function Transactions() {
                   color: colors.divider,
                 }}
               >
-                <Text
-                  style={[
-                    styles.calcOpenButtonText,
-                    {
-                      color: colors.primary,
-                    },
-                  ]}
-                >
-                  📲
-                </Text>
+                <Ionicons
+                  name="calculator-outline"
+                  size={20}
+                  color={colors.primary}
+                />
               </Pressable>
             </View>
 
@@ -3133,26 +3121,6 @@ const createStyles = (colors) =>
       fontFamily: fonts.monoRegular,
     },
 
-    calendarBalanceText: {
-      fontSize: 15,
-      fontFamily: fonts.monoMedium,
-      marginTop: 2,
-      maxWidth: "90%",
-    },
-
-    calendarBalancePlaceholder: {
-      height: 11,
-      marginTop: 2,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-
-    calendarEmptyDot: {
-      width: 3,
-      height: 3,
-      borderRadius: 2,
-    },
-
     calendarTodayIndicator: {
       width: 4,
       height: 4,
@@ -3184,8 +3152,8 @@ const createStyles = (colors) =>
     },
 
     calendarLegendText: {
-      fontSize: 8,
-      fontFamily: fonts.bodyMedium,
+      fontSize: 10,
+      fontFamily: fonts.monoMedium,
       color: colors.textFaint,
     },
 
@@ -3269,11 +3237,6 @@ const createStyles = (colors) =>
       borderWidth: 1,
       alignItems: "center",
       justifyContent: "center",
-    },
-
-    calcOpenButtonText: {
-      fontSize: 21,
-      fontFamily: fonts.bodySemiBold,
     },
 
     amountInput: {
@@ -3674,9 +3637,9 @@ const createStyles = (colors) =>
     },
 
     accountSelectIcon: {
-      width: 32,
-      height: 32,
-      borderRadius: 9,
+      width: 22,
+      height: 22,
+      borderRadius: 15,
       alignItems: "center",
       justifyContent: "center",
       marginRight: 10,
@@ -3716,7 +3679,7 @@ const createStyles = (colors) =>
 
     accountPickerItem: {
       minHeight: 68,
-      borderRadius: 12,
+      borderRadius: 15,
       borderWidth: 1,
       padding: 10,
       marginBottom: 9,
@@ -3725,9 +3688,9 @@ const createStyles = (colors) =>
     },
 
     accountPickerIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 11,
+      width: 22,
+      height: 22,
+      borderRadius: 15,
       alignItems: "center",
       justifyContent: "center",
       marginRight: 10,

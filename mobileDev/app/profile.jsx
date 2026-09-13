@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,12 @@ import { Ionicons } from "@expo/vector-icons";
 
 import * as ImagePicker from "expo-image-picker";
 
-import { getCurrentUser, logoutUser, uploadAvatar } from "../services/auth";
+import {
+  getCurrentUser,
+  logoutUser,
+  uploadAvatar,
+  deleteAccount,
+} from "../services/auth";
 
 import { useTheme } from "../contexts/ThemeContext";
 import { useCurrency } from "../contexts/CurrencyContext";
@@ -27,7 +32,8 @@ import { useCurrency } from "../contexts/CurrencyContext";
 import { ALL_CURRENCIES, currencyLabel } from "../utils/currency";
 
 // TODO: point this at your real support inbox.
-const SUPPORT_EMAIL = "support@yourapp.com";
+const SUPPORT_EMAIL = "budget442@gmail.com";
+const SUPPORT_PHONE = "+234 80 0000-0000";
 
 const FAQ_ITEMS = [
   {
@@ -80,6 +86,13 @@ export default function Profile() {
 
   const [contactModalVisible, setContactModalVisible] = useState(false);
 
+  // Guards against re-pulling the backend's stored currency every time
+  // this screen refocuses (e.g. when the currency picker Modal closes).
+  // Without this, any focus-triggered reload would silently overwrite
+  // whatever the user just picked with the backend's stale value, since
+  // nothing yet writes the new currency back to the backend.
+  const hasSyncedRemoteCurrency = useRef(false);
+
   const loadProfile = async () => {
     try {
       setLoading(true);
@@ -112,13 +125,12 @@ export default function Profile() {
           null,
       });
 
-      // If the profile response already carries a base currency, prefer
-      // that over whatever is cached locally. setBaseCurrency() updates
-      // the shared context (and its AsyncStorage cache) for every screen.
       const remoteCurrency =
         profile?.base_currency || profile?.baseCurrency || null;
 
-      if (remoteCurrency && remoteCurrency !== baseCurrency) {
+      if (remoteCurrency && !hasSyncedRemoteCurrency.current) {
+        hasSyncedRemoteCurrency.current = true;
+
         setBaseCurrency(remoteCurrency);
       }
     } catch (error) {
@@ -209,8 +221,6 @@ export default function Profile() {
   };
 
   const handleSelectCurrency = async (code) => {
-    // Updates the shared CurrencyContext (and its AsyncStorage cache),
-    // so every screen using useCurrency() picks up the change instantly.
     await setBaseCurrency(code);
     setCurrencyModalVisible(false);
   };
@@ -222,8 +232,6 @@ export default function Profile() {
     }
 
     console.log("USER RATING SUBMITTED:", selectedRating);
-
-    // TODO: send `selectedRating` to your analytics/feedback endpoint here.
 
     setRatingSubmitted(true);
   };
@@ -276,7 +284,7 @@ export default function Profile() {
   const handleDeleteAccount = () => {
     Alert.alert(
       "Delete account",
-      "This permanently deletes your account and all of your data. This action cannot be undone.",
+      "Deleting your account permanently removes all of your data, including your profile, history, and settings. This can't be undone. Are you sure you want to continue?",
       [
         {
           text: "Cancel",
@@ -284,25 +292,6 @@ export default function Profile() {
         },
         {
           text: "Delete",
-          style: "destructive",
-          onPress: confirmDeleteAccount,
-        },
-      ],
-    );
-  };
-
-  const confirmDeleteAccount = () => {
-    // A second confirmation for a destructive, irreversible action.
-    Alert.alert(
-      "Are you absolutely sure?",
-      "Type nothing needed — just confirm one more time to permanently delete your account.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Yes, delete my account",
           style: "destructive",
           onPress: performDeleteAccount,
         },
@@ -314,22 +303,58 @@ export default function Profile() {
     try {
       setDeleting(true);
 
-      // TODO: wire this up to your real delete-account endpoint, e.g.:
-      // await deleteAccount();
-      // For now this only logs the user out locally so the UI has
-      // somewhere safe to go once the real call is in place.
+      console.log("🗑️ Deleting BudgetIQ account from backend...");
+
+      /*
+       * Delete the account from PostgreSQL.
+       *
+       * The backend identifies the account from the JWT.
+       */
+
+      const response = await deleteAccount();
+
+      console.log("DELETE ACCOUNT RESPONSE:", response);
+
+      /*
+       * Only clear the local login session AFTER the backend
+       * confirms successful deletion.
+       */
+
       await logoutUser();
 
-      router.replace("/");
-    } catch (error) {
-      console.log("Delete account error:", error);
+      /*
+       * Tell the user the deletion was successful.
+       */
 
       Alert.alert(
-        "Unable to delete account",
-        error?.message ||
-          error?.error ||
-          "Something went wrong. Please try again.",
+        "Account deleted",
+        "Your BudgetIQ account and all associated data have been permanently deleted.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              router.replace("/");
+            },
+          },
+        ],
+        {
+          cancelable: false,
+        },
       );
+    } catch (error) {
+      console.log(
+        "Delete account error:",
+        error?.response?.data || error?.message || error,
+      );
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        error?.error ||
+        "Something went wrong while deleting your account. Please try again.";
+
+      Alert.alert("Unable to delete account", message);
     } finally {
       setDeleting(false);
     }
@@ -714,14 +739,7 @@ export default function Profile() {
                   </View>
 
                   <View>
-                    <Text
-                      style={[
-                        styles.listLabel,
-                        {
-                          color: colors.text,
-                        },
-                      ]}
-                    >
+                    <Text style={[styles.listLabel, { color: colors.text }]}>
                       Rate us
                     </Text>
 
@@ -777,14 +795,7 @@ export default function Profile() {
                   </View>
 
                   <View>
-                    <Text
-                      style={[
-                        styles.listLabel,
-                        {
-                          color: colors.text,
-                        },
-                      ]}
-                    >
+                    <Text style={[styles.listLabel, { color: colors.text }]}>
                       FAQ
                     </Text>
 
@@ -840,14 +851,7 @@ export default function Profile() {
                   </View>
 
                   <View>
-                    <Text
-                      style={[
-                        styles.listLabel,
-                        {
-                          color: colors.text,
-                        },
-                      ]}
-                    >
+                    <Text style={[styles.listLabel, { color: colors.text }]}>
                       Contact us
                     </Text>
 
@@ -869,6 +873,41 @@ export default function Profile() {
                   size={18}
                   color={colors.textFaint}
                 />
+              </TouchableOpacity>
+
+              {/* SMALL DELETE ACCOUNT */}
+              <TouchableOpacity
+                style={[
+                  styles.deleteButton,
+                  {
+                    borderColor: colors.dangerBorder,
+                  },
+                  deleting && styles.logoutButtonDisabled,
+                ]}
+                onPress={handleDeleteAccount}
+                disabled={deleting}
+                activeOpacity={0.7}
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color={colors.danger} />
+                ) : (
+                  <Ionicons
+                    name="trash-outline"
+                    size={15}
+                    color={colors.danger}
+                  />
+                )}
+
+                <Text
+                  style={[
+                    styles.deleteText,
+                    {
+                      color: colors.danger,
+                    },
+                  ]}
+                >
+                  {deleting ? "Deleting..." : "Delete account"}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -907,54 +946,6 @@ export default function Profile() {
                 {loggingOut ? "Logging out..." : "Logout"}
               </Text>
             </TouchableOpacity>
-
-            {/* DELETE ACCOUNT */}
-            <TouchableOpacity
-              style={[
-                styles.deleteButton,
-                {
-                  borderColor: colors.dangerBorder,
-                },
-                deleting && styles.logoutButtonDisabled,
-              ]}
-              onPress={handleDeleteAccount}
-              disabled={deleting}
-              activeOpacity={0.7}
-            >
-              {deleting ? (
-                <ActivityIndicator size="small" color={colors.danger} />
-              ) : (
-                <Ionicons
-                  name="trash-outline"
-                  size={18}
-                  color={colors.danger}
-                />
-              )}
-
-              <Text
-                style={[
-                  styles.logoutText,
-                  {
-                    color: colors.danger,
-                  },
-                ]}
-              >
-                {deleting ? "Deleting..." : "Delete account"}
-              </Text>
-            </TouchableOpacity>
-
-            <Text
-              style={[
-                styles.deleteWarning,
-                {
-                  color: colors.textFaint,
-                },
-              ]}
-            >
-              Deleting your account permanently removes all of your data,
-              including your profile, history, and settings. This can't be
-              undone.
-            </Text>
           </>
         )}
       />
@@ -1105,7 +1096,7 @@ export default function Profile() {
                         name={
                           starValue <= selectedRating ? "star" : "star-outline"
                         }
-                        size={36}
+                        size={25}
                         color={colors.primary}
                         style={styles.starIcon}
                       />
@@ -1236,7 +1227,7 @@ export default function Profile() {
           >
             <Ionicons
               name="mail-outline"
-              size={36}
+              size={30}
               color={colors.primary}
               style={{ marginBottom: 12 }}
             />
@@ -1264,6 +1255,16 @@ export default function Profile() {
               activeOpacity={0.8}
             >
               <Text style={styles.modalPrimaryButtonText}>{SUPPORT_EMAIL}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.modalPrimaryButton,
+                { backgroundColor: colors.primary },
+              ]}
+              onPress={handleContactEmail}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalPrimaryButtonText}>{SUPPORT_PHONE}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1345,14 +1346,15 @@ const styles = StyleSheet.create({
   },
 
   userName: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: "SpaceGrotesk_700Bold",
+    marginTop: -10,
   },
 
   userEmail: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    marginTop: 4,
+    marginTop: 1,
   },
 
   nameSkeleton: {
@@ -1423,9 +1425,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginHorizontal: 20,
+    marginHorizontal: 25,
     marginTop: 24,
-    paddingVertical: 14,
+    paddingVertical: 11,
     borderWidth: 1,
     borderRadius: 12,
   },
@@ -1442,18 +1444,23 @@ const styles = StyleSheet.create({
   deleteButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    justifyContent: "flex-start",
+    gap: 20,
     marginHorizontal: 20,
-    marginTop: 12,
-    paddingVertical: 14,
-
-    borderRadius: 12,
+    marginTop: -3,
+    paddingVertical: 12,
+    borderRadius: 10,
     backgroundColor: "transparent",
+    marginLeft: 25,
+  },
+
+  deleteText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
   },
 
   deleteWarning: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Inter_400Regular",
     textAlign: "center",
     marginHorizontal: 32,
@@ -1468,9 +1475,9 @@ const styles = StyleSheet.create({
   },
 
   modalSheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 18,
     paddingTop: 18,
     paddingBottom: 28,
   },
@@ -1480,49 +1487,49 @@ const styles = StyleSheet.create({
   },
 
   modalSheetCentered: {
-    borderRadius: 20,
-    marginHorizontal: 24,
+    borderRadius: 14,
+    marginHorizontal: 28,
     marginBottom: "auto",
     marginTop: "auto",
     alignItems: "center",
-    paddingVertical: 28,
+    paddingVertical: 2,
   },
 
   modalHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 12,
   },
 
   modalTitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontFamily: "SpaceGrotesk_700Bold",
     textAlign: "center",
   },
 
   modalBodyText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
     textAlign: "center",
-    lineHeight: 18,
+    lineHeight: 15,
   },
 
   modalPrimaryButton: {
-    marginTop: 20,
-    paddingVertical: 12,
+    marginTop: 15,
+    paddingVertical: 10,
     paddingHorizontal: 28,
     borderRadius: 12,
   },
 
   modalPrimaryButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     color: "#FFFFFF",
   },
 
   modalDismissText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter_500Medium",
   },
 

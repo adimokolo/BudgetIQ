@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "./api";
 import { TOKEN_KEY, USER_KEY } from "./constants";
 import * as ImagePicker from "expo-image-picker";
+
 /*
 |--------------------------------------------------------------------------
 | REGISTER
@@ -185,9 +186,38 @@ export const getCurrentUser = async () => {
 
 /*
 |--------------------------------------------------------------------------
-| FORGOT PASSWORD
+| DELETE ACCOUNT
+|--------------------------------------------------------------------------
+|
+| Permanently deletes the currently authenticated BudgetIQ account.
+|
+| The backend gets the user ID from the JWT.
+| No user ID is sent from the mobile app.
+|
 |--------------------------------------------------------------------------
 */
+
+export const deleteAccount = async () => {
+  try {
+    const response = await api.delete("/auth/account");
+
+    console.log("DELETE ACCOUNT RESPONSE:", response.data);
+
+    return response.data;
+  } catch (error) {
+    console.log("DELETE ACCOUNT API ERROR:", error);
+
+    console.log("DELETE ACCOUNT STATUS:", error?.response?.status);
+
+    console.log("DELETE ACCOUNT DATA:", error?.response?.data);
+
+    throw (
+      error?.response?.data || {
+        message: error?.message || "Unable to delete your account.",
+      }
+    );
+  }
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -236,7 +266,7 @@ export const verifyResetOTP = async (email, otp) => {
 
 /*
 |--------------------------------------------------------------------------
-| RESET PASSWORD (with OTP)
+| RESET PASSWORD WITH OTP
 |--------------------------------------------------------------------------
 */
 
@@ -266,7 +296,9 @@ export const resetPassword = async (email, otp, newPassword) => {
 
 export const uploadAvatar = async (avatarDataUrl) => {
   try {
-    const response = await api.patch("/auth/avatar", { avatarDataUrl });
+    const response = await api.patch("/auth/avatar", {
+      avatarDataUrl,
+    });
 
     return response.data;
   } catch (error) {

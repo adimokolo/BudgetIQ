@@ -11,14 +11,17 @@ const router = express.Router();
 | DEBUG — Check controller functions
 |--------------------------------------------------------------------------
 |
-| This can be removed later, but it is useful while resolving the merge.
+| This is useful for confirming that every controller function is loaded.
+|
 |--------------------------------------------------------------------------
 */
 
 console.log("Auth controller functions:", {
   register: typeof authController.register,
+
   verifyOTP: typeof authController.verifyOTP,
   resendOTP: typeof authController.resendOTP,
+
   login: typeof authController.login,
 
   forgotPassword: typeof authController.forgotPassword,
@@ -29,6 +32,8 @@ console.log("Auth controller functions:", {
   resetPasswordWithOtp: typeof authController.resetPasswordWithOtp,
 
   me: typeof authController.me,
+
+  deleteAccount: typeof authController.deleteAccount,
 
   uploadAvatar: typeof authController.uploadAvatar,
   updateAvatar: typeof authController.updateAvatar,
@@ -92,12 +97,29 @@ router.get("/me", requireAuth, authController.me);
 
 /*
 |--------------------------------------------------------------------------
+| DELETE ACCOUNT
+|--------------------------------------------------------------------------
+|
+| DELETE /api/auth/account
+|
+| requireAuth gets the user ID from the JWT.
+|
+| The mobile app does NOT send a user ID.
+|
+|--------------------------------------------------------------------------
+*/
+
+router.delete("/account", requireAuth, authController.deleteAccount);
+
+/*
+|--------------------------------------------------------------------------
 | PROFILE AVATAR — MOBILE
 |--------------------------------------------------------------------------
 |
-| Mobile sends multipart/form-data with:
+| Mobile sends multipart/form-data:
 |
 | avatar: image file
+|
 |--------------------------------------------------------------------------
 */
 
@@ -118,6 +140,7 @@ router.post(
 | {
 |   avatarDataUrl: "data:image/..."
 | }
+|
 |--------------------------------------------------------------------------
 */
 

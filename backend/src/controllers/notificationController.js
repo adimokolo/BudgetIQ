@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const asyncHandler = require("../utils/asyncHandler");
+const { sendNotificationEmail } = require("../utils/mailer");
 
 const listNotifications = asyncHandler(async (req, res) => {
   const [notificationsResult, unreadResult] = await Promise.all([
@@ -35,7 +36,33 @@ const createNotification = asyncHandler(async (req, res) => {
     [req.user.id, type, title, body, budgetId],
   );
 
-  res.status(201).json({ notification: result.rows[0] });
+  const notification = result.rows[0];
+
+  res.status(201).json({ notification });
+
+  // Fire the email AFTER responding, so a slow/unreachable SMTP server
+  // never delays the API response the app is waiting on. Wrapped in its
+  // own async IIFE since we're outside the request/response cycle now.
+  (async () => {
+    let recipientEmail = req.user.email;
+
+    if (!recipientEmail) {
+      const userResult = await pool.query(
+        `SELECT email FROM users WHERE id = $1`,
+        [req.user.id],
+      );
+
+      recipientEmail = userResult.rows[0]?.email;
+    }
+
+    await sendNotificationEmail({
+      to: recipientEmail,
+      title: notification.title,
+      body: notification.body,
+    });
+  })().catch((error) => {
+    console.log("Post-response notification email error:", error.message);
+  });
 });
 
 const markRead = asyncHandler(async (req, res) => {

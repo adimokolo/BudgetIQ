@@ -1217,6 +1217,195 @@ const me = asyncHandler(async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
+| DELETE ACCOUNT
+|--------------------------------------------------------------------------
+|
+| Permanently deletes the authenticated user's account and all
+| associated data. This is destructive and irreversible, so
+| everything runs inside a single transaction: either all rows
+| are removed, or none are (on any failure, we roll back).
+|--------------------------------------------------------------------------
+*/
+
+const deleteAccount = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  console.log("");
+  console.log("========================================");
+  console.log("🗑️ BUDGETIQ ACCOUNT DELETION");
+  console.log(`👤 User ID: ${userId}`);
+  console.log("========================================");
+  console.log("");
+
+  const client = await pool.connect();
+
+  try {
+    /*
+     * Start one database transaction.
+     *
+     * This is important because either EVERYTHING gets deleted,
+     * or NOTHING gets deleted if something goes wrong.
+     */
+
+    await client.query("BEGIN");
+
+    /*
+     * Delete transactions
+     */
+
+    await client.query(
+      `
+      DELETE FROM transactions
+      WHERE user_id = $1
+      `,
+      [userId],
+    );
+
+    console.log("✅ Transactions deleted");
+
+    /*
+     * Delete budgets
+     */
+
+    await client.query(
+      `
+      DELETE FROM budgets
+      WHERE user_id = $1
+      `,
+      [userId],
+    );
+
+    console.log("✅ Budgets deleted");
+
+    /*
+     * Delete accounts
+     */
+
+    await client.query(
+      `
+      DELETE FROM accounts
+      WHERE user_id = $1
+      `,
+      [userId],
+    );
+
+    console.log("✅ Accounts deleted");
+
+    /*
+     * Delete categories
+     */
+
+    await client.query(
+      `
+      DELETE FROM categories
+      WHERE user_id = $1
+      `,
+      [userId],
+    );
+
+    console.log("✅ Categories deleted");
+
+    /*
+     * Delete email verification OTPs
+     */
+
+    await client.query(
+      `
+      DELETE FROM otp_codes
+      WHERE user_id = $1
+      `,
+      [userId],
+    );
+
+    console.log("✅ OTP records deleted");
+
+    /*
+     * Delete password reset records
+     */
+
+    await client.query(
+      `
+      DELETE FROM password_resets
+      WHERE user_id = $1
+      `,
+      [userId],
+    );
+
+    console.log("✅ Password reset records deleted");
+
+    /*
+     * Finally delete the user.
+     *
+     * RETURNING lets us confirm that the user actually existed.
+     */
+
+    const result = await client.query(
+      `
+      DELETE FROM users
+      WHERE id = $1
+      RETURNING id, email
+      `,
+      [userId],
+    );
+
+    /*
+     * User does not exist
+     */
+
+    if (result.rowCount === 0) {
+      await client.query("ROLLBACK");
+
+      console.log("⚠️ Account deletion failed: user not found");
+
+      return res.status(404).json({
+        error: "User account not found.",
+      });
+    }
+
+    /*
+     * Everything succeeded.
+     */
+
+    await client.query("COMMIT");
+
+    console.log("");
+    console.log("========================================");
+    console.log("✅ BUDGETIQ ACCOUNT COMPLETELY DELETED");
+    console.log(`📧 Email: ${result.rows[0].email}`);
+    console.log("========================================");
+    console.log("");
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Your BudgetIQ account and all associated data have been permanently deleted.",
+    });
+  } catch (error) {
+    /*
+     * If ANY deletion fails, restore everything.
+     */
+
+    await client.query("ROLLBACK");
+
+    console.error("");
+    console.error("========================================");
+    console.error("❌ BUDGETIQ ACCOUNT DELETION FAILED");
+    console.error(error);
+    console.error("========================================");
+    console.error("");
+
+    throw error;
+  } finally {
+    /*
+     * Always release the PostgreSQL connection.
+     */
+
+    client.release();
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
 | MOBILE PROFILE AVATAR
 |--------------------------------------------------------------------------
 |
@@ -1352,6 +1541,9 @@ module.exports = {
 
   // Current user
   me,
+
+  // Account deletion
+  deleteAccount,
 
   // Avatars
   uploadAvatar,
