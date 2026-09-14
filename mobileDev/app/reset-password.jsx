@@ -32,7 +32,6 @@ export default function ResetPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Password visibility
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -150,7 +149,6 @@ export default function ResetPasswordScreen() {
 
           <Text style={styles.label}>New password</Text>
 
-          {/* New password with eye toggle */}
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
@@ -179,8 +177,6 @@ export default function ResetPasswordScreen() {
           </View>
 
           <Text style={styles.label}>Confirm password</Text>
-
-          {/* Confirm password with eye toggle */}
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
@@ -278,7 +274,7 @@ const createStyles = (colors) =>
     logo: {
       width: 100,
       height: 100,
-      marginBottom: -10,
+      marginBottom: 5,
     },
 
     brand: {
@@ -320,13 +316,6 @@ const createStyles = (colors) =>
       alignSelf: "flex-start",
       marginBottom: 6,
     },
-
-    /*
-    |--------------------------------------------------------------------------
-    | PASSWORD INPUT WITH EYE BUTTON
-    |--------------------------------------------------------------------------
-    */
-
     passwordContainer: {
       width: "100%",
       flexDirection: "row",

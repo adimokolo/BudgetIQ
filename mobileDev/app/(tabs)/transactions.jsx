@@ -136,13 +136,13 @@ const SWATCHES = [
   "#174E78",
   "#2DD4BF",
   "#7C6FF0",
-  "#F472B6",
-  "#EC4899",
+  "#cc4b8e",
+  "#8f3863",
   "#FBBF24",
   "#16A34A",
   "#F59E0B",
   "#3B82F6",
-  "#EF4444",
+  "#b10c0c",
   "#0EA5E9",
   "#22C55E",
   "#A855F7",
@@ -154,29 +154,12 @@ function fallbackIconFor(type) {
   return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
 }
 
-/*
-|--------------------------------------------------------------------------
-| LOCAL DATE HELPERS
-|--------------------------------------------------------------------------
-|
-| Important:
-| Do not use toISOString().slice(0, 10) for date-only financial
-| transactions because UTC conversion can move the date backwards/forwards.
-|
-*/
-
 function getLocalDateString(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
     2,
     "0",
   )}-${String(date.getDate()).padStart(2, "0")}`;
 }
-
-/*
-|--------------------------------------------------------------------------
-| DROPDOWN
-|--------------------------------------------------------------------------
-*/
 
 function Dropdown({
   label,
@@ -288,12 +271,6 @@ function Dropdown({
     </View>
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| CATEGORY PICKER MODAL
-|--------------------------------------------------------------------------
-*/
 
 function CategoryPickerModal({
   visible,
@@ -507,12 +484,6 @@ function CategoryPickerModal({
     </Modal>
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| CALCULATOR MODAL
-|--------------------------------------------------------------------------
-*/
 
 function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
   const [display, setDisplay] = useState("0");
@@ -891,12 +862,6 @@ function CalculatorModal({ visible, onClose, onApply, colors, styles }) {
   );
 }
 
-/*
-|--------------------------------------------------------------------------
-| CURRENCY CONVERTER
-|--------------------------------------------------------------------------
-*/
-
 function CurrencyConverterCard({
   colors,
   styles,
@@ -1115,12 +1080,6 @@ function CurrencyConverterCard({
   );
 }
 
-/*
-|--------------------------------------------------------------------------
-| BUILD MONTH GRID
-|--------------------------------------------------------------------------
-*/
-
 function buildMonthGrid(viewDate) {
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -1168,12 +1127,6 @@ function buildMonthGrid(viewDate) {
 
   return cells;
 }
-
-/*
-|--------------------------------------------------------------------------
-| FULL COLORFUL CALENDAR
-|--------------------------------------------------------------------------
-*/
 
 function FullCalendar({
   viewDate,
@@ -1230,8 +1183,6 @@ function FullCalendar({
         },
       ]}
     >
-      {/* HEADER */}
-
       <View style={styles.calendarHeaderRow}>
         <View>
           <Text style={styles.calendarTitle}>Calendar</Text>
@@ -1252,8 +1203,6 @@ function FullCalendar({
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* MONTH NAVIGATION */}
 
       <View style={styles.calendarNavRow}>
         <TouchableOpacity
@@ -1312,8 +1261,6 @@ function FullCalendar({
         </TouchableOpacity>
       </View>
 
-      {/* WEEKDAYS */}
-
       <View style={styles.weekdayRow}>
         {WEEKDAY_LABELS.map((label, index) => (
           <Text
@@ -1332,8 +1279,6 @@ function FullCalendar({
           </Text>
         ))}
       </View>
-
-      {/* CALENDAR GRID */}
 
       <View style={styles.calendarGrid}>
         {cells.map((cell) => {
@@ -1369,11 +1314,6 @@ function FullCalendar({
             backgroundColor = colors.expenseBg;
           }
 
-          /*
-           * The current system date gets the strongest
-           * visual treatment.
-           */
-
           if (isToday) {
             backgroundColor = colors.primary;
           }
@@ -1397,8 +1337,6 @@ function FullCalendar({
                 isSelected && !isToday && styles.calendarSelectedCell,
               ]}
             >
-              {/* DATE */}
-
               <View
                 style={[
                   styles.calendarDateCircle,
@@ -1424,8 +1362,6 @@ function FullCalendar({
                 </Text>
               </View>
 
-              {/* TODAY INDICATOR */}
-
               {isToday && (
                 <View
                   style={[
@@ -1440,8 +1376,6 @@ function FullCalendar({
           );
         })}
       </View>
-
-      {/* LEGEND */}
 
       <View style={styles.calendarLegend}>
         <View style={styles.calendarLegendItem}>
@@ -1492,12 +1426,6 @@ function FullCalendar({
     </View>
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| TRANSACTION CARD
-|--------------------------------------------------------------------------
-*/
 
 function TransactionCard({ transaction, currency, onDelete, styles }) {
   const isIncome = transaction.type === "Income";
@@ -1555,12 +1483,6 @@ function TransactionCard({ transaction, currency, onDelete, styles }) {
   );
 }
 
-/*
-|--------------------------------------------------------------------------
-| MAP TRANSACTION
-|--------------------------------------------------------------------------
-*/
-
 function mapTransaction(raw) {
   return {
     id: raw.id,
@@ -1587,18 +1509,9 @@ function mapTransaction(raw) {
   };
 }
 
-/*
-|--------------------------------------------------------------------------
-| MAIN SCREEN
-|--------------------------------------------------------------------------
-*/
-
 export default function Transactions() {
   const { colors } = useTheme();
 
-  // Base currency now comes from the shared CurrencyContext, which is
-  // populated from Profile (or the currency picked at signup) and stays
-  // in sync everywhere it's used - no separate fetch needed here.
   const { baseCurrency: currency, currencyReady } = useCurrency();
 
   const [fontsLoaded] = useFonts({
@@ -1618,11 +1531,6 @@ export default function Transactions() {
   const styles = createStyles(colors);
 
   const currentSystemDate = useMemo(() => getLocalDateString(new Date()), []);
-
-  /*
-   * Automatically select today's date when the
-   * screen opens.
-   */
 
   const [selectedDate, setSelectedDate] = useState(currentSystemDate);
 
@@ -1738,21 +1646,6 @@ export default function Transactions() {
     (c) => c.type?.toLowerCase() === type.toLowerCase(),
   );
 
-  /*
-   |--------------------------------------------------------------------------
-   | DAILY NET BALANCE
-   |--------------------------------------------------------------------------
-   |
-   | Income  = positive
-   | Expense = negative
-   |
-   | Example:
-   | Income  ₦100,000
-   | Expense  ₦30,000
-   | Net     +₦70,000
-   |
-   */
-
   const dailyBalances = useMemo(() => {
     const balances = {};
 
@@ -1833,16 +1726,6 @@ export default function Transactions() {
     setSelectedCategory(null);
   };
 
-  /*
-   * FILTER TABS ("All types" / "Income" / "Expense")
-   *
-   * Switching to "All types" clears whatever day is selected on the
-   * calendar, so it truly shows every transaction rather than only
-   * the ones on the previously-selected day. Switching to "Income" or
-   * "Expense" leaves the current date selection alone, so the two
-   * filters (type + day) keep composing the way they already did.
-   */
-
   const handleFilterChange = (nextFilter) => {
     setFilter(nextFilter);
 
@@ -1875,10 +1758,6 @@ export default function Transactions() {
         amount: numericAmount,
 
         description: description.trim() || null,
-
-        /*
-         * Use LOCAL date instead of UTC.
-         */
 
         occurredOn: getLocalDateString(date),
 
@@ -2011,8 +1890,6 @@ export default function Transactions() {
           />
         }
       >
-        {/* HEADER */}
-
         <View style={styles.header}>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.heading}>Transactions</Text>
@@ -2082,8 +1959,6 @@ export default function Transactions() {
           </View>
         </View>
 
-        {/* CONVERTER */}
-
         {showConverter && (
           <CurrencyConverterCard
             colors={colors}
@@ -2092,8 +1967,6 @@ export default function Transactions() {
             onAddResult={handleConverterAdd}
           />
         )}
-
-        {/* SUMMARY */}
 
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
@@ -2112,8 +1985,6 @@ export default function Transactions() {
             </Text>
           </View>
         </View>
-
-        {/* FILTER */}
 
         <View style={styles.filterContainer}>
           <Text style={styles.filterLabel}>Filter transactions</Text>
@@ -2141,8 +2012,6 @@ export default function Transactions() {
           </View>
         </View>
 
-        {/* TRANSACTION LIST */}
-
         <View style={styles.listCard}>
           {filteredTransactions.length > 0 ? (
             filteredTransactions.map((transaction) => (
@@ -2167,8 +2036,6 @@ export default function Transactions() {
           )}
         </View>
 
-        {/* COLORFUL CALENDAR */}
-
         <FullCalendar
           viewDate={calendarMonth}
           onChangeMonth={setCalendarMonth}
@@ -2183,8 +2050,6 @@ export default function Transactions() {
           styles={styles}
         />
       </ScrollView>
-
-      {/* CONVERTER ACCOUNT PICKER */}
 
       <Modal
         visible={showConverterAccountPicker}
@@ -2295,12 +2160,6 @@ export default function Transactions() {
                           },
                         ]}
                       >
-                        {/*
-                         * Accounts with a saved color show a solid
-                         * swatch here instead of the wallet icon.
-                         * Accounts without one (older accounts, or
-                         * bank-synced accounts) keep the wallet icon.
-                         */}
                         {!account.color && (
                           <Ionicons
                             name="wallet-outline"
@@ -2374,8 +2233,6 @@ export default function Transactions() {
         </View>
       </Modal>
 
-      {/* ADD TRANSACTION MODAL */}
-
       <Modal
         visible={showAddModal}
         transparent
@@ -2400,8 +2257,6 @@ export default function Transactions() {
               styles={styles}
             />
 
-            {/* ACCOUNT */}
-
             <Text style={styles.inputLabel}>Account</Text>
 
             <Pressable
@@ -2423,12 +2278,6 @@ export default function Transactions() {
                     },
                   ]}
                 >
-                  {/*
-                   * Once an account with a saved color is picked, this
-                   * shows a solid swatch instead of the wallet icon.
-                   * Before anything is picked (or for accounts with no
-                   * color), the wallet icon still shows.
-                   */}
                   {!selectedAccount?.color && (
                     <Ionicons
                       name="wallet-outline"
@@ -2472,8 +2321,6 @@ export default function Transactions() {
               <Text style={styles.dropdownArrow}>⌄</Text>
             </Pressable>
 
-            {/* AMOUNT */}
-
             <Text style={styles.inputLabel}>Amount</Text>
 
             <View style={styles.amountRow}>
@@ -2506,8 +2353,6 @@ export default function Transactions() {
                 />
               </Pressable>
             </View>
-
-            {/* CATEGORY */}
 
             <Text style={styles.inputLabel}>Category</Text>
 
@@ -2564,8 +2409,6 @@ export default function Transactions() {
               <Text style={styles.dropdownArrow}>⌄</Text>
             </Pressable>
 
-            {/* DESCRIPTION */}
-
             <Text style={styles.inputLabel}>Description</Text>
 
             <TextInput
@@ -2575,8 +2418,6 @@ export default function Transactions() {
               value={description}
               onChangeText={setDescription}
             />
-
-            {/* DATE */}
 
             <Text style={styles.inputLabel}>Date</Text>
 
@@ -2623,8 +2464,6 @@ export default function Transactions() {
         </View>
       </Modal>
 
-      {/* CATEGORY PICKER */}
-
       <CategoryPickerModal
         visible={showCategoryPicker}
         onClose={() => setShowCategoryPicker(false)}
@@ -2636,8 +2475,6 @@ export default function Transactions() {
         styles={styles}
       />
 
-      {/* CALCULATOR */}
-
       <CalculatorModal
         visible={showCalculator}
         onClose={() => setShowCalculator(false)}
@@ -2648,12 +2485,6 @@ export default function Transactions() {
     </SafeAreaView>
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| STYLES
-|--------------------------------------------------------------------------
-*/
 
 const createStyles = (colors) =>
   StyleSheet.create({
@@ -3002,12 +2833,6 @@ const createStyles = (colors) =>
       textAlign: "center",
     },
 
-    /*
-    |--------------------------------------------------------------------------
-    | COLORFUL CALENDAR
-    |--------------------------------------------------------------------------
-    */
-
     calendarWrap: {
       borderRadius: 18,
       borderWidth: 1,
@@ -3157,12 +2982,6 @@ const createStyles = (colors) =>
       color: colors.textFaint,
     },
 
-    /*
-    |--------------------------------------------------------------------------
-    | MODAL
-    |--------------------------------------------------------------------------
-    */
-
     modalOverlay: {
       flex: 1,
       backgroundColor: colors.overlay,
@@ -3218,12 +3037,6 @@ const createStyles = (colors) =>
       backgroundColor: colors.inputBg,
     },
 
-    /*
-    |--------------------------------------------------------------------------
-    | AMOUNT
-    |--------------------------------------------------------------------------
-    */
-
     amountRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -3242,12 +3055,6 @@ const createStyles = (colors) =>
     amountInput: {
       flex: 1,
     },
-
-    /*
-    |--------------------------------------------------------------------------
-    | CALCULATOR
-    |--------------------------------------------------------------------------
-    */
 
     calcModalOverlay: {
       flex: 1,
@@ -3365,12 +3172,6 @@ const createStyles = (colors) =>
       fontFamily: fonts.bodyRegular,
     },
 
-    /*
-    |--------------------------------------------------------------------------
-    | CATEGORY
-    |--------------------------------------------------------------------------
-    */
-
     categoryField: {
       flexDirection: "row",
       alignItems: "center",
@@ -3487,12 +3288,6 @@ const createStyles = (colors) =>
       borderColor: "transparent",
     },
 
-    /*
-    |--------------------------------------------------------------------------
-    | DROPDOWN
-    |--------------------------------------------------------------------------
-    */
-
     dropdownField: {
       flexDirection: "row",
       alignItems: "center",
@@ -3589,12 +3384,6 @@ const createStyles = (colors) =>
       color: colors.primary,
     },
 
-    /*
-    |--------------------------------------------------------------------------
-    | SAVE BUTTON
-    |--------------------------------------------------------------------------
-    */
-
     saveButton: {
       marginTop: 20,
       backgroundColor: colors.primary,
@@ -3612,12 +3401,6 @@ const createStyles = (colors) =>
       fontSize: 12,
       fontFamily: fonts.bodySemiBold,
     },
-
-    /*
-    |--------------------------------------------------------------------------
-    | ACCOUNT PICKER
-    |--------------------------------------------------------------------------
-    */
 
     accountSelectField: {
       minHeight: 48,
@@ -3768,12 +3551,6 @@ const createStyles = (colors) =>
       alignItems: "center",
       paddingVertical: 10,
     },
-
-    /*
-    |--------------------------------------------------------------------------
-    | CONVERTER
-    |--------------------------------------------------------------------------
-    */
 
     converterCard: {
       borderRadius: 16,

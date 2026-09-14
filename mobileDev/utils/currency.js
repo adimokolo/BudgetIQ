@@ -156,18 +156,6 @@ export const ALL_CURRENCIES = [
   { code: "ZWL", name: "Zimbabwean Dollar" },
 ];
 
-/*
-|--------------------------------------------------------------------------
-| FORMAT CURRENCY
-|--------------------------------------------------------------------------
-|
-| Formats a raw number as a currency string using the correct symbol,
-| decimal places, and grouping for the given ISO code - no manual
-| symbol table to maintain. Falls back to "<CODE> 123.45" if the
-| runtime's Intl support can't resolve a symbol for some reason.
-|
-*/
-
 export function formatCurrency(amount, currencyCode = "NGN") {
   const value = Number(amount || 0);
 
@@ -180,7 +168,6 @@ export function formatCurrency(amount, currencyCode = "NGN") {
       maximumFractionDigits: 2,
     }).format(value);
   } catch (error) {
-    // Unknown/unsupported code - fall back to a plain, still-readable format.
     console.log("formatCurrency fallback for code:", currencyCode, error);
 
     return `${currencyCode} ${value.toLocaleString("en", {
@@ -189,18 +176,6 @@ export function formatCurrency(amount, currencyCode = "NGN") {
     })}`;
   }
 }
-
-/*
-|--------------------------------------------------------------------------
-| CURRENCY SYMBOL ONLY
-|--------------------------------------------------------------------------
-|
-| For UI spots that show the symbol separately from a typed number
-| (e.g. a "₦" prefix beside a raw text input) rather than a fully
-| formatted amount. Falls back to the currency code itself if no
-| distinct symbol is resolvable.
-|
-*/
 
 export function currencySymbolFor(currencyCode = "NGN") {
   try {
@@ -220,17 +195,6 @@ export function currencySymbolFor(currencyCode = "NGN") {
   }
 }
 
-/*
-|--------------------------------------------------------------------------
-| GET CURRENCY SYMBOL
-|--------------------------------------------------------------------------
-|
-| Returns just the symbol (e.g. "₦", "$", "€") for a given ISO code,
-| for places like an empty-state icon or an input prefix where a full
-| formatted amount doesn't make sense. Falls back to the code itself.
-|
-*/
-
 export function getCurrencySymbol(currencyCode = "NGN") {
   try {
     const parts = new Intl.NumberFormat("en", {
@@ -248,15 +212,6 @@ export function getCurrencySymbol(currencyCode = "NGN") {
     return currencyCode;
   }
 }
-
-/*
-|--------------------------------------------------------------------------
-| FIND CURRENCY LABEL
-|--------------------------------------------------------------------------
-|
-| e.g. "NGN — Nigerian Naira", used for the picker's display text.
-|
-*/
 
 export function currencyLabel(code) {
   const match = ALL_CURRENCIES.find((c) => c.code === code);

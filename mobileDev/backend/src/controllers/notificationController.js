@@ -38,9 +38,6 @@ const createNotification = asyncHandler(async (req, res) => {
 
   const notification = insertResult.rows[0];
 
-  // Resolve the recipient's email — use it if the auth middleware already
-  // attached it, otherwise look it up. Adjust the column/table name if
-  // your schema is different.
   let recipientEmail = req.user.email;
 
   if (!recipientEmail) {
@@ -52,8 +49,6 @@ const createNotification = asyncHandler(async (req, res) => {
     recipientEmail = userResult.rows[0]?.email;
   }
 
-  // Fire-and-forget so a slow/unreachable SMTP server never delays the
-  // API response. sendNotificationEmail catches its own errors internally.
   sendNotificationEmail({
     to: recipientEmail,
     title: notification.title,

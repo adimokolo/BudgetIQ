@@ -22,17 +22,6 @@ const CurrencyContext = createContext({
   currencySymbol: currencySymbolFor(DEFAULT_CURRENCY),
 });
 
-/*
-|--------------------------------------------------------------------------
-| CURRENCY PROVIDER
-|--------------------------------------------------------------------------
-|
-| Wrap the app (e.g. in app/_layout.js, alongside your ThemeProvider)
-| with this so every screen shares the same base currency and updates
-| the moment it changes - no per-screen AsyncStorage reads needed.
-|
-*/
-
 export function CurrencyProvider({ children }) {
   const [baseCurrency, setBaseCurrencyState] = useState(DEFAULT_CURRENCY);
   const [currencyReady, setCurrencyReady] = useState(false);
@@ -60,9 +49,6 @@ export function CurrencyProvider({ children }) {
     } catch (error) {
       console.log("Failed to persist base currency:", error);
     }
-
-    // TODO: if your backend tracks base currency per-user, sync it here,
-    // e.g. await updateProfile({ base_currency: code });
   }, []);
 
   const formatAmount = useCallback(
@@ -87,18 +73,6 @@ export function CurrencyProvider({ children }) {
     </CurrencyContext.Provider>
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| USE CURRENCY
-|--------------------------------------------------------------------------
-|
-| import { useCurrency } from "../contexts/CurrencyContext";
-| const { baseCurrency, formatAmount, currencySymbol } = useCurrency();
-|
-| formatAmount(1234.5) -> "₦1,234.50" (using whatever the user picked)
-|
-*/
 
 export function useCurrency() {
   return useContext(CurrencyContext);
