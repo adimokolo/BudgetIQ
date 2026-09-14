@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
 import Skeleton from '../components/Skeleton';
 import KebabMenu from '../components/KebabMenu';
+import { getIcon, fallbackIconFor } from '../utils/categoryIcons';
 import { formatCurrency } from '../utils/format';
 import { TRANSACTION_CREATED_EVENT } from '../components/AddTransactionModal';
 
@@ -116,7 +117,24 @@ export default function Budgets() {
               <div className="facet-card" key={b.id}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 14.5 }}>
-                    <span className="cat-dot" style={{ background: b.category_color || '#B9C3D4' }} />
+                    <span
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: '50%',
+                        background: b.category_color || '#647089',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        fontSize: 14,
+                      }}
+                    >
+                      {getIcon(
+                        categories.find((c) => String(c.id) === String(b.category_id))?.icon ||
+                        fallbackIconFor('expense')
+                      )}
+                    </span>
                     {b.category_name || 'Overall'}
                   </span>
                   <KebabMenu

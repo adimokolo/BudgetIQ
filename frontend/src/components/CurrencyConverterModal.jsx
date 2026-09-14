@@ -1,4 +1,3 @@
-// frontend/src/components/CurrencyConverterModal.jsx
 import { useState } from 'react';
 import Modal from './Modal';
 import CustomSelect from './CustomSelect';
@@ -11,24 +10,22 @@ const CURRENCY_OPTIONS = ALL_CURRENCIES.map((c) => ({
 }));
 
 export default function CurrencyConverterModal({ defaultFrom = 'NGN', defaultTo = 'USD', onClose }) {
-  const [amount, setAmount]           = useState('');
+  const [amount, setAmount]             = useState('');
   const [fromCurrency, setFromCurrency] = useState(defaultFrom);
-  const [toCurrency, setToCurrency]   = useState(defaultTo);
-  const [result, setResult]           = useState(null);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState(null);
+  const [toCurrency, setToCurrency]     = useState(defaultTo);
+  const [result, setResult]             = useState(null);
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState(null);
 
   const handleConvert = async (e) => {
     e.preventDefault();
     setError(null);
     setResult(null);
-
     const value = Number(amount);
     if (!amount || Number.isNaN(value) || value <= 0) {
       setError('Enter a valid amount to convert.');
       return;
     }
-
     setLoading(true);
     try {
       const converted = await convertCurrency(value, fromCurrency, toCurrency);
@@ -52,9 +49,8 @@ export default function CurrencyConverterModal({ defaultFrom = 'NGN', defaultTo 
 
         {/* Amount */}
         <div className="field">
-          <label htmlFor="convertAmount">Amount</label>
+          <label>Amount</label>
           <input
-            id="convertAmount"
             type="number"
             min="0"
             step="0.01"
@@ -65,36 +61,39 @@ export default function CurrencyConverterModal({ defaultFrom = 'NGN', defaultTo 
           />
         </div>
 
-        {/* From / Swap / To */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
-          <div className="field" style={{ flex: 1, marginBottom: 16 }}>
-            <label>From</label>
-            <CustomSelect
-              value={fromCurrency}
-              onChange={(val) => { setFromCurrency(val); setResult(null); }}
-              options={CURRENCY_OPTIONS}
-            />
-          </div>
+        {/* From */}
+        <div className="field">
+          <label>From</label>
+          <CustomSelect
+            value={fromCurrency}
+            onChange={(val) => { setFromCurrency(val); setResult(null); }}
+            options={CURRENCY_OPTIONS}
+            searchPlaceholder="Search currency..."
+          />
+        </div>
 
+        {/* Swap button */}
+        <div style={{ textAlign: 'center', margin: '8px 0' }}>
           <button
             type="button"
-            className="icon-btn"
+            className="btn btn--ghost"
             onClick={swapCurrencies}
-            aria-label="Swap currencies"
-            title="Swap"
-            style={{ marginBottom: 16, fontSize: 20 }}
+            title="Swap currencies"
+            style={{ fontSize: 18, padding: '6px 20px' }}
           >
-            ⇄
+            ⇅ Swap
           </button>
+        </div>
 
-          <div className="field" style={{ flex: 1, marginBottom: 16 }}>
-            <label>To</label>
-            <CustomSelect
-              value={toCurrency}
-              onChange={(val) => { setToCurrency(val); setResult(null); }}
-              options={CURRENCY_OPTIONS}
-            />
-          </div>
+        {/* To */}
+        <div className="field">
+          <label>To</label>
+          <CustomSelect
+            value={toCurrency}
+            onChange={(val) => { setToCurrency(val); setResult(null); }}
+            options={CURRENCY_OPTIONS}
+            searchPlaceholder="Search currency..."
+          />
         </div>
 
         {/* Error */}
