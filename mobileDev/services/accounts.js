@@ -40,6 +40,7 @@ export const createAccount = async ({
   currency,
   initialAmount,
   notes,
+  color,
 }) => {
   try {
     const response = await api.post("/accounts", {
@@ -47,6 +48,7 @@ export const createAccount = async ({
       currency,
       initialAmount,
       notes,
+      color,
     });
 
     console.log("Create account status:", response.status);
@@ -76,7 +78,7 @@ export const createAccount = async ({
 
 export const updateAccount = async (
   accountId,
-  { name, currency, initialAmount, notes },
+  { name, currency, initialAmount, notes, color },
 ) => {
   try {
     const response = await api.put(`/accounts/${accountId}`, {
@@ -84,6 +86,7 @@ export const updateAccount = async (
       currency,
       initialAmount,
       notes,
+      color,
     });
 
     console.log("Update account status:", response.status);

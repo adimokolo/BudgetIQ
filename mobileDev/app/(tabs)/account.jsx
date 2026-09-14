@@ -61,6 +61,28 @@ import {
   refreshBankAccount,
 } from "../../services/bankSync";
 
+// --------------------------------------------------
+// ACCOUNT COLOR SWATCHES
+// --------------------------------------------------
+
+const SWATCHES = [
+  "#174E78",
+  "#2DD4BF",
+  "#7C6FF0",
+  "#F472B6",
+  "#EC4899",
+  "#FBBF24",
+  "#16A34A",
+  "#F59E0B",
+  "#3B82F6",
+  "#EF4444",
+  "#0EA5E9",
+  "#22C55E",
+  "#A855F7",
+  "#F97316",
+  "#84CC16",
+];
+
 export default function Account() {
   const { colors } = useTheme();
 
@@ -118,6 +140,7 @@ export default function Account() {
   const [currency, setCurrency] = useState("NGN");
   const [initialAmount, setInitialAmount] = useState("");
   const [notes, setNotes] = useState("");
+  const [accountColor, setAccountColor] = useState(SWATCHES[0]);
 
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [currencySearch, setCurrencySearch] = useState("");
@@ -457,6 +480,7 @@ export default function Account() {
     setCurrency("NGN");
     setInitialAmount("");
     setNotes("");
+    setAccountColor(SWATCHES[0]);
     setCurrencySearch("");
     setShowCurrencyPicker(false);
   };
@@ -489,6 +513,8 @@ export default function Account() {
     setInitialAmount(String(account.balance ?? ""));
 
     setNotes(account.notes || "");
+
+    setAccountColor(account.color || SWATCHES[0]);
 
     setCurrencySearch("");
 
@@ -544,6 +570,7 @@ export default function Account() {
         currency,
         initialAmount: amount,
         notes: notes.trim() || null,
+        color: accountColor,
       };
 
       // --------------------------------------------------
@@ -563,6 +590,7 @@ export default function Account() {
           currency: accountData.currency,
           balance: amount,
           notes: accountData.notes,
+          color: accountData.color,
         };
 
         setAccounts((currentAccounts) =>
@@ -1105,20 +1133,29 @@ export default function Account() {
                     style={[
                       styles.accountIcon,
                       {
-                        backgroundColor: colors.chipBg,
+                        backgroundColor: account.color || colors.chipBg,
                       },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.accountIconText,
-                        {
-                          color: colors.primary,
-                        },
-                      ]}
-                    >
-                      {getCurrencySymbol(account.currency)}
-                    </Text>
+                    {/*
+                     * Accounts created with a color code show a solid
+                     * swatch here instead of the currency symbol.
+                     * Older accounts saved before this feature (no
+                     * `color` field yet) fall back to the currency
+                     * symbol so nothing looks broken.
+                     */}
+                    {!account.color && (
+                      <Text
+                        style={[
+                          styles.accountIconText,
+                          {
+                            color: colors.primary,
+                          },
+                        ]}
+                      >
+                        {getCurrencySymbol(account.currency)}
+                      </Text>
+                    )}
                   </View>
 
                   <View style={styles.accountInfo}>
@@ -1751,6 +1788,65 @@ export default function Account() {
               </View>
             )}
 
+            {/* ACCOUNT COLOR */}
+
+            <Text
+              style={[
+                styles.inputLabel,
+                {
+                  color: colors.textMuted,
+                },
+              ]}
+            >
+              Account color
+            </Text>
+
+            <View style={styles.colorPreviewRow}>
+              <View
+                style={[
+                  styles.colorPreviewCircle,
+                  {
+                    backgroundColor: accountColor,
+                  },
+                ]}
+              />
+
+              <Text
+                style={[
+                  styles.colorPreviewText,
+                  {
+                    color: colors.textFaint,
+                  },
+                ]}
+              >
+                This color shows on the account card{" "}
+                {accountName.trim() ? `for "${accountName.trim()}"` : ""}
+              </Text>
+            </View>
+
+            <View style={styles.swatchRow}>
+              {SWATCHES.map((swatch) => {
+                const isSelected = accountColor === swatch;
+
+                return (
+                  <Pressable
+                    key={swatch}
+                    onPress={() => setAccountColor(swatch)}
+                    disabled={savingAccount}
+                    style={[
+                      styles.swatch,
+                      {
+                        backgroundColor: swatch,
+                      },
+                      isSelected && {
+                        borderColor: colors.text,
+                      },
+                    ]}
+                  />
+                );
+              })}
+            </View>
+
             {/* AMOUNT */}
 
             <Text
@@ -2053,7 +2149,7 @@ const styles = StyleSheet.create({
   // --------------------------------------------------
 
   accountCard: {
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 16,
     marginBottom: 12,
@@ -2065,9 +2161,9 @@ const styles = StyleSheet.create({
   },
 
   accountIcon: {
-    width: 35,
-    height: 35,
-    borderRadius: 22,
+    width: 20,
+    height: 20,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -2350,6 +2446,44 @@ const styles = StyleSheet.create({
   noCurrencyResultsText: {
     fontSize: 9,
     fontFamily: "Inter_400Regular",
+  },
+
+  // --------------------------------------------------
+  // ACCOUNT COLOR PICKER
+  // --------------------------------------------------
+
+  colorPreviewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 10,
+  },
+
+  colorPreviewCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+  },
+
+  colorPreviewText: {
+    flex: 1,
+    fontSize: 9,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 13,
+  },
+
+  swatchRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+
+  swatch: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "transparent",
   },
 
   amountInputContainer: {
