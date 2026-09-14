@@ -685,17 +685,37 @@
   padding: 20px;
 }
 
+
 .modal-card {
   width: 100%;
   max-width: 440px;
   padding: 26px;
+  max-height: 94vh;
+  overflow: visible;
+}
+
+.modal-card>form {
+  max-height: calc(94vh - 110px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.modal-card>form {
+  max-height: calc(94vh - 110px);
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .modal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 18px;
+}
+
+.modal-head h3 {
+  margin: 0;
 }
 
 .icon-btn {

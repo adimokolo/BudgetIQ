@@ -9,10 +9,15 @@ export default function Modal({ title, onClose, children }) {
       <div className="facet-card modal-card">
         <div className="modal-head">
           <h3>{title}</h3>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
+          <button
+            className="icon-btn"
+            onClick={onClose}
+            aria-label="Close"
+          >
             ✕
           </button>
         </div>
+
         {children}
       </div>
     </div>
