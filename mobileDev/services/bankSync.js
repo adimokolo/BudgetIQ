@@ -1,9 +1,5 @@
 import api from "./api";
 
-// ======================================================
-// START BANK SYNCHRONIZATION
-// ======================================================
-
 export const startBankSynchronization = async ({ name, email }) => {
   try {
     if (!name || !email) {
@@ -39,10 +35,6 @@ export const startBankSynchronization = async ({ name, email }) => {
   }
 };
 
-// ======================================================
-// GET BANK SYNCHRONIZATION STATUS
-// ======================================================
-
 export const getBankSyncStatus = async (ref) => {
   try {
     const response = await api.get(
@@ -69,10 +61,6 @@ export const getBankSyncStatus = async (ref) => {
   }
 };
 
-// ======================================================
-// GET CONNECTED BANK ACCOUNTS
-// ======================================================
-
 export const getBankAccounts = async () => {
   try {
     const response = await api.get("/bank-sync/accounts");
@@ -93,10 +81,6 @@ export const getBankAccounts = async () => {
     );
   }
 };
-
-// ======================================================
-// REFRESH BANK ACCOUNT
-// ======================================================
 
 export const refreshBankAccount = async (id) => {
   try {

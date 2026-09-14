@@ -12,20 +12,14 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import { Ionicons } from "@expo/vector-icons";
-
 import {
   getCategories,
   createCategory,
   deleteCategory,
 } from "../../services/categories";
-
 import { useTheme } from "../../contexts/ThemeContext";
-
-// FONTS
 import {
   useFonts,
   Inter_400Regular,
@@ -34,22 +28,17 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
-
 import {
   SpaceGrotesk_400Regular,
   SpaceGrotesk_500Medium,
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
 } from "@expo-google-fonts/space-grotesk";
-
 import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
 } from "@expo-google-fonts/jetbrains-mono";
 
-// Background color for each category's icon circle. Kept alongside
-// the icon (rather than replaced) since a colored circle is what
-// makes each icon glyph easy to tell apart at a glance.
 const SWATCHES = [
   "#174E78",
   "#2DD4BF",
@@ -68,8 +57,6 @@ const SWATCHES = [
   "#84CC16",
 ];
 
-// Pool of icon choices shown in the "New category" picker. Ionicons
-// ships with Expo already, so nothing extra to install.
 const ICON_OPTIONS = [
   "fast-food-outline",
   "restaurant-outline",
@@ -114,10 +101,6 @@ const ICON_OPTIONS = [
   "ellipsis-horizontal-outline",
 ];
 
-// Expanded preset list so the picker starts with a much longer
-// default set of categories than just "type a name + pick a color".
-// Tapping one fills the form (name/type/icon/color); the person can
-// still tweak it before saving, or type something custom instead.
 const CATEGORY_PRESETS = [
   {
     name: "Food & Dining",
@@ -225,8 +208,6 @@ const CATEGORY_PRESETS = [
   },
 ];
 
-// Fallback icon whenever a category was created before icons existed
-// (or the icon field otherwise comes back empty from the API).
 function fallbackIconFor(type) {
   return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
 }
@@ -585,8 +566,6 @@ export default function Categories() {
           />
         }
       >
-        {/* HEADER */}
-
         <View style={styles.header}>
           <View>
             <Text
@@ -635,16 +614,12 @@ export default function Categories() {
           </TouchableOpacity>
         </View>
 
-        {/* INCOME */}
-
         <CategorySection
           title="Income"
           categories={incomeCategories}
           onDelete={handleDeleteCategory}
           colors={colors}
         />
-
-        {/* EXPENSE */}
 
         <CategorySection
           title="Expense"
@@ -653,8 +628,6 @@ export default function Categories() {
           colors={colors}
         />
       </ScrollView>
-
-      {/* ADD CATEGORY MODAL */}
 
       <Modal
         visible={showAddModal}
@@ -685,8 +658,6 @@ export default function Categories() {
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
             >
-              {/* MODAL HEADER */}
-
               <View style={styles.modalHeader}>
                 <Text
                   style={[
@@ -718,8 +689,6 @@ export default function Categories() {
                   </Text>
                 </Pressable>
               </View>
-
-              {/* QUICK ADD PRESETS */}
 
               <Text
                 style={[
@@ -790,8 +759,6 @@ export default function Categories() {
                 })}
               </ScrollView>
 
-              {/* CATEGORY NAME */}
-
               <Text
                 style={[
                   styles.inputLabel,
@@ -816,8 +783,6 @@ export default function Categories() {
                 value={name}
                 onChangeText={setName}
               />
-
-              {/* CATEGORY TYPE */}
 
               <Text
                 style={[
@@ -892,8 +857,6 @@ export default function Categories() {
                 </Pressable>
               </View>
 
-              {/* ICON */}
-
               <Text
                 style={[
                   styles.inputLabel,
@@ -967,8 +930,6 @@ export default function Categories() {
                 ))}
               </View>
 
-              {/* COLOR */}
-
               <Text
                 style={[
                   styles.inputLabel,
@@ -998,8 +959,6 @@ export default function Categories() {
                   />
                 ))}
               </View>
-
-              {/* SAVE */}
 
               <Pressable
                 style={[
@@ -1099,10 +1058,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-
-  // Icon replaces the old plain color "dot" indicator - a small
-  // circle in the category's color, with the chosen Ionicons glyph
-  // centered inside it (white, so it reads on any swatch color).
   iconCircle: {
     width: 26,
     height: 26,
@@ -1185,8 +1140,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
   },
 
-  // QUICK ADD PRESETS
-
   presetRow: {
     flexDirection: "row",
     gap: 8,
@@ -1236,8 +1189,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
 
-  // ICON PICKER
-
   iconPreviewRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1275,8 +1226,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
-  // COLOR SWATCHES
 
   swatchRow: {
     flexDirection: "row",

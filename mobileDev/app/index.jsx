@@ -32,7 +32,6 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Password visibility
   const [showPassword, setShowPassword] = useState(false);
 
   const [rememberLogin, setRememberLogin] = useState(false);
@@ -353,7 +352,7 @@ const createStyles = (colors) =>
     logo: {
       width: 100,
       height: 100,
-      marginBottom: -10,
+      marginBottom: 5,
     },
 
     brand: {

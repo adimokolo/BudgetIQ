@@ -1,18 +1,5 @@
 import api from "./api";
 
-/*
-|--------------------------------------------------------------------------
-| NOTIFICATIONS SERVICE (backend-backed)
-|--------------------------------------------------------------------------
-|
-| Every function here hits the real backend, scoped by the logged-in
-| user's JWT - no shared local storage, so nothing can leak between
-| accounts on the same device. Field names are mapped at this layer
-| (body -> message, read_at -> read, created_at -> createdAt) so the
-| screens that already consume this service don't need to change.
-|
-*/
-
 function mapNotification(raw) {
   return {
     id: raw.id,
@@ -23,12 +10,6 @@ function mapNotification(raw) {
     createdAt: raw.created_at,
   };
 }
-
-/*
-|--------------------------------------------------------------------------
-| GET NOTIFICATIONS
-|--------------------------------------------------------------------------
-*/
 
 export const getNotifications = async () => {
   try {
@@ -43,12 +24,6 @@ export const getNotifications = async () => {
     return [];
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| ADD NOTIFICATION
-|--------------------------------------------------------------------------
-*/
 
 export const addNotification = async ({
   title,
@@ -76,12 +51,6 @@ export const addNotification = async ({
   }
 };
 
-/*
-|--------------------------------------------------------------------------
-| MARK NOTIFICATION AS READ
-|--------------------------------------------------------------------------
-*/
-
 export const markNotificationAsRead = async (notificationId) => {
   try {
     await api.patch(`/notifications/${notificationId}/read`);
@@ -93,12 +62,6 @@ export const markNotificationAsRead = async (notificationId) => {
     return false;
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| MARK ALL AS READ
-|--------------------------------------------------------------------------
-*/
 
 export const markAllNotificationsAsRead = async () => {
   try {
@@ -112,12 +75,6 @@ export const markAllNotificationsAsRead = async () => {
   }
 };
 
-/*
-|--------------------------------------------------------------------------
-| DELETE NOTIFICATION
-|--------------------------------------------------------------------------
-*/
-
 export const deleteNotification = async (notificationId) => {
   try {
     await api.delete(`/notifications/${notificationId}`);
@@ -130,12 +87,6 @@ export const deleteNotification = async (notificationId) => {
   }
 };
 
-/*
-|--------------------------------------------------------------------------
-| CLEAR ALL NOTIFICATIONS
-|--------------------------------------------------------------------------
-*/
-
 export const clearNotifications = async () => {
   try {
     await api.delete("/notifications");
@@ -147,18 +98,6 @@ export const clearNotifications = async () => {
     return false;
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| BUDGET STATUS CACHE (local, per-device dedupe only)
-|--------------------------------------------------------------------------
-|
-| This is NOT user data - it's just a local memo so the app doesn't
-| re-fire the same "budget exceeded" alert on every refresh. Safe to
-| stay in AsyncStorage since losing/mixing it only risks a duplicate
-| or missed alert, never someone else's financial data.
-|--------------------------------------------------------------------------
-*/
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getSavedUser } from "./auth";
@@ -199,18 +138,6 @@ export const saveBudgetStatuses = async (statuses) => {
     console.log("Save budget statuses error:", error);
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| CHECK BUDGET NOTIFICATIONS
-|--------------------------------------------------------------------------
-|
-| safe     = below 80%
-| warning  = 80% - 99%
-| exceeded = 100%+
-|
-|--------------------------------------------------------------------------
-*/
 
 export const checkBudgetNotifications = async (budgets) => {
   try {

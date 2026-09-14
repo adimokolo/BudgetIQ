@@ -3,12 +3,6 @@ import api from "./api";
 import { TOKEN_KEY, USER_KEY } from "./constants";
 import * as ImagePicker from "expo-image-picker";
 
-/*
-|--------------------------------------------------------------------------
-| REGISTER
-|--------------------------------------------------------------------------
-*/
-
 export const registerUser = async (userData) => {
   try {
     const response = await api.post("/auth/register", userData);
@@ -26,12 +20,6 @@ export const registerUser = async (userData) => {
     );
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| VERIFY OTP
-|--------------------------------------------------------------------------
-*/
 
 export const verifyOTP = async (email, otp) => {
   try {
@@ -66,12 +54,6 @@ export const verifyOTP = async (email, otp) => {
   }
 };
 
-/*
-|--------------------------------------------------------------------------
-| RESEND OTP
-|--------------------------------------------------------------------------
-*/
-
 export const resendOTP = async (email) => {
   try {
     const response = await api.post("/auth/resend-otp", {
@@ -89,12 +71,6 @@ export const resendOTP = async (email) => {
     );
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| LOGIN
-|--------------------------------------------------------------------------
-*/
 
 export const loginUser = async (email, password) => {
   try {
@@ -129,21 +105,9 @@ export const loginUser = async (email, password) => {
   }
 };
 
-/*
-|--------------------------------------------------------------------------
-| GET TOKEN
-|--------------------------------------------------------------------------
-*/
-
 export const getToken = async () => {
   return await AsyncStorage.getItem(TOKEN_KEY);
 };
-
-/*
-|--------------------------------------------------------------------------
-| GET SAVED USER
-|--------------------------------------------------------------------------
-*/
 
 export const getSavedUser = async () => {
   const user = await AsyncStorage.getItem(USER_KEY);
@@ -151,22 +115,10 @@ export const getSavedUser = async () => {
   return user ? JSON.parse(user) : null;
 };
 
-/*
-|--------------------------------------------------------------------------
-| LOGOUT
-|--------------------------------------------------------------------------
-*/
-
 export const logoutUser = async () => {
   await AsyncStorage.removeItem(TOKEN_KEY);
   await AsyncStorage.removeItem(USER_KEY);
 };
-
-/*
-|--------------------------------------------------------------------------
-| GET CURRENT USER
-|--------------------------------------------------------------------------
-*/
 
 export const getCurrentUser = async () => {
   try {
@@ -183,19 +135,6 @@ export const getCurrentUser = async () => {
     );
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| DELETE ACCOUNT
-|--------------------------------------------------------------------------
-|
-| Permanently deletes the currently authenticated BudgetIQ account.
-|
-| The backend gets the user ID from the JWT.
-| No user ID is sent from the mobile app.
-|
-|--------------------------------------------------------------------------
-*/
 
 export const deleteAccount = async () => {
   try {
@@ -219,12 +158,6 @@ export const deleteAccount = async () => {
   }
 };
 
-/*
-|--------------------------------------------------------------------------
-| FORGOT PASSWORD
-|--------------------------------------------------------------------------
-*/
-
 export const forgotPassword = async (email) => {
   try {
     const response = await api.post("/auth/forgot-password-otp", {
@@ -240,12 +173,6 @@ export const forgotPassword = async (email) => {
     );
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| VERIFY RESET OTP
-|--------------------------------------------------------------------------
-*/
 
 export const verifyResetOTP = async (email, otp) => {
   try {
@@ -264,12 +191,6 @@ export const verifyResetOTP = async (email, otp) => {
   }
 };
 
-/*
-|--------------------------------------------------------------------------
-| RESET PASSWORD WITH OTP
-|--------------------------------------------------------------------------
-*/
-
 export const resetPassword = async (email, otp, newPassword) => {
   try {
     const response = await api.post("/auth/reset-password-otp", {
@@ -287,12 +208,6 @@ export const resetPassword = async (email, otp, newPassword) => {
     );
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| UPLOAD AVATAR
-|--------------------------------------------------------------------------
-*/
 
 export const uploadAvatar = async (avatarDataUrl) => {
   try {

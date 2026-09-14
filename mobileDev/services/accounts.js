@@ -1,11 +1,5 @@
 import api from "./api";
 
-/*
-|--------------------------------------------------------------------------
-| GET ACCOUNTS
-|--------------------------------------------------------------------------
-*/
-
 export const getAccounts = async () => {
   try {
     const response = await api.get("/accounts");
@@ -28,12 +22,6 @@ export const getAccounts = async () => {
     );
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| CREATE ACCOUNT
-|--------------------------------------------------------------------------
-*/
 
 export const createAccount = async ({
   name,
@@ -70,12 +58,6 @@ export const createAccount = async ({
   }
 };
 
-/*
-|--------------------------------------------------------------------------
-| UPDATE ACCOUNT
-|--------------------------------------------------------------------------
-*/
-
 export const updateAccount = async (
   accountId,
   { name, currency, initialAmount, notes, color },
@@ -107,12 +89,6 @@ export const updateAccount = async (
     );
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| DELETE ACCOUNT
-|--------------------------------------------------------------------------
-*/
 
 export const deleteAccount = async (accountId) => {
   try {

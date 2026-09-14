@@ -1,11 +1,5 @@
 import api from "./api";
 
-/*
-|--------------------------------------------------------------------------
-| GET BUDGETS
-|--------------------------------------------------------------------------
-*/
-
 export const getBudgets = async () => {
   try {
     const response = await api.get("/budgets");
@@ -28,12 +22,6 @@ export const getBudgets = async () => {
     );
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| CREATE BUDGET
-|--------------------------------------------------------------------------
-*/
 
 export const createBudget = async ({ categoryId, monthlyLimit }) => {
   try {
@@ -61,19 +49,11 @@ export const createBudget = async ({ categoryId, monthlyLimit }) => {
   }
 };
 
-/*
-|--------------------------------------------------------------------------
-| UPDATE BUDGET
-|--------------------------------------------------------------------------
-*/
-
 export const updateBudget = async (id, { monthlyLimit }) => {
   try {
     console.log("Updating budget:", id);
     console.log("Monthly limit:", monthlyLimit);
 
-    // IMPORTANT:
-    // Backend route uses PATCH, not PUT.
     const response = await api.patch(`/budgets/${id}`, {
       monthlyLimit,
     });
@@ -96,12 +76,6 @@ export const updateBudget = async (id, { monthlyLimit }) => {
     );
   }
 };
-
-/*
-|--------------------------------------------------------------------------
-| DELETE BUDGET
-|--------------------------------------------------------------------------
-*/
 
 export const deleteBudget = async (id) => {
   try {

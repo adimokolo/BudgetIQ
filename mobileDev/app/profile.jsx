@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Modal,
   FlatList,
   Linking,
+  TextInput,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -31,7 +32,6 @@ import { useCurrency } from "../contexts/CurrencyContext";
 
 import { ALL_CURRENCIES, currencyLabel } from "../utils/currency";
 
-// TODO: point this at your real support inbox.
 const SUPPORT_EMAIL = "budget442@gmail.com";
 const SUPPORT_PHONE = "+234 80 0000-0000";
 
@@ -76,6 +76,7 @@ export default function Profile() {
   const [deleting, setDeleting] = useState(false);
 
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
+  const [currencySearch, setCurrencySearch] = useState("");
 
   const [rateModalVisible, setRateModalVisible] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
@@ -86,11 +87,6 @@ export default function Profile() {
 
   const [contactModalVisible, setContactModalVisible] = useState(false);
 
-  // Guards against re-pulling the backend's stored currency every time
-  // this screen refocuses (e.g. when the currency picker Modal closes).
-  // Without this, any focus-triggered reload would silently overwrite
-  // whatever the user just picked with the backend's stale value, since
-  // nothing yet writes the new currency back to the backend.
   const hasSyncedRemoteCurrency = useRef(false);
 
   const loadProfile = async () => {
@@ -220,10 +216,42 @@ export default function Profile() {
     router.push("/forget-password");
   };
 
+  const handleOpenCurrencyModal = () => {
+    setCurrencySearch("");
+    setCurrencyModalVisible(true);
+  };
+
+  const handleCloseCurrencyModal = () => {
+    setCurrencyModalVisible(false);
+    setCurrencySearch("");
+  };
+
   const handleSelectCurrency = async (code) => {
     await setBaseCurrency(code);
-    setCurrencyModalVisible(false);
+    handleCloseCurrencyModal();
   };
+
+  /*
+   * Filter currencies by code or name.
+   *
+   * Matches are case-insensitive and match anywhere in either
+   * field, so typing "dollar" or "us" both find USD.
+   */
+
+  const filteredCurrencies = useMemo(() => {
+    const query = currencySearch.trim().toLowerCase();
+
+    if (!query) {
+      return ALL_CURRENCIES;
+    }
+
+    return ALL_CURRENCIES.filter((item) => {
+      const code = item.code?.toLowerCase() || "";
+      const name = item.name?.toLowerCase() || "";
+
+      return code.includes(query) || name.includes(query);
+    });
+  }, [currencySearch]);
 
   const handleSubmitRating = () => {
     if (selectedRating === 0) {
@@ -305,26 +333,11 @@ export default function Profile() {
 
       console.log("🗑️ Deleting BudgetIQ account from backend...");
 
-      /*
-       * Delete the account from PostgreSQL.
-       *
-       * The backend identifies the account from the JWT.
-       */
-
       const response = await deleteAccount();
 
       console.log("DELETE ACCOUNT RESPONSE:", response);
 
-      /*
-       * Only clear the local login session AFTER the backend
-       * confirms successful deletion.
-       */
-
       await logoutUser();
-
-      /*
-       * Tell the user the deletion was successful.
-       */
 
       Alert.alert(
         "Account deleted",
@@ -372,7 +385,6 @@ export default function Profile() {
       ]}
       edges={["top"]}
     >
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -403,7 +415,6 @@ export default function Profile() {
         contentContainerStyle={{ paddingBottom: 32 }}
         renderItem={() => (
           <>
-            {/* PROFILE */}
             <View style={styles.avatarSection}>
               <TouchableOpacity
                 onPress={handleAvatarPress}
@@ -512,7 +523,6 @@ export default function Profile() {
               )}
             </View>
 
-            {/* SETTINGS CARD */}
             <View
               style={[
                 styles.listCard,
@@ -522,7 +532,6 @@ export default function Profile() {
                 },
               ]}
             >
-              {/* DARK MODE */}
               <View style={styles.listRow}>
                 <View style={styles.listLeft}>
                   <View
@@ -585,10 +594,9 @@ export default function Profile() {
                 ]}
               />
 
-              {/* BASE CURRENCY */}
               <TouchableOpacity
                 style={styles.listRow}
-                onPress={() => setCurrencyModalVisible(true)}
+                onPress={handleOpenCurrencyModal}
                 disabled={loading}
                 activeOpacity={0.7}
               >
@@ -649,7 +657,6 @@ export default function Profile() {
                 ]}
               />
 
-              {/* CHANGE PASSWORD */}
               <TouchableOpacity
                 style={styles.listRow}
                 onPress={handleChangePassword}
@@ -705,7 +712,6 @@ export default function Profile() {
               </TouchableOpacity>
             </View>
 
-            {/* SUPPORT CARD */}
             <View
               style={[
                 styles.listCard,
@@ -716,7 +722,6 @@ export default function Profile() {
                 },
               ]}
             >
-              {/* RATE US */}
               <TouchableOpacity
                 style={styles.listRow}
                 onPress={() => setRateModalVisible(true)}
@@ -772,7 +777,6 @@ export default function Profile() {
                 ]}
               />
 
-              {/* FAQ */}
               <TouchableOpacity
                 style={styles.listRow}
                 onPress={() => setFaqModalVisible(true)}
@@ -828,7 +832,6 @@ export default function Profile() {
                 ]}
               />
 
-              {/* CONTACT US */}
               <TouchableOpacity
                 style={styles.listRow}
                 onPress={() => setContactModalVisible(true)}
@@ -875,7 +878,6 @@ export default function Profile() {
                 />
               </TouchableOpacity>
 
-              {/* SMALL DELETE ACCOUNT */}
               <TouchableOpacity
                 style={[
                   styles.deleteButton,
@@ -911,7 +913,6 @@ export default function Profile() {
               </TouchableOpacity>
             </View>
 
-            {/* LOGOUT */}
             <TouchableOpacity
               style={[
                 styles.logoutButton,
@@ -950,12 +951,11 @@ export default function Profile() {
         )}
       />
 
-      {/* BASE CURRENCY MODAL */}
       <Modal
         visible={currencyModalVisible}
         animationType="slide"
         transparent
-        onRequestClose={() => setCurrencyModalVisible(false)}
+        onRequestClose={handleCloseCurrencyModal}
       >
         <View style={styles.modalOverlay}>
           <View
@@ -972,18 +972,69 @@ export default function Profile() {
                 Base currency
               </Text>
 
-              <TouchableOpacity
-                onPress={() => setCurrencyModalVisible(false)}
-                hitSlop={10}
-              >
+              <TouchableOpacity onPress={handleCloseCurrencyModal} hitSlop={10}>
                 <Ionicons name="close" size={22} color={colors.textFaint} />
               </TouchableOpacity>
             </View>
 
+            <View
+              style={[
+                styles.searchBox,
+                {
+                  backgroundColor: colors.chipBg,
+                  borderColor: colors.cardBorder,
+                },
+              ]}
+            >
+              <Ionicons
+                name="search-outline"
+                size={16}
+                color={colors.textFaint}
+              />
+
+              <TextInput
+                value={currencySearch}
+                onChangeText={setCurrencySearch}
+                placeholder="Search currency"
+                placeholderTextColor={colors.textFaint}
+                style={[styles.searchInput, { color: colors.text }]}
+                autoCorrect={false}
+                autoCapitalize="none"
+                returnKeyType="search"
+                clearButtonMode="while-editing"
+              />
+
+              {currencySearch.length > 0 ? (
+                <TouchableOpacity
+                  onPress={() => setCurrencySearch("")}
+                  hitSlop={8}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={16}
+                    color={colors.textFaint}
+                  />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
             <FlatList
-              data={ALL_CURRENCIES}
+              data={filteredCurrencies}
               keyExtractor={(item) => item.code}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={
+                <Text
+                  style={[
+                    styles.noResultsText,
+                    {
+                      color: colors.textFaint,
+                    },
+                  ]}
+                >
+                  No currencies match "{currencySearch}".
+                </Text>
+              }
               renderItem={({ item }) => {
                 const isSelected = item.code === baseCurrency;
 
@@ -1019,7 +1070,6 @@ export default function Profile() {
         </View>
       </Modal>
 
-      {/* RATE US MODAL */}
       <Modal
         visible={rateModalVisible}
         animationType="fade"
@@ -1134,7 +1184,6 @@ export default function Profile() {
         </View>
       </Modal>
 
-      {/* FAQ MODAL */}
       <Modal
         visible={faqModalVisible}
         animationType="slide"
@@ -1208,7 +1257,6 @@ export default function Profile() {
         </View>
       </Modal>
 
-      {/* CONTACT US MODAL */}
       <Modal
         visible={contactModalVisible}
         animationType="fade"
@@ -1541,6 +1589,31 @@ const styles = StyleSheet.create({
 
   starIcon: {
     marginHorizontal: 2,
+  },
+
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginBottom: 10,
+  },
+
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    padding: 0,
+  },
+
+  noResultsText: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    marginTop: 24,
   },
 
   currencyRow: {

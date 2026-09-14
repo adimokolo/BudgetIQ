@@ -29,12 +29,6 @@ import { useTheme } from "../contexts/ThemeContext";
 
 import { ALL_CURRENCIES } from "../utils/currency";
 
-/*
-|--------------------------------------------------------------------------
-| CURRENCY DROPDOWN
-|--------------------------------------------------------------------------
-*/
-
 function CurrencyDropdown({ value, onChange, colors, styles }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -153,12 +147,6 @@ export default function SignupScreen() {
 
   const [password, setPassword] = useState("");
 
-  /*
-  |--------------------------------------------------------------------------
-  | DEFAULT CURRENCY
-  |--------------------------------------------------------------------------
-  */
-
   const [currency, setCurrency] = useState("NGN");
 
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -176,12 +164,6 @@ export default function SignupScreen() {
   };
 
   const handleSignup = async () => {
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
     if (!fullName.trim()) {
       Alert.alert("Full Name Required", "Please enter your full name.");
 
@@ -228,12 +210,6 @@ export default function SignupScreen() {
       return;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | REGISTER
-    |--------------------------------------------------------------------------
-    */
-
     try {
       setLoading(true);
 
@@ -246,35 +222,14 @@ export default function SignupScreen() {
         email: cleanEmail,
         password: password,
 
-        /*
-          |--------------------------------------------------------------------------
-          | THIS IS THE USER'S SELECTED CURRENCY
-          |--------------------------------------------------------------------------
-          */
-
         currency: currency,
       });
 
       console.log("Registration successful:", response);
 
-      /*
-      |--------------------------------------------------------------------------
-      | SAVE SELECTED CURRENCY LOCALLY
-      |--------------------------------------------------------------------------
-      |
-      | CurrencyContext will use this immediately.
-      |
-      */
-
       await AsyncStorage.setItem("base_currency", currency);
 
       console.log("Saved base currency:", currency);
-
-      /*
-      |--------------------------------------------------------------------------
-      | SUCCESS
-      |--------------------------------------------------------------------------
-      */
 
       Alert.alert(
         "Account Created",
@@ -495,7 +450,7 @@ const createStyles = (colors) =>
     logo: {
       width: 100,
       height: 100,
-      marginBottom: -10,
+      marginBottom: 5,
     },
 
     brand: {

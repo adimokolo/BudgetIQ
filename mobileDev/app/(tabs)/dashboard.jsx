@@ -401,24 +401,6 @@ export default function Dashboard() {
 
   const { colors } = useTheme();
 
-  /*
-  |--------------------------------------------------------------------------
-  | CURRENCY
-  |--------------------------------------------------------------------------
-  |
-  | The dashboard no longer keeps its own currency state.
-  |
-  | CurrencyContext is now the single source of truth.
-  |
-  | formatAmount(1000)
-  | -> ₦1,000.00
-  | -> $1,000.00
-  | -> €1,000.00
-  |
-  | depending on the currency selected by the user.
-  |
-  */
-
   const { formatAmount, baseCurrency, currencyReady, setBaseCurrency } =
     useCurrency();
 
@@ -510,21 +492,6 @@ export default function Dashboard() {
 
       setUserName(String(fullName).trim().split(" ")[0]);
 
-      /*
-      |--------------------------------------------------------------------------
-      | IMPORTANT: SYNC USER CURRENCY
-      |--------------------------------------------------------------------------
-      |
-      | Registration saves the selected currency to the user profile.
-      |
-      | When the dashboard loads, we read that same profile currency and
-      | sync it into CurrencyContext.
-      |
-      | This means the dashboard will respect the currency selected during
-      | registration.
-      |
-      */
-
       const profileCurrency =
         profile?.currency ||
         profile?.base_currency ||
@@ -611,16 +578,6 @@ export default function Dashboard() {
     loadNotificationCount,
   ]);
 
-  /*
-  |--------------------------------------------------------------------------
-  | WAIT FOR CURRENCY
-  |--------------------------------------------------------------------------
-  |
-  | Prevents the dashboard from briefly displaying NGN before the user's
-  | saved currency has been loaded from AsyncStorage.
-  |
-  */
-
   if (loading || !currencyReady) {
     return (
       <SafeAreaView
@@ -652,12 +609,6 @@ export default function Dashboard() {
   const summary = dashboard?.summary || {};
 
   const monthlyTrend = dashboard?.monthlyTrend || [];
-
-  /*
-  |--------------------------------------------------------------------------
-  | WHERE IT WENT
-  |--------------------------------------------------------------------------
-  */
 
   const now = new Date();
 
@@ -790,8 +741,6 @@ export default function Dashboard() {
           />
         }
       >
-        {/* HEADER */}
-
         <View style={styles.headerRow}>
           <TouchableOpacity
             onPress={() => router.push("/profile")}
@@ -888,8 +837,6 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* STAT CARDS */}
-
         <View style={styles.cardsWrap}>
           <StatCard
             colors={colors}
@@ -911,8 +858,6 @@ export default function Dashboard() {
             value={formatAmount(netBalance)}
             badge={`${savingsRate}% savings rate`}
           />
-
-          {/* FORECAST */}
 
           <View
             style={[
@@ -1009,8 +954,6 @@ export default function Dashboard() {
           </View>
         </View>
 
-        {/* INCOME VS SPENDING */}
-
         <View
           style={[
             styles.sectionCard,
@@ -1095,8 +1038,6 @@ export default function Dashboard() {
             formatAmount={formatAmount}
           />
         </View>
-
-        {/* WHERE IT WENT */}
 
         <View
           style={[

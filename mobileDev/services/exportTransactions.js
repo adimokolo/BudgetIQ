@@ -2,12 +2,6 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as Print from "expo-print";
 
-/*
-|--------------------------------------------------------------------------
-| FORMAT DATE
-|--------------------------------------------------------------------------
-*/
-
 function formatDate(date) {
   if (!date) return "";
 
@@ -18,23 +12,11 @@ function formatDate(date) {
   });
 }
 
-/*
-|--------------------------------------------------------------------------
-| ESCAPE CSV CELL
-|--------------------------------------------------------------------------
-*/
-
 function escapeCell(cell) {
   const str = String(cell ?? "");
 
   return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 }
-
-/*
-|--------------------------------------------------------------------------
-| EXPORT CSV
-|--------------------------------------------------------------------------
-*/
 
 export async function exportTransactionsToCsv(transactions, currency = "NGN") {
   if (!transactions || transactions.length === 0) {
@@ -83,24 +65,12 @@ export async function exportTransactionsToCsv(transactions, currency = "NGN") {
   });
 }
 
-/*
-|--------------------------------------------------------------------------
-| EXPORT PDF
-|--------------------------------------------------------------------------
-*/
-
 export async function exportTransactionsToPdf(transactions, currency = "NGN") {
   if (!transactions || transactions.length === 0) {
     throw new Error("There are no transactions to export.");
   }
 
   const today = new Date().toISOString().slice(0, 10);
-
-  /*
-  |--------------------------------------------------------------------------
-  | SUMMARY
-  |--------------------------------------------------------------------------
-  */
 
   const income = transactions
     .filter((t) => t.type === "income")
@@ -111,12 +81,6 @@ export async function exportTransactionsToPdf(transactions, currency = "NGN") {
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
   const net = income - expense;
-
-  /*
-  |--------------------------------------------------------------------------
-  | TABLE
-  |--------------------------------------------------------------------------
-  */
 
   const tableRows = transactions
     .map((t) => {
@@ -151,12 +115,6 @@ export async function exportTransactionsToPdf(transactions, currency = "NGN") {
       `;
     })
     .join("");
-
-  /*
-  |--------------------------------------------------------------------------
-  | PDF HTML
-  |--------------------------------------------------------------------------
-  */
 
   const html = `
     <!DOCTYPE html>
@@ -338,22 +296,10 @@ export async function exportTransactionsToPdf(transactions, currency = "NGN") {
     </html>
   `;
 
-  /*
-  |--------------------------------------------------------------------------
-  | CREATE PDF
-  |--------------------------------------------------------------------------
-  */
-
   const { uri } = await Print.printToFileAsync({
     html,
     base64: false,
   });
-
-  /*
-  |--------------------------------------------------------------------------
-  | SHARE PDF
-  |--------------------------------------------------------------------------
-  */
 
   const sharingAvailable = await Sharing.isAvailableAsync();
 
