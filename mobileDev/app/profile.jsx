@@ -62,7 +62,7 @@ export default function Profile() {
   const router = useRouter();
 
   const { colors, isDark, setDarkMode } = useTheme();
-  const { baseCurrency, setBaseCurrency } = useCurrency();
+  const { baseCurrency, setBaseCurrency, hydrateBaseCurrency } = useCurrency();
 
   const [user, setUser] = useState({
     name: "",
@@ -86,8 +86,6 @@ export default function Profile() {
   const [expandedFaqIndex, setExpandedFaqIndex] = useState(null);
 
   const [contactModalVisible, setContactModalVisible] = useState(false);
-
-  const hasSyncedRemoteCurrency = useRef(false);
 
   const loadProfile = async () => {
     try {
@@ -122,12 +120,13 @@ export default function Profile() {
       });
 
       const remoteCurrency =
-        profile?.base_currency || profile?.baseCurrency || null;
+        profile?.currency ||
+        profile?.base_currency ||
+        profile?.baseCurrency ||
+        null;
 
-      if (remoteCurrency && !hasSyncedRemoteCurrency.current) {
-        hasSyncedRemoteCurrency.current = true;
-
-        setBaseCurrency(remoteCurrency);
+      if (remoteCurrency) {
+        hydrateBaseCurrency(remoteCurrency);
       }
     } catch (error) {
       console.log(
@@ -227,8 +226,15 @@ export default function Profile() {
   };
 
   const handleSelectCurrency = async (code) => {
-    await setBaseCurrency(code);
-    handleCloseCurrencyModal();
+    try {
+      await setBaseCurrency(code);
+      handleCloseCurrencyModal();
+    } catch (error) {
+      Alert.alert(
+        "Couldn't update currency",
+        "Please check your connection and try again.",
+      );
+    }
   };
 
   /*
