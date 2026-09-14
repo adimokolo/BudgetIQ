@@ -89,47 +89,47 @@ const CURRENCY_DROPDOWN_OPTIONS = ALL_CURRENCIES.map((c) => ({
 }));
 
 const ICON_OPTIONS = [
-  "fast-food-outline",
-  "restaurant-outline",
-  "cafe-outline",
-  "beer-outline",
-  "cart-outline",
-  "basket-outline",
-  "bus-outline",
-  "car-outline",
-  "bicycle-outline",
-  "train-outline",
-  "airplane-outline",
-  "home-outline",
-  "bed-outline",
-  "flash-outline",
-  "water-outline",
-  "wifi-outline",
-  "call-outline",
-  "phone-portrait-outline",
-  "laptop-outline",
-  "medkit-outline",
-  "fitness-outline",
-  "barbell-outline",
-  "school-outline",
-  "book-outline",
-  "film-outline",
-  "musical-notes-outline",
-  "game-controller-outline",
-  "gift-outline",
-  "shirt-outline",
-  "cut-outline",
-  "paw-outline",
-  "diamond-outline",
-  "wallet-outline",
-  "card-outline",
-  "cash-outline",
-  "trending-up-outline",
-  "briefcase-outline",
-  "business-outline",
-  "construct-outline",
-  "heart-outline",
-  "ellipsis-horizontal-outline",
+  "🍔",
+  "🍽️",
+  "☕",
+  "🍺",
+  "🛒",
+  "🧺",
+  "🚌",
+  "🚗",
+  "🚲",
+  "🚂",
+  "✈️",
+  "🏠",
+  "🛏️",
+  "⚡",
+  "💧",
+  "📶",
+  "📞",
+  "📱",
+  "💻",
+  "🏥",
+  "🏃",
+  "🏋️",
+  "🏫",
+  "📚",
+  "🎬",
+  "🎵",
+  "🎮",
+  "🎁",
+  "👕",
+  "✂️",
+  "🐾",
+  "💎",
+  "👛",
+  "💳",
+  "💵",
+  "📈",
+  "💼",
+  "🏢",
+  "🛠️",
+  "❤️",
+  "🏷️",
 ];
 
 const SWATCHES = [
@@ -151,7 +151,35 @@ const SWATCHES = [
 ];
 
 function fallbackIconFor(type) {
-  return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
+  return type?.toLowerCase() === "income" ? "💵" : "🏷️";
+}
+
+function isLegacyIonicon(icon) {
+  return (
+    typeof icon === "string" &&
+    /^[a-z0-9-]+$/i.test(icon) &&
+    (icon.includes("-") || icon.endsWith("outline"))
+  );
+}
+
+function CategoryIconGlyph({
+  icon,
+  type,
+  size = 14,
+  color = "#FFFFFF",
+  styles,
+}) {
+  const resolvedIcon = icon || fallbackIconFor(type);
+
+  if (isLegacyIonicon(resolvedIcon)) {
+    return <Ionicons name={resolvedIcon} size={size} color={color} />;
+  }
+
+  return (
+    <Text style={[styles.categoryIconEmoji, { fontSize: size }]}>
+      {resolvedIcon}
+    </Text>
+  );
 }
 
 function getLocalDateString(date = new Date()) {
@@ -353,10 +381,12 @@ function CategoryPickerModal({
                           },
                         ]}
                       >
-                        <Ionicons
-                          name={iconFor(category)}
+                        <CategoryIconGlyph
+                          icon={iconFor(category)}
+                          type={category.type}
                           size={14}
                           color="#FFFFFF"
+                          styles={styles}
                         />
                       </View>
 
@@ -403,7 +433,13 @@ function CategoryPickerModal({
                   },
                 ]}
               >
-                <Ionicons name={icon} size={18} color="#FFFFFF" />
+                <CategoryIconGlyph
+                  icon={icon}
+                  type={type}
+                  size={18}
+                  color="#FFFFFF"
+                  styles={styles}
+                />
               </View>
 
               <Text
@@ -435,13 +471,17 @@ function CategoryPickerModal({
                     },
                   ]}
                 >
-                  <Ionicons
-                    name={iconName}
-                    size={17}
-                    color={
-                      icon === iconName ? colors.primary : colors.textMuted
-                    }
-                  />
+                  <Text
+                    style={[
+                      styles.categoryIconEmoji,
+                      {
+                        fontSize: 17,
+                        opacity: icon === iconName ? 1 : 0.82,
+                      },
+                    ]}
+                  >
+                    {iconName}
+                  </Text>
                 </Pressable>
               ))}
             </View>
@@ -1427,7 +1467,7 @@ function FullCalendar({
   );
 }
 
-function TransactionCard({ transaction, currency, onDelete, styles }) {
+function TransactionCard({ transaction, currency, onDelete, styles, colors }) {
   const isIncome = transaction.type === "Income";
 
   return (
@@ -1436,17 +1476,20 @@ function TransactionCard({ transaction, currency, onDelete, styles }) {
         <View
           style={[
             styles.transactionIcon,
-            isIncome ? styles.incomeIcon : styles.expenseIcon,
+            {
+              backgroundColor:
+                transaction.categoryColor ||
+                (isIncome ? colors.income : colors.expense),
+            },
           ]}
         >
-          <Text
-            style={[
-              styles.iconText,
-              isIncome ? styles.incomeIconText : styles.expenseIconText,
-            ]}
-          >
-            {isIncome ? "↓" : "↑"}
-          </Text>
+          <CategoryIconGlyph
+            icon={transaction.categoryIcon}
+            type={transaction.type}
+            size={15}
+            color="#FFFFFF"
+            styles={styles}
+          />
         </View>
 
         <View style={{ flex: 1 }}>
@@ -1491,7 +1534,11 @@ function mapTransaction(raw) {
 
     category: raw.category_name || "Uncategorized",
 
+    categoryId: raw.category_id ?? null,
+
     categoryColor: raw.category_color,
+
+    categoryIcon: raw.category_icon || fallbackIconFor(raw.type),
 
     amount: Number(raw.amount || 0),
 
@@ -1666,17 +1713,35 @@ export default function Transactions() {
     return balances;
   }, [transactions]);
 
-  const filteredTransactions = transactions.filter((transaction) => {
-    if (filter !== "All types" && transaction.type !== filter) {
-      return false;
-    }
+  const categoryById = useMemo(
+    () => new Map(allCategories.map((category) => [category.id, category])),
+    [allCategories],
+  );
 
-    if (selectedDate && transaction.rawDate !== selectedDate) {
-      return false;
-    }
+  const filteredTransactions = transactions
+    .filter((transaction) => {
+      if (filter !== "All types" && transaction.type !== filter) {
+        return false;
+      }
 
-    return true;
-  });
+      if (selectedDate && transaction.rawDate !== selectedDate) {
+        return false;
+      }
+
+      return true;
+    })
+    .map((transaction) => {
+      const matchedCategory = categoryById.get(transaction.categoryId);
+
+      return {
+        ...transaction,
+        categoryIcon:
+          matchedCategory?.icon ||
+          transaction.categoryIcon ||
+          fallbackIconFor(transaction.type),
+        categoryColor: matchedCategory?.color || transaction.categoryColor,
+      };
+    });
 
   const totalIncome = transactions
     .filter((item) => item.type === "Income")
@@ -2021,6 +2086,7 @@ export default function Transactions() {
                 currency={currency}
                 onDelete={deleteTransaction}
                 styles={styles}
+                colors={colors}
               />
             ))
           ) : (
@@ -2377,13 +2443,12 @@ export default function Transactions() {
                       },
                     ]}
                   >
-                    <Ionicons
-                      name={
-                        selectedCategory.icon ||
-                        fallbackIconFor(selectedCategory.type)
-                      }
+                    <CategoryIconGlyph
+                      icon={selectedCategory.icon}
+                      type={selectedCategory.type}
                       size={14}
                       color="#FFFFFF"
+                      styles={styles}
                     />
                   </View>
 
@@ -3201,6 +3266,12 @@ const createStyles = (colors) =>
       borderRadius: 13,
       alignItems: "center",
       justifyContent: "center",
+    },
+
+    categoryIconEmoji: {
+      lineHeight: 20,
+      textAlign: "center",
+      includeFontPadding: false,
     },
 
     categoryPickGrid: {

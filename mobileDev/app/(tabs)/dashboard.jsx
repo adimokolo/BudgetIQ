@@ -381,7 +381,7 @@ function GroupedBarChart({
 }
 
 function fallbackIconFor(type) {
-  return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
+  return type?.toLowerCase() === "income" ? "💵" : "🏷️";
 }
 
 function monthLabel(monthKey) {
@@ -1091,11 +1091,9 @@ export default function Dashboard() {
                         },
                       ]}
                     >
-                      <Ionicons
-                        name={segment.icon || fallbackIconFor("expense")}
-                        size={11}
-                        color="#FFFFFF"
-                      />
+                      <Text style={styles.categoryIconEmoji}>
+                        {segment.icon || fallbackIconFor("expense")}
+                      </Text>
                     </View>
 
                     <Text
@@ -1495,6 +1493,12 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  categoryIconEmoji: {
+    fontSize: 13,
+    lineHeight: 16,
+    textAlign: "center",
   },
 
   legendLabel: {

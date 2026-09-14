@@ -16,7 +16,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 
 import {
@@ -52,9 +51,9 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useCurrency } from "../../contexts/CurrencyContext";
 import { formatCurrency, getCurrencySymbol } from "../../utils/currency";
 
-// Fallback icon whenever a category predates icons (same logic as Categories).
+// Fallback emoji whenever a category predates icons (same logic as Categories).
 function fallbackIconFor(type) {
-  return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
+  return type?.toLowerCase() === "income" ? "💵" : "🏷️";
 }
 
 function progressColor(percent, colors) {
@@ -104,11 +103,9 @@ function BudgetCard({ budget, currency, onEdit, onDelete, colors }) {
               },
             ]}
           >
-            <Ionicons
-              name={budget.category_icon || fallbackIconFor("expense")}
-              size={13}
-              color="#FFFFFF"
-            />
+            <Text style={styles.categoryIconEmoji}>
+              {budget.category_icon || fallbackIconFor("expense")}
+            </Text>
           </View>
 
           <Text
@@ -835,11 +832,9 @@ export default function Budgets() {
                           },
                         ]}
                       >
-                        <Ionicons
-                          name={category.icon || fallbackIconFor(category.type)}
-                          size={11}
-                          color="#FFFFFF"
-                        />
+                        <Text style={styles.categoryIconEmojiSmall}>
+                          {category.icon || fallbackIconFor(category.type)}
+                        </Text>
                       </View>
 
                       <Text
@@ -1082,10 +1077,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Icon replaces the old plain color "dot" indicator - a small
-  // circle in the category's color, with the Ionicons glyph
-  // centered inside it (white, so it reads on any swatch color).
-  // Same as the Categories screen.
+  // Category emoji sits inside the category's saved color circle,
+  // matching the Categories screen.
   iconCircle: {
     width: 26,
     height: 26,
@@ -1094,12 +1087,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  categoryIconEmoji: {
+    fontSize: 14,
+    lineHeight: 18,
+    textAlign: "center",
+  },
+
   iconCircleSmall: {
     width: 20,
     height: 20,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  categoryIconEmojiSmall: {
+    fontSize: 11,
+    lineHeight: 14,
+    textAlign: "center",
   },
 
   budgetName: {

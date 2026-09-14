@@ -186,19 +186,11 @@ async function issueOtp(client, userId, email, fullName) {
 const register = asyncHandler(async (req, res) => {
   const { fullName, email, password, currency } = req.body;
 
-  /*
-   * Validate required fields
-   */
-
   if (!fullName || !email || !password) {
     return res.status(400).json({
       error: "Full name, email, and password are required.",
     });
   }
-
-  /*
-   * Validate password
-   */
 
   if (password.length < 8) {
     return res.status(400).json({
@@ -206,16 +198,8 @@ const register = asyncHandler(async (req, res) => {
     });
   }
 
-  /*
-   * Clean input
-   */
-
   const cleanEmail = email.trim().toLowerCase();
   const cleanFullName = fullName.trim();
-
-  /*
-   * Check existing account
-   */
 
   const existing = await pool.query("SELECT id FROM users WHERE email = $1", [
     cleanEmail,
@@ -227,24 +211,12 @@ const register = asyncHandler(async (req, res) => {
     });
   }
 
-  /*
-   * Hash password
-   */
-
   const passwordHash = await bcrypt.hash(password, 12);
-
-  /*
-   * Database transaction
-   */
 
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
-
-    /*
-     * Create user
-     */
 
     const userResult = await client.query(
       `
@@ -271,10 +243,6 @@ const register = asyncHandler(async (req, res) => {
 
     const user = userResult.rows[0];
 
-    /*
-     * Create default categories
-     */
-
     for (const category of DEFAULT_CATEGORIES) {
       await client.query(
         `
@@ -293,17 +261,9 @@ const register = asyncHandler(async (req, res) => {
       );
     }
 
-    /*
-     * Create verification OTP
-     */
-
     await issueOtp(client, user.id, user.email, user.full_name);
 
     await client.query("COMMIT");
-
-    /*
-     * User must verify before logging in.
-     */
 
     return res.status(201).json({
       message:
@@ -326,17 +286,6 @@ const register = asyncHandler(async (req, res) => {
 |--------------------------------------------------------------------------
 | VERIFY EMAIL OTP
 |--------------------------------------------------------------------------
-|
-| Accepts both:
-|
-| { email, code }
-|
-| and:
-|
-| { email, otp }
-|
-| This keeps web and mobile clients compatible.
-|--------------------------------------------------------------------------
 */
 
 const verifyOTP = asyncHandler(async (req, res) => {
@@ -352,10 +301,6 @@ const verifyOTP = asyncHandler(async (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
   const cleanCode = verificationCode.toString().trim();
-
-  /*
-   * Find user
-   */
 
   const userResult = await pool.query(
     `
@@ -380,25 +325,13 @@ const verifyOTP = asyncHandler(async (req, res) => {
     });
   }
 
-  /*
-   * Already verified
-   */
-
   if (user.is_verified) {
     return res.status(400).json({
       error: "This account is already verified. Please log in.",
     });
   }
 
-  /*
-   * Hash submitted code
-   */
-
   const codeHash = hashSecret(cleanCode);
-
-  /*
-   * Find matching active OTP
-   */
 
   const otpResult = await pool.query(
     `
@@ -424,10 +357,6 @@ const verifyOTP = asyncHandler(async (req, res) => {
       error: "Invalid or expired verification code.",
     });
   }
-
-  /*
-   * Verify user + consume OTP atomically
-   */
 
   const client = await pool.connect();
 
@@ -462,10 +391,6 @@ const verifyOTP = asyncHandler(async (req, res) => {
     client.release();
   }
 
-  /*
-   * Generate JWT
-   */
-
   const token = signToken(user);
 
   return res.json({
@@ -499,10 +424,6 @@ const resendOTP = asyncHandler(async (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
 
-  /*
-   * Find user
-   */
-
   const userResult = await pool.query(
     `
     SELECT
@@ -516,10 +437,6 @@ const resendOTP = asyncHandler(async (req, res) => {
     [cleanEmail],
   );
 
-  /*
-   * Don't reveal whether an account exists.
-   */
-
   if (userResult.rows.length === 0) {
     return res.json({
       message: "If that account needs verifying, a new code has been sent.",
@@ -528,19 +445,11 @@ const resendOTP = asyncHandler(async (req, res) => {
 
   const user = userResult.rows[0];
 
-  /*
-   * Already verified
-   */
-
   if (user.is_verified) {
     return res.json({
       message: "If that account needs verifying, a new code has been sent.",
     });
   }
-
-  /*
-   * Invalidate previous verification OTPs
-   */
 
   await pool.query(
     `
@@ -552,10 +461,6 @@ const resendOTP = asyncHandler(async (req, res) => {
     `,
     [user.id],
   );
-
-  /*
-   * Create and send new OTP
-   */
 
   const client = await pool.connect();
 
@@ -594,10 +499,6 @@ const login = asyncHandler(async (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
 
-  /*
-   * Find user
-   */
-
   const result = await pool.query(
     `
     SELECT
@@ -622,10 +523,6 @@ const login = asyncHandler(async (req, res) => {
     });
   }
 
-  /*
-   * Check password
-   */
-
   const valid = await bcrypt.compare(password, user.password_hash);
 
   if (!valid) {
@@ -633,10 +530,6 @@ const login = asyncHandler(async (req, res) => {
       error: "Incorrect email or password.",
     });
   }
-
-  /*
-   * Check email verification
-   */
 
   if (!user.is_verified) {
     return res.status(403).json({
@@ -647,15 +540,7 @@ const login = asyncHandler(async (req, res) => {
     });
   }
 
-  /*
-   * Remove password hash
-   */
-
   delete user.password_hash;
-
-  /*
-   * Generate JWT
-   */
 
   const token = signToken(user);
 
@@ -695,10 +580,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
   );
 
   const user = result.rows[0];
-
-  /*
-   * Same response regardless of account existence.
-   */
 
   if (user) {
     const rawToken = generateResetToken();
@@ -895,15 +776,7 @@ const forgotPasswordOtp = asyncHandler(async (req, res) => {
 
   const user = result.rows[0];
 
-  /*
-   * Don't reveal whether account exists.
-   */
-
   if (user) {
-    /*
-     * Invalidate old reset OTPs
-     */
-
     await pool.query(
       `
       UPDATE otp_codes
@@ -915,15 +788,7 @@ const forgotPasswordOtp = asyncHandler(async (req, res) => {
       [user.id],
     );
 
-    /*
-     * Generate new reset OTP
-     */
-
     const code = generateOtp();
-
-    /*
-     * Save OTP
-     */
 
     await pool.query(
       `
@@ -940,10 +805,6 @@ const forgotPasswordOtp = asyncHandler(async (req, res) => {
       [user.id, hashSecret(code), minutesFromNow(OTP_TTL_MINUTES)],
     );
 
-    /*
-     * Development OTP
-     */
-
     if (process.env.NODE_ENV !== "production") {
       console.log("");
       console.log("========================================");
@@ -954,10 +815,6 @@ const forgotPasswordOtp = asyncHandler(async (req, res) => {
       console.log("========================================");
       console.log("");
     }
-
-    /*
-     * Send email
-     */
 
     try {
       await sendEmail({
@@ -1109,17 +966,17 @@ const resetPasswordWithOtp = asyncHandler(async (req, res) => {
 
   const otpResult = await pool.query(
     `
-      SELECT
-        id,
-        code_hash,
-        expires_at
-      FROM otp_codes
-      WHERE user_id = $1
-        AND purpose = 'password_reset'
-        AND consumed_at IS NULL
-      ORDER BY created_at DESC
-      LIMIT 1
-      `,
+    SELECT
+      id,
+      code_hash,
+      expires_at
+    FROM otp_codes
+    WHERE user_id = $1
+      AND purpose = 'password_reset'
+      AND consumed_at IS NULL
+    ORDER BY created_at DESC
+    LIMIT 1
+    `,
     [user.id],
   );
 
@@ -1139,10 +996,6 @@ const resetPasswordWithOtp = asyncHandler(async (req, res) => {
 
   const passwordHash = await bcrypt.hash(newPassword, 12);
 
-  /*
-   * Update password and consume OTP atomically
-   */
-
   const client = await pool.connect();
 
   try {
@@ -1150,21 +1003,21 @@ const resetPasswordWithOtp = asyncHandler(async (req, res) => {
 
     await client.query(
       `
-        UPDATE users
-        SET
-          password_hash = $1,
-          updated_at = NOW()
-        WHERE id = $2
-        `,
+      UPDATE users
+      SET
+        password_hash = $1,
+        updated_at = NOW()
+      WHERE id = $2
+      `,
       [passwordHash, user.id],
     );
 
     await client.query(
       `
-        UPDATE otp_codes
-        SET consumed_at = NOW()
-        WHERE id = $1
-        `,
+      UPDATE otp_codes
+      SET consumed_at = NOW()
+      WHERE id = $1
+      `,
       [otpRecord.id],
     );
 
@@ -1220,37 +1073,96 @@ const me = asyncHandler(async (req, res) => {
 | DELETE ACCOUNT
 |--------------------------------------------------------------------------
 |
-| Permanently deletes the authenticated user's account and all
-| associated data. This is destructive and irreversible, so
-| everything runs inside a single transaction: either all rows
-| are removed, or none are (on any failure, we roll back).
+| Shared by BOTH:
+|
+| - BudgetIQ Web Frontend
+| - BudgetIQ Mobile App
+|
+| The client sends:
+|
+| {
+|   "password": "current-password"
+| }
+|
+| The authenticated user's password is verified before deletion.
+|
+| Everything is deleted inside one PostgreSQL transaction.
 |--------------------------------------------------------------------------
 */
 
 const deleteAccount = asyncHandler(async (req, res) => {
+  const { password } = req.body;
   const userId = req.user.id;
 
-  console.log("");
-  console.log("========================================");
-  console.log("🗑️ BUDGETIQ ACCOUNT DELETION");
-  console.log(`👤 User ID: ${userId}`);
-  console.log("========================================");
-  console.log("");
+  /*
+   * Password is required.
+   */
+
+  if (!password) {
+    return res.status(400).json({
+      error: "Password is required to delete your account.",
+    });
+  }
+
+  /*
+   * Get current user's password hash.
+   */
+
+  const userResult = await pool.query(
+    `
+    SELECT
+      id,
+      email,
+      password_hash
+    FROM users
+    WHERE id = $1
+    `,
+    [userId],
+  );
+
+  if (userResult.rows.length === 0) {
+    return res.status(404).json({
+      error: "User not found.",
+    });
+  }
+
+  const user = userResult.rows[0];
+
+  /*
+   * Verify current password.
+   */
+
+  const passwordMatches = await bcrypt.compare(password, user.password_hash);
+
+  if (!passwordMatches) {
+    return res.status(401).json({
+      error: "Incorrect password.",
+    });
+  }
+
+  /*
+   * Connect to database.
+   */
 
   const client = await pool.connect();
 
   try {
     /*
-     * Start one database transaction.
-     *
-     * This is important because either EVERYTHING gets deleted,
-     * or NOTHING gets deleted if something goes wrong.
+     * Start transaction.
      */
 
     await client.query("BEGIN");
 
+    console.log("");
+    console.log("========================================");
+    console.log("🗑️ BUDGETIQ ACCOUNT DELETION");
+    console.log(`👤 User ID: ${userId}`);
+    console.log(`📧 Email: ${user.email}`);
+    console.log("========================================");
+    console.log("");
+
     /*
-     * Delete transactions
+     * Delete transactions.
      */
 
     await client.query(
@@ -1264,7 +1176,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
     console.log("✅ Transactions deleted");
 
     /*
-     * Delete budgets
+     * Delete budgets.
      */
 
     await client.query(
@@ -1278,7 +1190,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
     console.log("✅ Budgets deleted");
 
     /*
-     * Delete accounts
+     * Delete accounts.
      */
 
     await client.query(
@@ -1292,7 +1204,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
     console.log("✅ Accounts deleted");
 
     /*
-     * Delete categories
+     * Delete categories.
      */
 
     await client.query(
@@ -1306,7 +1218,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
     console.log("✅ Categories deleted");
 
     /*
-     * Delete email verification OTPs
+     * Delete OTP records.
      */
 
     await client.query(
@@ -1320,7 +1232,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
     console.log("✅ OTP records deleted");
 
     /*
-     * Delete password reset records
+     * Delete password reset records.
      */
 
     await client.query(
@@ -1335,11 +1247,9 @@ const deleteAccount = asyncHandler(async (req, res) => {
 
     /*
      * Finally delete the user.
-     *
-     * RETURNING lets us confirm that the user actually existed.
      */
 
-    const result = await client.query(
+    const deletedUser = await client.query(
       `
       DELETE FROM users
       WHERE id = $1
@@ -1349,13 +1259,11 @@ const deleteAccount = asyncHandler(async (req, res) => {
     );
 
     /*
-     * User does not exist
+     * Make sure the user actually existed.
      */
 
-    if (result.rowCount === 0) {
+    if (deletedUser.rowCount === 0) {
       await client.query("ROLLBACK");
-
-      console.log("⚠️ Account deletion failed: user not found");
 
       return res.status(404).json({
         error: "User account not found.",
@@ -1371,7 +1279,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
     console.log("");
     console.log("========================================");
     console.log("✅ BUDGETIQ ACCOUNT COMPLETELY DELETED");
-    console.log(`📧 Email: ${result.rows[0].email}`);
+    console.log(`📧 Email: ${deletedUser.rows[0].email}`);
     console.log("========================================");
     console.log("");
 
@@ -1382,7 +1290,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     /*
-     * If ANY deletion fails, restore everything.
+     * Roll back everything if ANY deletion fails.
      */
 
     await client.query("ROLLBACK");
@@ -1397,7 +1305,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
     throw error;
   } finally {
     /*
-     * Always release the PostgreSQL connection.
+     * Always release database connection.
      */
 
     client.release();
@@ -1407,9 +1315,6 @@ const deleteAccount = asyncHandler(async (req, res) => {
 /*
 |--------------------------------------------------------------------------
 | MOBILE PROFILE AVATAR
-|--------------------------------------------------------------------------
-|
-| Used by mobile multipart/form-data upload.
 |--------------------------------------------------------------------------
 */
 
@@ -1455,9 +1360,6 @@ const uploadAvatar = asyncHandler(async (req, res) => {
 /*
 |--------------------------------------------------------------------------
 | WEB PROFILE AVATAR
-|--------------------------------------------------------------------------
-|
-| Existing web frontend sends a base64 data URL.
 |--------------------------------------------------------------------------
 */
 
@@ -1513,9 +1415,10 @@ const updateAvatar = asyncHandler(async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
-| CHANGE PASSWORD (logged in)
+| CHANGE PASSWORD
 |--------------------------------------------------------------------------
 */
+
 const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -1524,6 +1427,7 @@ const changePassword = asyncHandler(async (req, res) => {
       error: "Current and new password are required.",
     });
   }
+
   if (newPassword.length < 8) {
     return res.status(400).json({
       error: "New password must be at least 8 characters.",
@@ -1536,21 +1440,32 @@ const changePassword = asyncHandler(async (req, res) => {
   );
 
   if (result.rows.length === 0) {
-    return res.status(404).json({ error: "User not found." });
+    return res.status(404).json({
+      error: "User not found.",
+    });
   }
 
-  const matches = await bcrypt.compare(currentPassword, result.rows[0].password_hash);
+  const matches = await bcrypt.compare(
+    currentPassword,
+    result.rows[0].password_hash,
+  );
+
   if (!matches) {
-    return res.status(401).json({ error: "Current password is incorrect." });
+    return res.status(401).json({
+      error: "Current password is incorrect.",
+    });
   }
 
   const newHash = await bcrypt.hash(newPassword, 12);
+
   await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [
     newHash,
     req.user.id,
   ]);
 
-  return res.json({ message: "Password updated successfully." });
+  return res.json({
+    message: "Password updated successfully.",
+  });
 });
 
 /*
@@ -1558,65 +1473,45 @@ const changePassword = asyncHandler(async (req, res) => {
 | UPDATE BASE CURRENCY
 |--------------------------------------------------------------------------
 |
-| Relabels how amounts are displayed going forward. Does not convert or
-| recalculate any historical transaction, budget, or account amounts.
+| Relabels how amounts are displayed going forward.
+| Does not convert or recalculate historical transaction,
+| budget, or account amounts.
 |--------------------------------------------------------------------------
 */
+
 const updateCurrency = asyncHandler(async (req, res) => {
   const { currency } = req.body;
 
   if (!currency || typeof currency !== "string" || currency.length > 8) {
-    return res.status(400).json({ error: "A valid currency code is required." });
+    return res.status(400).json({
+      error: "A valid currency code is required.",
+    });
   }
 
   const result = await pool.query(
-    `UPDATE users SET currency = $1 WHERE id = $2
-     RETURNING id, full_name, email, currency, is_verified, avatar_url, created_at`,
+    `UPDATE users
+     SET currency = $1
+     WHERE id = $2
+     RETURNING
+       id,
+       full_name,
+       email,
+       currency,
+       is_verified,
+       avatar_url,
+       created_at`,
     [currency.toUpperCase(), req.user.id],
   );
 
   if (result.rows.length === 0) {
-    return res.status(404).json({ error: "User not found." });
+    return res.status(404).json({
+      error: "User not found.",
+    });
   }
 
-  return res.json({ user: result.rows[0] });
-});
-
-/*
-|--------------------------------------------------------------------------
-| DELETE ACCOUNT
-|--------------------------------------------------------------------------
-|
-| Permanent, not reversible. Every table referencing users(id) is
-| ON DELETE CASCADE in schema.sql, so this single delete cleans up
-| accounts, categories, transactions, budgets, notifications,
-| otp_codes, and password_resets automatically.
-|--------------------------------------------------------------------------
-*/
-const deleteAccount = asyncHandler(async (req, res) => {
-  const { password } = req.body;
-
-  if (!password) {
-    return res.status(400).json({ error: "Password is required to delete your account." });
-  }
-
-  const result = await pool.query(
-    `SELECT password_hash FROM users WHERE id = $1`,
-    [req.user.id],
-  );
-
-  if (result.rows.length === 0) {
-    return res.status(404).json({ error: "User not found." });
-  }
-
-  const matches = await bcrypt.compare(password, result.rows[0].password_hash);
-  if (!matches) {
-    return res.status(401).json({ error: "Incorrect password." });
-  }
-
-  await pool.query(`DELETE FROM users WHERE id = $1`, [req.user.id]);
-
-  return res.json({ message: "Your account has been permanently deleted." });
+  return res.json({
+    user: result.rows[0],
+  });
 });
 
 /*
@@ -1624,7 +1519,9 @@ const deleteAccount = asyncHandler(async (req, res) => {
 | EXPORTS
 |--------------------------------------------------------------------------
 |
-| These names must match the routes.
+| IMPORTANT:
+| deleteAccount is exported ONLY ONCE because the same backend
+| controller is shared by the web frontend and mobile app.
 |--------------------------------------------------------------------------
 */
 
@@ -1657,8 +1554,7 @@ module.exports = {
   uploadAvatar,
   updateAvatar,
 
-  // Settings page
+  // Settings
   changePassword,
   updateCurrency,
-  deleteAccount,
 };
