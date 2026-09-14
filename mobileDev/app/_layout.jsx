@@ -56,20 +56,18 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    async function prepare() {
-      await new Promise((r) => setTimeout(r, 1500));
+    SplashScreen.hideAsync();
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
       setMinDelayDone(true);
-    }
-    prepare();
+    }, 2900);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const ready = minDelayDone && (fontsLoaded || fontError);
-
-  useEffect(() => {
-    if (ready) {
-      SplashScreen.hideAsync();
-    }
-  }, [ready]);
 
   if (fontError) {
     console.log("FONT LOAD ERROR:", fontError);

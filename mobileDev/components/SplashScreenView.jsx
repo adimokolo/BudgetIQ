@@ -22,18 +22,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 170,
+    height: 170,
     marginBottom: 5,
   },
   title: {
-    fontSize: 23,
+    fontSize: 25,
     fontWeight: "800",
     color: "#1B3A6B",
     letterSpacing: 3,
   },
   tagline: {
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: "500",
     color: "#1B3A6B",
     letterSpacing: 1,
