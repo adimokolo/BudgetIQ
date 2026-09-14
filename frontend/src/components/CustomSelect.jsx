@@ -8,11 +8,11 @@ export default function CustomSelect({
   searchable = false,
   searchPlaceholder = 'Search...',
 }) {
-  const [open, setOpen]       = useState(false);
-  const [query, setQuery]     = useState('');
-  const ref                   = useRef(null);
-  const searchRef             = useRef(null);
-  const listRef               = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const ref = useRef(null);
+  const searchRef = useRef(null);
+  const listRef = useRef(null);
 
   const selected = options.find((o) => String(o.value) === String(value));
 
@@ -84,6 +84,8 @@ export default function CustomSelect({
           justifyContent: 'space-between',
           alignItems: 'center',
           userSelect: 'none',
+          minWidth: 0,
+          overflow: 'hidden',
         }}
       >
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>

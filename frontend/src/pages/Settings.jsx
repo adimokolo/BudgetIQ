@@ -53,6 +53,7 @@ export default function Settings() {
     const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
     const [currencySaving, setCurrencySaving] = useState(false);
     const [currencyError, setCurrencyError] = useState(null);
+    const [currencySearch, setCurrencySearch] = useState('');
 
     const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [passwordSaving, setPasswordSaving] = useState(false);
@@ -335,21 +336,43 @@ export default function Settings() {
                             <button className="icon-btn" onClick={() => setCurrencyModalOpen(false)} aria-label="Close">✕</button>
                         </div>
                         {currencyError && <p className="error-text" style={{ marginBottom: 10 }}>{currencyError}</p>}
+
+                        <div className="field" style={{ marginBottom: 12 }}>
+                            <input
+                                type="text"
+                                placeholder="Search currency..."
+                                value={currencySearch}
+                                onChange={(e) => setCurrencySearch(e.target.value)}
+                                autoFocus
+                            />
+                        </div>
+
                         <div className="currency-picker-list">
-                            {ALL_CURRENCIES.map((c) => {
-                                const isSelected = c.code === (user?.currency || 'NGN');
-                                return (
-                                    <button
-                                        key={c.code}
-                                        className={`currency-picker-row${isSelected ? ' currency-picker-row--selected' : ''}`}
-                                        onClick={() => handleSelectCurrency(c.code)}
-                                        disabled={currencySaving}
-                                    >
-                                        <span>{c.code} — {c.name}</span>
-                                        {isSelected && <span aria-hidden="true">✓</span>}
-                                    </button>
-                                );
-                            })}
+                            {ALL_CURRENCIES
+                                .filter((c) => {
+                                    const query = currencySearch.trim().toLowerCase();
+
+                                    if (!query) return true;
+
+                                    return (
+                                        c.code.toLowerCase().includes(query) ||
+                                        c.name.toLowerCase().includes(query)
+                                    );
+                                })
+                                .map((c) => {
+                                    const isSelected = c.code === (user?.currency || 'NGN');
+                                    return (
+                                        <button
+                                            key={c.code}
+                                            className={`currency-picker-row${isSelected ? ' currency-picker-row--selected' : ''}`}
+                                            onClick={() => handleSelectCurrency(c.code)}
+                                            disabled={currencySaving}
+                                        >
+                                            <span>{c.code} — {c.name}</span>
+                                            {isSelected && <span aria-hidden="true">✓</span>}
+                                        </button>
+                                    );
+                                })}
                         </div>
                     </div>
                 </div>
