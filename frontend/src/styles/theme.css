@@ -83,7 +83,7 @@
   color-scheme: dark;
 }
 
-[data-theme='dark'] select option {
+[data-theme='dark'] .field select option {
   background-color: #060B14;
   color: #EAF2FF;
 }
@@ -299,6 +299,39 @@ select option {
   flex-direction: column;
   gap: 6px;
   margin-bottom: 16px;
+}
+
+.currency-register-trigger {
+  width: 100%;
+  background: var(--surface-strong);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  text-align: left;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.currency-register-trigger:focus {
+  outline: none;
+  border-color: var(--prism-1);
+}
+
+.currency-register-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.currency-register-dropdown>input {
+  width: 100%;
 }
 
 .field label {

@@ -13,6 +13,8 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [currency, setCurrency] = useState('NGN');
+  const [currencySearch, setCurrencySearch] = useState('');
+  const [currencyPickerOpen, setCurrencyPickerOpen] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [agreementError, setAgreementError] = useState(null);
@@ -66,14 +68,75 @@ export default function Register() {
             />
           </div>
           <div className="field">
-            <label htmlFor="currency">Currency</label>
-            <select id="currency" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              {ALL_CURRENCIES.map((currencyOption) => (
-                <option key={currencyOption.code} value={currencyOption.code}>
-                  {currencyOption.code} — {currencyOption.name}
-                </option>
-              ))}
-            </select>
+            <label>Currency</label>
+
+            <button
+              type="button"
+              className="currency-register-trigger"
+              onClick={() => {
+                setCurrencyPickerOpen((open) => !open);
+                setCurrencySearch('');
+              }}
+            >
+              <span>
+                {(() => {
+                  const selected = ALL_CURRENCIES.find((c) => c.code === currency);
+                  return selected
+                    ? `${selected.code} — ${selected.name}`
+                    : currency;
+                })()}
+              </span>
+
+              <span aria-hidden="true">
+                {currencyPickerOpen ? '▲' : '▼'}
+              </span>
+            </button>
+
+            {currencyPickerOpen && (
+              <div className="currency-register-dropdown">
+                <input
+                  type="text"
+                  placeholder="Search currency..."
+                  value={currencySearch}
+                  onChange={(e) => setCurrencySearch(e.target.value)}
+                  autoFocus
+                />
+
+                <div className="currency-picker-list">
+                  {ALL_CURRENCIES
+                    .filter((c) => {
+                      const query = currencySearch.trim().toLowerCase();
+
+                      if (!query) return true;
+
+                      return (
+                        c.code.toLowerCase().includes(query) ||
+                        c.name.toLowerCase().includes(query)
+                      );
+                    })
+                    .map((c) => {
+                      const isSelected = c.code === currency;
+
+                      return (
+                        <button
+                          key={c.code}
+                          type="button"
+                          className={`currency-picker-row${isSelected ? ' currency-picker-row--selected' : ''
+                            }`}
+                          onClick={() => {
+                            setCurrency(c.code);
+                            setCurrencySearch('');
+                            setCurrencyPickerOpen(false);
+                          }}
+                        >
+                          <span>{c.code} — {c.name}</span>
+                          {isSelected && <span aria-hidden="true">✓</span>}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
           </div>
 
           <label className="checkbox-row">
