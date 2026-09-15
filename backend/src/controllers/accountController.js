@@ -116,7 +116,7 @@ async function createAccount(req, res) {
         currency.trim().toUpperCase(),
         amount,
         notes ? notes.trim() : null,
-        isValidHexColor ? color.trim() : null,
+        isValidHexColor ? color.trim() : '#6366F1',
       ],
     );
 
@@ -189,7 +189,7 @@ async function updateAccount(req, res) {
         currency = $2,
         balance = $3,
         notes = $4,
-        color = $5,
+        color = COALESCE($5, color),
         updated_at = NOW()
       WHERE id = $6
         AND user_id = $7

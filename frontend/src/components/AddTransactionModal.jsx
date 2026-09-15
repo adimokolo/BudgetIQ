@@ -6,6 +6,7 @@ import { ALL_CURRENCIES, formatCurrency as formatCurr } from '../utils/currency'
 import { convertCurrency } from '../services/convertCurrency';
 import { getAccounts } from '../services/accounts';
 import { useAuth } from '../context/AuthContext';
+import { getIcon, fallbackIconFor } from '../utils/categoryIcons';
 
 const EMPTY_FORM = { type: 'expense', amount: '', categoryId: '', description: '', occurredOn: '', accountId: '' };
 
@@ -292,6 +293,7 @@ export default function AddTransactionModal({ onClose, prefillAmount = '', prefi
   const [showCalc, setShowCalc] = useState(false);
   const [showConverter, setShowConverter] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [pendingConvert, setPendingConvert] = useState(null);
 
   useEffect(() => {
@@ -396,6 +398,9 @@ export default function AddTransactionModal({ onClose, prefillAmount = '', prefi
 
   const selectedAccount = accounts.find((a) => a.id === form.accountId);
   const filteredCategories = categories.filter((c) => c.type === form.type);
+  const selectedCategory = categories.find(
+    (c) => String(c.id) === String(form.categoryId)
+  );
 
   return (
 
@@ -470,15 +475,20 @@ export default function AddTransactionModal({ onClose, prefillAmount = '', prefi
           {/* Category */}
           <div className="field">
             <label>Category</label>
-            <CustomSelect
-              value={form.categoryId}
-              onChange={(val) => setForm({ ...form, categoryId: val })}
-              options={[
-                { value: '', label: 'Uncategorized' },
-                ...filteredCategories.map((c) => ({ value: c.id, label: c.name })),
-              ]}
-              placeholder="Uncategorized"
-            />
+
+            <button
+              type="button"
+              className="category-picker-trigger"
+              onClick={() => setShowCategoryPicker(true)}
+            >
+              <span>
+                {selectedCategory
+                  ? selectedCategory.name
+                  : 'Select category...'}
+              </span>
+
+              <span aria-hidden="true">›</span>
+            </button>
           </div>
 
           {/* Description */}
@@ -528,7 +538,98 @@ export default function AddTransactionModal({ onClose, prefillAmount = '', prefi
         </form>
       </Modal>
 
+      {/* Category picker overlay */}
+      {showCategoryPicker && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setShowCategoryPicker(false)}
+          style={{ zIndex: 70 }}
+        >
+          <div
+            className="facet-card category-picker-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <h3>Select category</h3>
+
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setShowCategoryPicker(false)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="category-picker-subtitle">
+              Your {form.type} categories
+            </p>
+
+            <div className="category-picker-grid">
+              {filteredCategories.map((category) => {
+                const isSelected =
+                  String(category.id) === String(form.categoryId);
+
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    className={`category-picker-chip${isSelected ? ' category-picker-chip--selected' : ''
+                      }`}
+                    onClick={() => {
+                      setForm((current) => ({
+                        ...current,
+                        categoryId: category.id,
+                      }));
+                      setShowCategoryPicker(false);
+                    }}
+                  >
+                    <span
+                      className="category-picker-icon"
+                      style={{
+                        background:
+                          category.color || 'var(--surface-strong)',
+                      }}
+                    >
+                      {getIcon(
+                        category.icon ||
+                        fallbackIconFor(form.type)
+                      )}
+                    </span>
+
+                    <span>{category.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {filteredCategories.length === 0 && (
+              <p className="category-picker-empty">
+                No {form.type} categories available.
+              </p>
+            )}
+
+            <button
+              type="button"
+              className="category-picker-uncategorized"
+              onClick={() => {
+                setForm((current) => ({
+                  ...current,
+                  categoryId: '',
+                }));
+                setShowCategoryPicker(false);
+              }}
+            >
+              Use Uncategorized
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Account picker overlay */}
+
+
       {showAccountPicker && (
         <AccountPickerModal
           accounts={accounts}

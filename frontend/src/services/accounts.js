@@ -6,17 +6,37 @@ export const getAccounts = async () => {
   return response.data;
 };
 
-export const createAccount = async ({ name, currency, initialAmount, notes }) => {
+export const createAccount = async ({
+  name,
+  currency,
+  initialAmount,
+  notes,
+  color
+}) => {
+
+
   const response = await apiClient.post('/accounts', {
-    name, currency, initialAmount, notes
+    name,
+    currency,
+    initialAmount,
+    notes,
+    color
   });
   return response.data;
 };
 
-export const updateAccount = async (accountId, { name, currency, initialAmount, notes }) => {
+export const updateAccount = async (
+  accountId,
+  { name, currency, initialAmount, notes, color }
+) => {
   const response = await apiClient.put(`/accounts/${accountId}`, {
-    name, currency, initialAmount, notes
+    name,
+    currency,
+    initialAmount,
+    notes,
+    color,
   });
+
   return response.data;
 };
 
