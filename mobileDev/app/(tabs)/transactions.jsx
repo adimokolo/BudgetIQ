@@ -132,6 +132,67 @@ const ICON_OPTIONS = [
   "ellipsis-horizontal-outline",
 ];
 
+// Category icon keys stay unchanged in the shared backend. This mapping only
+// changes how they are displayed so mobile matches the frontend icon style.
+const CATEGORY_ICON_MAP = {
+  "fast-food-outline": "🍔",
+  "restaurant-outline": "🍽️",
+  "cafe-outline": "☕",
+  "beer-outline": "🍺",
+  "cart-outline": "🛒",
+  "basket-outline": "🧺",
+  "bus-outline": "🚌",
+  "car-outline": "🚗",
+  "bicycle-outline": "🚲",
+  "train-outline": "🚆",
+  "airplane-outline": "✈️",
+  "home-outline": "🏠",
+  "bed-outline": "🛏️",
+  "flash-outline": "⚡",
+  "water-outline": "💧",
+  "wifi-outline": "📶",
+  "call-outline": "📞",
+  "phone-portrait-outline": "📱",
+  "laptop-outline": "💻",
+  "medkit-outline": "🩺",
+  "fitness-outline": "🏃",
+  "barbell-outline": "🏋️",
+  "school-outline": "🎓",
+  "book-outline": "📚",
+  "film-outline": "🎬",
+  "musical-notes-outline": "🎵",
+  "game-controller-outline": "🎮",
+  "gift-outline": "🎁",
+  "shirt-outline": "👕",
+  "cut-outline": "✂️",
+  "paw-outline": "🐾",
+  "diamond-outline": "💎",
+  "wallet-outline": "👛",
+  "card-outline": "💳",
+  "cash-outline": "💵",
+  "trending-up-outline": "📈",
+  "briefcase-outline": "💼",
+  "business-outline": "🏢",
+  "construct-outline": "🛠️",
+  "heart-outline": "❤️",
+  "ellipsis-horizontal-outline": "•••",
+  "pricetag-outline": "🏷️",
+};
+
+function getCategoryIcon(iconName) {
+  if (!iconName) return CATEGORY_ICON_MAP["pricetag-outline"];
+
+  const normalizedName = iconName.endsWith("-outline")
+    ? iconName
+    : `${iconName}-outline`;
+
+  return (
+    CATEGORY_ICON_MAP[iconName] ||
+    CATEGORY_ICON_MAP[normalizedName] ||
+    CATEGORY_ICON_MAP["pricetag-outline"]
+  );
+}
+
 const SWATCHES = [
   "#174E78",
   "#2DD4BF",
@@ -353,11 +414,9 @@ function CategoryPickerModal({
                           },
                         ]}
                       >
-                        <Ionicons
-                          name={iconFor(category)}
-                          size={14}
-                          color="#FFFFFF"
-                        />
+                        <Text style={styles.categoryEmoji}>
+                          {getCategoryIcon(iconFor(category))}
+                        </Text>
                       </View>
 
                       <Text
@@ -403,7 +462,9 @@ function CategoryPickerModal({
                   },
                 ]}
               >
-                <Ionicons name={icon} size={18} color="#FFFFFF" />
+                <Text style={styles.categoryPreviewEmoji}>
+                  {getCategoryIcon(icon)}
+                </Text>
               </View>
 
               <Text
@@ -435,13 +496,9 @@ function CategoryPickerModal({
                     },
                   ]}
                 >
-                  <Ionicons
-                    name={iconName}
-                    size={17}
-                    color={
-                      icon === iconName ? colors.primary : colors.textMuted
-                    }
-                  />
+                  <Text style={styles.categoryOptionEmoji}>
+                    {getCategoryIcon(iconName)}
+                  </Text>
                 </Pressable>
               ))}
             </View>
@@ -1427,8 +1484,26 @@ function FullCalendar({
   );
 }
 
-function TransactionCard({ transaction, currency, onDelete, styles }) {
+function TransactionCard({
+  transaction,
+  categories,
+  currency,
+  onDelete,
+  styles,
+}) {
   const isIncome = transaction.type === "Income";
+  const matchedCategory = categories.find(
+    (category) =>
+      category.name?.toLowerCase() === transaction.category?.toLowerCase(),
+  );
+  const categoryColor =
+    transaction.categoryColor ||
+    matchedCategory?.color ||
+    (isIncome ? "#16A34A" : "#EF4444");
+  const categoryIcon =
+    transaction.categoryIcon ||
+    matchedCategory?.icon ||
+    fallbackIconFor(transaction.type);
 
   return (
     <View style={styles.transactionCard}>
@@ -1436,16 +1511,13 @@ function TransactionCard({ transaction, currency, onDelete, styles }) {
         <View
           style={[
             styles.transactionIcon,
-            isIncome ? styles.incomeIcon : styles.expenseIcon,
+            {
+              backgroundColor: categoryColor,
+            },
           ]}
         >
-          <Text
-            style={[
-              styles.iconText,
-              isIncome ? styles.incomeIconText : styles.expenseIconText,
-            ]}
-          >
-            {isIncome ? "↓" : "↑"}
+          <Text style={styles.transactionCategoryEmoji}>
+            {getCategoryIcon(categoryIcon)}
           </Text>
         </View>
 
@@ -1492,6 +1564,8 @@ function mapTransaction(raw) {
     category: raw.category_name || "Uncategorized",
 
     categoryColor: raw.category_color,
+
+    categoryIcon: raw.category_icon,
 
     amount: Number(raw.amount || 0),
 
@@ -2017,6 +2091,7 @@ export default function Transactions() {
               <TransactionCard
                 key={transaction.id}
                 transaction={transaction}
+                categories={allCategories}
                 currency={currency}
                 onDelete={deleteTransaction}
                 styles={styles}
@@ -2521,14 +2596,12 @@ export default function Transactions() {
                         },
                       ]}
                     >
-                      <Ionicons
-                        name={
+                      <Text style={styles.categoryEmoji}>
+                        {getCategoryIcon(
                           selectedCategory.icon ||
-                          fallbackIconFor(selectedCategory.type)
-                        }
-                        size={14}
-                        color="#FFFFFF"
-                      />
+                            fallbackIconFor(selectedCategory.type),
+                        )}
+                      </Text>
                     </View>
 
                     <Text style={styles.categoryFieldText}>
@@ -2988,9 +3061,9 @@ const createStyles = (colors) =>
     },
 
     transactionIcon: {
-      width: 28,
-      height: 28,
-      borderRadius: 21,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
       justifyContent: "center",
       alignItems: "center",
       marginRight: 12,
@@ -3007,6 +3080,12 @@ const createStyles = (colors) =>
     iconText: {
       fontSize: 15,
       fontFamily: fonts.bodySemiBold,
+    },
+
+    transactionCategoryEmoji: {
+      fontSize: 16,
+      lineHeight: 21,
+      textAlign: "center",
     },
 
     incomeIconText: {
@@ -3466,11 +3545,17 @@ const createStyles = (colors) =>
     },
 
     iconCircle: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
       alignItems: "center",
       justifyContent: "center",
+    },
+
+    categoryEmoji: {
+      fontSize: 16,
+      lineHeight: 21,
+      textAlign: "center",
     },
 
     categoryPickGrid: {
@@ -3517,9 +3602,15 @@ const createStyles = (colors) =>
     },
 
     iconPreviewCircle: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+    },
+
+    categoryPreviewEmoji: {
+      fontSize: 18,
+      lineHeight: 24,
+      textAlign: "center",
     },
 
     iconPreviewText: {
@@ -3542,6 +3633,12 @@ const createStyles = (colors) =>
       borderWidth: 1,
       alignItems: "center",
       justifyContent: "center",
+    },
+
+    categoryOptionEmoji: {
+      fontSize: 18,
+      lineHeight: 24,
+      textAlign: "center",
     },
 
     swatchRow: {
