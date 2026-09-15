@@ -1550,6 +1550,12 @@ export default function Transactions() {
 
   const [showExportMenu, setShowExportMenu] = useState(false);
 
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFromDate, setExportFromDate] = useState(null);
+  const [exportToDate, setExportToDate] = useState(null);
+  const [showExportFromPicker, setShowExportFromPicker] = useState(false);
+  const [showExportToPicker, setShowExportToPicker] = useState(false);
+
   const [transactions, setTransactions] = useState([]);
 
   const [allCategories, setAllCategories] = useState([]);
@@ -1801,28 +1807,70 @@ export default function Transactions() {
     }
   };
 
-  const handleExportCsv = async () => {
+  const openExportModal = () => {
     if (transactions.length === 0) {
       Alert.alert(
         "Nothing to export",
         "There are no transactions available to export.",
       );
-
       return;
     }
 
+    setShowExportMenu(false);
+    setShowExportModal(true);
+  };
+
+  const getTransactionsForExportRange = async () => {
+    if (!exportFromDate || !exportToDate) {
+      Alert.alert(
+        "Select date range",
+        "Please select both the From and To dates.",
+      );
+      return null;
+    }
+
+    const fromKey = getLocalDateString(exportFromDate);
+    const toKey = getLocalDateString(exportToDate);
+
+    if (fromKey > toKey) {
+      Alert.alert(
+        "Invalid date range",
+        "The From date cannot be later than the To date.",
+      );
+      return null;
+    }
+
+    const data = await getTransactions();
+    const rawTransactions = data.transactions || [];
+
+    const rangedTransactions = rawTransactions.filter((transaction) => {
+      if (!transaction.occurred_on) return false;
+      const transactionDate = String(transaction.occurred_on).slice(0, 10);
+      return transactionDate >= fromKey && transactionDate <= toKey;
+    });
+
+    if (rangedTransactions.length === 0) {
+      Alert.alert(
+        "Nothing to export",
+        "There are no transactions within the selected date range.",
+      );
+      return null;
+    }
+
+    return rangedTransactions;
+  };
+
+  const handleExportCsv = async () => {
     try {
       setExporting(true);
-      setShowExportMenu(false);
 
-      const data = await getTransactions();
-
-      const rawTransactions = data.transactions || [];
+      const rawTransactions = await getTransactionsForExportRange();
+      if (!rawTransactions) return;
 
       await exportTransactionsToCsv(rawTransactions, currency);
+      setShowExportModal(false);
     } catch (error) {
       console.log("CSV export error:", error);
-
       Alert.alert(
         "Export failed",
         error.message || "Unable to export transactions as CSV.",
@@ -1833,27 +1881,16 @@ export default function Transactions() {
   };
 
   const handleExportPdf = async () => {
-    if (transactions.length === 0) {
-      Alert.alert(
-        "Nothing to export",
-        "There are no transactions available to export.",
-      );
-
-      return;
-    }
-
     try {
       setExporting(true);
-      setShowExportMenu(false);
 
-      const data = await getTransactions();
-
-      const rawTransactions = data.transactions || [];
+      const rawTransactions = await getTransactionsForExportRange();
+      if (!rawTransactions) return;
 
       await exportTransactionsToPdf(rawTransactions, currency);
+      setShowExportModal(false);
     } catch (error) {
       console.log("PDF export error:", error);
-
       Alert.alert(
         "Export failed",
         error.message || "Unable to export transactions as PDF.",
@@ -1923,7 +1960,7 @@ export default function Transactions() {
                 <View style={styles.exportMenu}>
                   <TouchableOpacity
                     style={styles.exportMenuItem}
-                    onPress={handleExportCsv}
+                    onPress={openExportModal}
                     disabled={exporting}
                     activeOpacity={0.7}
                   >
@@ -1934,7 +1971,7 @@ export default function Transactions() {
 
                   <TouchableOpacity
                     style={styles.exportMenuItem}
-                    onPress={handleExportPdf}
+                    onPress={openExportModal}
                     disabled={exporting}
                     activeOpacity={0.7}
                   >
@@ -2012,6 +2049,143 @@ export default function Transactions() {
           styles={styles}
         />
       </ScrollView>
+
+      <Modal
+        visible={showExportModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowExportModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.exportModalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Export Transactions</Text>
+                <Text style={styles.exportModalSubtitle}>
+                  Select the transaction history period to export.
+                </Text>
+              </View>
+
+              <Pressable onPress={() => setShowExportModal(false)} hitSlop={10}>
+                <Text style={styles.closeButton}>×</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.exportDateRow}>
+              <View style={styles.exportDateColumn}>
+                <Text style={styles.inputLabel}>From</Text>
+                <Pressable
+                  style={styles.exportDateField}
+                  onPress={() => setShowExportFromPicker(true)}
+                >
+                  <Text
+                    style={[
+                      styles.exportDateText,
+                      !exportFromDate && { color: colors.textFaint },
+                    ]}
+                  >
+                    {exportFromDate
+                      ? exportFromDate.toLocaleDateString("en-US", {
+                          month: "2-digit",
+                          day: "2-digit",
+                          year: "numeric",
+                        })
+                      : "mm/dd/yyyy"}
+                  </Text>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={colors.text}
+                  />
+                </Pressable>
+              </View>
+
+              <View style={styles.exportDateColumn}>
+                <Text style={styles.inputLabel}>To</Text>
+                <Pressable
+                  style={styles.exportDateField}
+                  onPress={() => setShowExportToPicker(true)}
+                >
+                  <Text
+                    style={[
+                      styles.exportDateText,
+                      !exportToDate && { color: colors.textFaint },
+                    ]}
+                  >
+                    {exportToDate
+                      ? exportToDate.toLocaleDateString("en-US", {
+                          month: "2-digit",
+                          day: "2-digit",
+                          year: "numeric",
+                        })
+                      : "mm/dd/yyyy"}
+                  </Text>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={colors.text}
+                  />
+                </Pressable>
+              </View>
+            </View>
+
+            {showExportFromPicker && (
+              <DateTimePicker
+                value={exportFromDate || new Date()}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                maximumDate={exportToDate || new Date()}
+                onChange={(event, selected) => {
+                  setShowExportFromPicker(Platform.OS === "ios");
+                  if (selected) setExportFromDate(selected);
+                }}
+              />
+            )}
+
+            {showExportToPicker && (
+              <DateTimePicker
+                value={exportToDate || new Date()}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                minimumDate={exportFromDate || undefined}
+                maximumDate={new Date()}
+                onChange={(event, selected) => {
+                  setShowExportToPicker(Platform.OS === "ios");
+                  if (selected) setExportToDate(selected);
+                }}
+              />
+            )}
+
+            <View style={styles.exportModalActions}>
+              <Pressable
+                style={[
+                  styles.exportCsvButton,
+                  exporting && styles.saveButtonDisabled,
+                ]}
+                onPress={handleExportCsv}
+                disabled={exporting}
+              >
+                <Text style={styles.exportCsvButtonText}>Export CSV</Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.exportPdfButton,
+                  exporting && styles.saveButtonDisabled,
+                ]}
+                onPress={handleExportPdf}
+                disabled={exporting}
+              >
+                {exporting ? (
+                  <ActivityIndicator color={colors.primaryText} />
+                ) : (
+                  <Text style={styles.exportPdfButtonText}>Export PDF</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={showConverterAccountPicker}
@@ -2558,6 +2732,91 @@ const createStyles = (colors) =>
       color: colors.text,
       fontSize: 10,
       fontFamily: fonts.bodySemiBold,
+    },
+
+    exportModalCard: {
+      width: "92%",
+      maxWidth: 620,
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      padding: 20,
+    },
+
+    exportModalSubtitle: {
+      fontSize: 11,
+      fontFamily: fonts.bodyRegular,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+
+    exportDateRow: {
+      flexDirection: "row",
+      gap: 12,
+      marginTop: 12,
+    },
+
+    exportDateColumn: {
+      flex: 1,
+    },
+
+    exportDateField: {
+      minHeight: 52,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      backgroundColor: colors.inputBg,
+      paddingHorizontal: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+
+    exportDateText: {
+      flex: 1,
+      fontSize: 12,
+      fontFamily: fonts.bodyMedium,
+      color: colors.text,
+      marginRight: 8,
+    },
+
+    exportModalActions: {
+      flexDirection: "row",
+      gap: 12,
+      marginTop: 22,
+    },
+
+    exportCsvButton: {
+      flex: 1,
+      minHeight: 50,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      backgroundColor: colors.inputBg,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    exportCsvButtonText: {
+      fontSize: 12,
+      fontFamily: fonts.bodySemiBold,
+      color: colors.text,
+    },
+
+    exportPdfButton: {
+      flex: 1,
+      minHeight: 50,
+      borderRadius: 12,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    exportPdfButtonText: {
+      fontSize: 12,
+      fontFamily: fonts.bodySemiBold,
+      color: colors.primaryText,
     },
 
     exportMenuContainer: {

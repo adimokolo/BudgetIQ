@@ -409,13 +409,9 @@ export default function Account() {
       return;
     }
 
-    if (!initialAmount.trim()) {
-      Alert.alert("Missing amount", "Please enter the initial amount.");
-
-      return;
-    }
-
-    const amount = Number(initialAmount);
+    // Allow a new wallet/account to be created with a zero balance.
+    // If the field is left blank, treat it as 0.00.
+    const amount = initialAmount.trim() === "" ? 0 : Number(initialAmount);
 
     if (Number.isNaN(amount) || amount < 0) {
       Alert.alert("Invalid amount", "Please enter a valid initial amount.");
