@@ -9,7 +9,21 @@ export default function AccountCard({ account, onEdit, onDelete }) {
       {/* Account name + sync badge */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{account.name}</h3>
+          <span
+            aria-hidden="true"
+            style={{
+              width: 16,
+              height: 16,
+              borderRadius: '50%',
+              backgroundColor: account.color || '#6366F1',
+              flexShrink: 0,
+              boxShadow: '0 0 0 2px var(--surface-border)',
+            }}
+          />
+
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
+            {account.name}
+          </h3>
           {isSynced && (
             <span style={{
               fontSize: 11, fontWeight: 600, padding: '2px 8px',
