@@ -1,19 +1,19 @@
-import { PasswordInput } from '../components/PasswordInput';
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import AuthLogo from '../components/AuthLogo';
-import TermsModal from '../components/TermsModal';
-import { ALL_CURRENCIES } from '../utils/currency';
+import { PasswordInput } from "../components/PasswordInput";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import AuthLogo from "../components/AuthLogo";
+import TermsModal from "../components/TermsModal";
+import { ALL_CURRENCIES } from "../utils/currency";
 
 export default function Register() {
   const { register, loading, error } = useAuth();
   const navigate = useNavigate();
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [currency, setCurrency] = useState('NGN');
-  const [currencySearch, setCurrencySearch] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [currency, setCurrency] = useState("NGN");
+  const [currencySearch, setCurrencySearch] = useState("");
   const [currencyPickerOpen, setCurrencyPickerOpen] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
@@ -22,12 +22,14 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!agreedToTerms) {
-      setAgreementError('Please agree to the Terms of Service and Privacy Policy to continue.');
+      setAgreementError(
+        "Please agree to the Terms of Service and Privacy Policy to continue.",
+      );
       return;
     }
     setAgreementError(null);
     const ok = await register(fullName, email, password, currency);
-    if (ok) navigate('/verify-otp', { state: { email } });
+    if (ok) navigate("/verify-otp", { state: { email } });
   };
 
   return (
@@ -35,7 +37,9 @@ export default function Register() {
       <div className="facet-card auth-card">
         <AuthLogo />
         <h2 className="auth-title">Create your account</h2>
-        <p className="auth-subtitle">Clarity for your income and spending starts here.</p>
+        <p className="auth-subtitle">
+          Clarity for your income and spending starts here.
+        </p>
 
         <form onSubmit={handleSubmit}>
           <div className="field">
@@ -75,21 +79,21 @@ export default function Register() {
               className="currency-register-trigger"
               onClick={() => {
                 setCurrencyPickerOpen((open) => !open);
-                setCurrencySearch('');
+                setCurrencySearch("");
               }}
             >
               <span>
                 {(() => {
-                  const selected = ALL_CURRENCIES.find((c) => c.code === currency);
+                  const selected = ALL_CURRENCIES.find(
+                    (c) => c.code === currency,
+                  );
                   return selected
                     ? `${selected.code} — ${selected.name}`
                     : currency;
                 })()}
               </span>
 
-              <span aria-hidden="true">
-                {currencyPickerOpen ? '▲' : '▼'}
-              </span>
+              <span aria-hidden="true">{currencyPickerOpen ? "▲" : "▼"}</span>
             </button>
 
             {currencyPickerOpen && (
@@ -103,37 +107,38 @@ export default function Register() {
                 />
 
                 <div className="currency-picker-list">
-                  {ALL_CURRENCIES
-                    .filter((c) => {
-                      const query = currencySearch.trim().toLowerCase();
+                  {ALL_CURRENCIES.filter((c) => {
+                    const query = currencySearch.trim().toLowerCase();
 
-                      if (!query) return true;
+                    if (!query) return true;
 
-                      return (
-                        c.code.toLowerCase().includes(query) ||
-                        c.name.toLowerCase().includes(query)
-                      );
-                    })
-                    .map((c) => {
-                      const isSelected = c.code === currency;
+                    return (
+                      c.code.toLowerCase().includes(query) ||
+                      c.name.toLowerCase().includes(query)
+                    );
+                  }).map((c) => {
+                    const isSelected = c.code === currency;
 
-                      return (
-                        <button
-                          key={c.code}
-                          type="button"
-                          className={`currency-picker-row${isSelected ? ' currency-picker-row--selected' : ''
-                            }`}
-                          onClick={() => {
-                            setCurrency(c.code);
-                            setCurrencySearch('');
-                            setCurrencyPickerOpen(false);
-                          }}
-                        >
-                          <span>{c.code} — {c.name}</span>
-                          {isSelected && <span aria-hidden="true">✓</span>}
-                        </button>
-                      );
-                    })}
+                    return (
+                      <button
+                        key={c.code}
+                        type="button"
+                        className={`currency-picker-row${
+                          isSelected ? " currency-picker-row--selected" : ""
+                        }`}
+                        onClick={() => {
+                          setCurrency(c.code);
+                          setCurrencySearch("");
+                          setCurrencyPickerOpen(false);
+                        }}
+                      >
+                        <span>
+                          {c.code} — {c.name}
+                        </span>
+                        {isSelected && <span aria-hidden="true">✓</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -149,7 +154,7 @@ export default function Register() {
               }}
             />
             <span>
-              I agree to the{' '}
+              I agree to the{" "}
               <button
                 type="button"
                 className="link-button"
@@ -159,17 +164,38 @@ export default function Register() {
               </button>
             </span>
           </label>
-          {agreementError && <p className="error-text" style={{ marginBottom: 14 }}>{agreementError}</p>}
+          {agreementError && (
+            <p className="error-text" style={{ marginBottom: 14 }}>
+              {agreementError}
+            </p>
+          )}
 
-          {error && <p className="error-text" style={{ marginBottom: 14 }}>{error}</p>}
+          {error && (
+            <p className="error-text" style={{ marginBottom: 14 }}>
+              {error}
+            </p>
+          )}
 
-          <button className="btn btn--primary btn--block" type="submit" disabled={loading}>
-            {loading ? 'Creating account…' : 'Create account'}
+          <button
+            className="btn btn--primary btn--block"
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? "Creating account…" : "Create account"}
           </button>
         </form>
 
-        <p className="helper-text" style={{ marginTop: 18, textAlign: 'center' }}>
-          Already have an account? <Link to="/login" style={{ color: 'var(--brand-mid)', fontWeight: 600 }}>Log in</Link>
+        <p
+          className="helper-text"
+          style={{ marginTop: 18, textAlign: "center" }}
+        >
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            style={{ color: "var(--brand-mid)", fontWeight: 600 }}
+          >
+            Log in
+          </Link>
         </p>
       </div>
 
