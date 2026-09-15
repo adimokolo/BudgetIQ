@@ -216,6 +216,11 @@ export default function Transactions() {
   const [filterType, setFilterType] = useState('');
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportFrom, setExportFrom] = useState('');
+  const [exportTo, setExportTo] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
 
   const loadTransactions = (type = filterType) => {
     setLoading(true);
@@ -223,6 +228,72 @@ export default function Transactions() {
       .get('/transactions', { params: type ? { type } : {} })
       .then((res) => setTransactions(res.data.transactions))
       .finally(() => setLoading(false));
+  };
+  const fetchTransactionsForExport = async (from, to) => {
+    const limit = 100;
+    let page = 1;
+    let allTransactions = [];
+    let total = 0;
+
+    do {
+      const response = await apiClient.get('/transactions', {
+        params: {
+          from,
+          to,
+          page,
+          limit,
+          ...(filterType ? { type: filterType } : {}),
+        },
+      });
+
+      const batch = response.data.transactions || [];
+      allTransactions = [...allTransactions, ...batch];
+      total = Number(response.data.pagination?.total || 0);
+
+      page += 1;
+    } while (allTransactions.length < total);
+
+    return allTransactions;
+  };
+  const handleRangeExport = async (format) => {
+    setExportError('');
+
+    if (!exportFrom || !exportTo) {
+      setExportError('Please select both From and To dates.');
+      return;
+    }
+
+    if (exportFrom > exportTo) {
+      setExportError('From date cannot be later than To date.');
+      return;
+    }
+
+    try {
+      setExporting(true);
+
+      const rangeTransactions = await fetchTransactionsForExport(
+        exportFrom,
+        exportTo
+      );
+
+      if (rangeTransactions.length === 0) {
+        setExportError('No transactions found within the selected date range.');
+        return;
+      }
+
+      if (format === 'csv') {
+        exportTransactionsToCsv(rangeTransactions, currency);
+      } else if (format === 'pdf') {
+        exportTransactionsToPdf(rangeTransactions, currency);
+      }
+
+      setExportModalOpen(false);
+    } catch (error) {
+      console.error('Transaction export failed:', error);
+      setExportError('Unable to export transactions. Please try again.');
+    } finally {
+      setExporting(false);
+    }
   };
 
   useEffect(() => { loadTransactions(); }, []);
@@ -259,17 +330,12 @@ export default function Transactions() {
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <button
             className="btn btn--ghost"
-            onClick={() => exportTransactionsToCsv(transactions, currency)}
-            disabled={transactions.length === 0}
+            onClick={() => {
+              setExportError('');
+              setExportModalOpen(true);
+            }}
           >
-            Export CSV
-          </button>
-          <button
-            className="btn btn--ghost"
-            onClick={() => exportTransactionsToPdf(transactions, currency)}
-            disabled={transactions.length === 0}
-          >
-            Export PDF
+            Export
           </button>
           <button className="btn btn--primary" onClick={() => setModalOpen(true)}>
             + Add transaction
@@ -392,6 +458,118 @@ export default function Transactions() {
         onShowAll={() => setSelectedDate(null)}
         currency={currency}
       />
+      {exportModalOpen && (
+        <div
+          className="modal-backdrop"
+          onClick={() => !exporting && setExportModalOpen(false)}
+        >
+          <div
+            className="facet-card modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <div>
+                <h3>Export Transactions</h3>
+                <p
+                  style={{
+                    margin: '4px 0 0',
+                    fontSize: 12,
+                    color: 'var(--ink-faint)',
+                  }}
+                >
+                  Select the transaction history period to export.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setExportModalOpen(false)}
+                disabled={exporting}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 12,
+              }}
+            >
+              <div className="field">
+                <label htmlFor="export-from">From</label>
+                <input
+                  id="export-from"
+                  type="date"
+                  value={exportFrom}
+                  max={exportTo || undefined}
+                  onChange={(e) => {
+                    setExportFrom(e.target.value);
+                    setExportError('');
+                  }}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="export-to">To</label>
+                <input
+                  id="export-to"
+                  type="date"
+                  value={exportTo}
+                  min={exportFrom || undefined}
+                  onChange={(e) => {
+                    setExportTo(e.target.value);
+                    setExportError('');
+                  }}
+                />
+              </div>
+            </div>
+
+            {exportError && (
+              <p
+                style={{
+                  margin: '10px 0 0',
+                  fontSize: 12,
+                  color: 'var(--expense)',
+                }}
+              >
+                {exportError}
+              </p>
+            )}
+
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                marginTop: 20,
+              }}
+            >
+              <button
+                type="button"
+                className="btn btn--ghost"
+                style={{ flex: 1 }}
+                disabled={exporting}
+                onClick={() => handleRangeExport('csv')}
+              >
+                {exporting ? 'Exporting...' : 'Export CSV'}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn--primary"
+                style={{ flex: 1 }}
+                disabled={exporting}
+                onClick={() => handleRangeExport('pdf')}
+              >
+                {exporting ? 'Exporting...' : 'Export PDF'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modalOpen && <AddTransactionModal onClose={() => setModalOpen(false)} />}
 
