@@ -56,6 +56,63 @@ function fallbackIconFor(type) {
   return type?.toLowerCase() === "income" ? "💵" : "🏷️";
 }
 
+const CATEGORY_ICON_MAP = {
+  "fast-food-outline": "🍔",
+  "restaurant-outline": "🍽️",
+  "cafe-outline": "☕",
+  "beer-outline": "🍺",
+  "cart-outline": "🛒",
+  "basket-outline": "🧺",
+  "bus-outline": "🚌",
+  "car-outline": "🚗",
+  "bicycle-outline": "🚲",
+  "train-outline": "🚆",
+  "airplane-outline": "✈️",
+  "home-outline": "🏠",
+  "bed-outline": "🛏️",
+  "flash-outline": "⚡",
+  "water-outline": "💧",
+  "wifi-outline": "📶",
+  "call-outline": "📞",
+  "phone-portrait-outline": "📱",
+  "laptop-outline": "💻",
+  "medkit-outline": "🩺",
+  "fitness-outline": "🏃",
+  "barbell-outline": "🏋️",
+  "school-outline": "🎓",
+  "book-outline": "📚",
+  "film-outline": "🎬",
+  "musical-notes-outline": "🎵",
+  "game-controller-outline": "🎮",
+  "gift-outline": "🎁",
+  "shirt-outline": "👕",
+  "cut-outline": "✂️",
+  "paw-outline": "🐾",
+  "diamond-outline": "💎",
+  "wallet-outline": "👛",
+  "card-outline": "💳",
+  "cash-outline": "💵",
+  "trending-up-outline": "📈",
+  "briefcase-outline": "💼",
+  "business-outline": "🏢",
+  "construct-outline": "🛠️",
+  "heart-outline": "❤️",
+  "ellipsis-horizontal-outline": "•••",
+  "pricetag-outline": "🏷️",
+};
+
+function getCategoryIcon(iconName) {
+  if (!iconName) return CATEGORY_ICON_MAP["pricetag-outline"];
+  const normalizedName = iconName.endsWith("-outline")
+    ? iconName
+    : `${iconName}-outline`;
+  return (
+    CATEGORY_ICON_MAP[iconName] ||
+    CATEGORY_ICON_MAP[normalizedName] ||
+    CATEGORY_ICON_MAP["pricetag-outline"]
+  );
+}
+
 function progressColor(percent, colors) {
   if (percent >= 100) {
     return colors.danger;
@@ -103,8 +160,10 @@ function BudgetCard({ budget, currency, onEdit, onDelete, colors }) {
               },
             ]}
           >
-            <Text style={styles.categoryIconEmoji}>
-              {budget.category_icon || fallbackIconFor("expense")}
+            <Text style={styles.categoryEmoji}>
+              {getCategoryIcon(
+                budget.category_icon || fallbackIconFor("expense"),
+              )}
             </Text>
           </View>
 
@@ -832,8 +891,10 @@ export default function Budgets() {
                           },
                         ]}
                       >
-                        <Text style={styles.categoryIconEmojiSmall}>
-                          {category.icon || fallbackIconFor(category.type)}
+                        <Text style={styles.categoryEmojiSmall}>
+                          {getCategoryIcon(
+                            category.icon || fallbackIconFor(category.type),
+                          )}
                         </Text>
                       </View>
 
@@ -1077,9 +1138,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Category emoji sits inside the category's saved color circle,
-  // matching the Categories screen.
+  // Same colored-circle and emoji treatment used by Categories.
   iconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  iconCircleSmall: {
     width: 26,
     height: 26,
     borderRadius: 13,
@@ -1087,18 +1155,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  categoryIconEmoji: {
-    fontSize: 14,
-    lineHeight: 18,
+  categoryEmoji: {
+    fontSize: 16,
+    lineHeight: 21,
     textAlign: "center",
   },
 
-  iconCircleSmall: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
+  categoryEmojiSmall: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
   },
 
   categoryIconEmojiSmall: {
