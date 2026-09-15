@@ -13,7 +13,6 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import {
   getCategories,
   createCategory,
@@ -100,6 +99,68 @@ const ICON_OPTIONS = [
   "heart-outline",
   "ellipsis-horizontal-outline",
 ];
+
+// These keys are still saved to the shared backend, so the web and mobile
+// apps remain compatible. Mobile renders the same filled emoji-style icons
+// used by the frontend instead of thin platform outlines.
+const ICON_MAP = {
+  "fast-food-outline": "🍔",
+  "restaurant-outline": "🍽️",
+  "cafe-outline": "☕",
+  "beer-outline": "🍺",
+  "cart-outline": "🛒",
+  "basket-outline": "🧺",
+  "bus-outline": "🚌",
+  "car-outline": "🚗",
+  "bicycle-outline": "🚲",
+  "train-outline": "🚆",
+  "airplane-outline": "✈️",
+  "home-outline": "🏠",
+  "bed-outline": "🛏️",
+  "flash-outline": "⚡",
+  "water-outline": "💧",
+  "wifi-outline": "📶",
+  "call-outline": "📞",
+  "phone-portrait-outline": "📱",
+  "laptop-outline": "💻",
+  "medkit-outline": "🩺",
+  "fitness-outline": "🏃",
+  "barbell-outline": "🏋️",
+  "school-outline": "🎓",
+  "book-outline": "📚",
+  "film-outline": "🎬",
+  "musical-notes-outline": "🎵",
+  "game-controller-outline": "🎮",
+  "gift-outline": "🎁",
+  "shirt-outline": "👕",
+  "cut-outline": "✂️",
+  "paw-outline": "🐾",
+  "diamond-outline": "💎",
+  "wallet-outline": "👛",
+  "card-outline": "💳",
+  "cash-outline": "💵",
+  "trending-up-outline": "📈",
+  "briefcase-outline": "💼",
+  "business-outline": "🏢",
+  "construct-outline": "🛠️",
+  "heart-outline": "❤️",
+  "ellipsis-horizontal-outline": "•••",
+  "pricetag-outline": "🏷️",
+};
+
+function getIcon(iconName) {
+  if (!iconName) return ICON_MAP["pricetag-outline"];
+
+  const normalizedName = iconName.endsWith("-outline")
+    ? iconName
+    : `${iconName}-outline`;
+
+  return (
+    ICON_MAP[iconName] ||
+    ICON_MAP[normalizedName] ||
+    ICON_MAP["pricetag-outline"]
+  );
+}
 
 const CATEGORY_PRESETS = [
   {
@@ -231,11 +292,9 @@ function CategoryRow({ category, onDelete, colors }) {
             },
           ]}
         >
-          <Ionicons
-            name={category.icon || fallbackIconFor(category.type)}
-            size={16}
-            color="#FFFFFF"
-          />
+          <Text style={styles.categoryIcon}>
+            {getIcon(category.icon || fallbackIconFor(category.type))}
+          </Text>
         </View>
 
         <Text
@@ -349,9 +408,12 @@ export default function Categories() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [modalTab, setModalTab] = useState("quick");
+  const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState("");
   const [type, setType] = useState("Expense");
+  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
   const [icon, setIcon] = useState(ICON_OPTIONS[0]);
   const [color, setColor] = useState(SWATCHES[0]);
 
@@ -442,13 +504,44 @@ export default function Categories() {
     setType("Expense");
     setIcon(ICON_OPTIONS[0]);
     setColor(SWATCHES[0]);
+    setModalTab("quick");
+    setTypeMenuOpen(false);
   };
 
-  const applyPreset = (preset) => {
-    setName(preset.name);
-    setType(preset.type);
-    setIcon(preset.icon);
-    setColor(preset.color);
+  const existingNames = new Set(
+    [...incomeCategories, ...expenseCategories].map((category) =>
+      category.name.toLowerCase(),
+    ),
+  );
+
+  const addPreset = async (preset) => {
+    if (existingNames.has(preset.name.toLowerCase()) || saving) return;
+
+    try {
+      setSaving(true);
+      await createCategory({
+        name: preset.name,
+        type: preset.type.toLowerCase(),
+        icon: preset.icon,
+        color: preset.color,
+      });
+      const data = await getCategories();
+      const categories = Array.isArray(data) ? data : data?.categories || [];
+      setIncomeCategories(
+        categories.filter(
+          (category) => category.type?.toLowerCase() === "income",
+        ),
+      );
+      setExpenseCategories(
+        categories.filter(
+          (category) => category.type?.toLowerCase() === "expense",
+        ),
+      );
+    } catch (error) {
+      Alert.alert("Error", error.message || "Unable to add category.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addCategory = async () => {
@@ -458,6 +551,7 @@ export default function Categories() {
     }
 
     try {
+      setSaving(true);
       const newCategory = {
         name: name.trim(),
         type: type.toLowerCase(),
@@ -479,6 +573,8 @@ export default function Categories() {
       console.log("Add category error:", error);
 
       Alert.alert("Error", error.message || "Unable to add category.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -651,6 +747,7 @@ export default function Categories() {
               styles.modalCard,
               {
                 backgroundColor: colors.card,
+                borderColor: colors.primary,
               },
             ]}
           >
@@ -690,296 +787,346 @@ export default function Categories() {
                 </Pressable>
               </View>
 
-              <Text
-                style={[
-                  styles.inputLabel,
-                  {
-                    color: colors.textMuted,
-                    marginTop: 0,
-                  },
-                ]}
-              >
-                Quick add
-              </Text>
+              <View style={styles.tabRow}>
+                <Pressable
+                  onPress={() => setModalTab("quick")}
+                  style={[
+                    styles.tabButton,
+                    { backgroundColor: colors.inputBg },
+                    modalTab === "quick" && { backgroundColor: colors.primary },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tabButtonText,
+                      { color: colors.text },
+                      modalTab === "quick" && { color: colors.primaryText },
+                    ]}
+                  >
+                    ⚡ Quick add
+                  </Text>
+                </Pressable>
 
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.presetRow}
-              >
-                {CATEGORY_PRESETS.map((preset) => {
-                  const isActive =
-                    preset.name === name &&
-                    preset.icon === icon &&
-                    preset.color === color;
+                <Pressable
+                  onPress={() => setModalTab("custom")}
+                  style={[
+                    styles.tabButton,
+                    { backgroundColor: colors.inputBg },
+                    modalTab === "custom" && {
+                      backgroundColor: colors.primary,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tabButtonText,
+                      { color: colors.text },
+                      modalTab === "custom" && { color: colors.primaryText },
+                    ]}
+                  >
+                    ✏️ Custom
+                  </Text>
+                </Pressable>
+              </View>
 
-                  return (
-                    <Pressable
-                      key={preset.name}
-                      onPress={() => applyPreset(preset)}
-                      style={[
-                        styles.presetChip,
-                        {
-                          borderColor: colors.inputBorder,
-                          backgroundColor: colors.inputBg,
-                        },
-                        isActive && {
-                          borderColor: colors.primary,
-                        },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.presetChipIcon,
-                          {
-                            backgroundColor: preset.color,
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name={preset.icon}
-                          size={13}
-                          color="#FFFFFF"
-                        />
-                      </View>
-
+              {modalTab === "quick" ? (
+                <View style={styles.quickAddContent}>
+                  {["Expense", "Income"].map((presetType) => (
+                    <View key={presetType} style={styles.presetSection}>
                       <Text
                         style={[
-                          styles.presetChipText,
-                          {
-                            color: colors.text,
-                          },
+                          styles.presetSectionTitle,
+                          { color: colors.textFaint },
                         ]}
-                        numberOfLines={1}
                       >
-                        {preset.name}
+                        {presetType.toUpperCase()}
                       </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
 
-              <Text
-                style={[
-                  styles.inputLabel,
-                  {
-                    color: colors.textMuted,
-                  },
-                ]}
-              >
-                Category name
-              </Text>
+                      <View style={styles.presetGrid}>
+                        {CATEGORY_PRESETS.filter(
+                          (preset) => preset.type === presetType,
+                        ).map((preset) => {
+                          const isAdded = existingNames.has(
+                            preset.name.toLowerCase(),
+                          );
 
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    borderColor: colors.inputBorder,
-                    color: colors.text,
-                  },
-                ]}
-                placeholder="e.g. Subscriptions"
-                placeholderTextColor={colors.textFaint}
-                value={name}
-                onChangeText={setName}
-              />
+                          return (
+                            <Pressable
+                              key={preset.name}
+                              disabled={isAdded || saving}
+                              onPress={() => addPreset(preset)}
+                              style={[
+                                styles.presetCard,
+                                {
+                                  borderColor: colors.inputBorder,
+                                  backgroundColor: colors.inputBg,
+                                },
+                                isAdded && styles.presetCardAdded,
+                              ]}
+                            >
+                              <View
+                                style={[
+                                  styles.presetCardIcon,
+                                  { backgroundColor: preset.color },
+                                  isAdded && styles.presetCardIconAdded,
+                                ]}
+                              >
+                                <Text style={styles.presetCardEmoji}>
+                                  {getIcon(preset.icon)}
+                                </Text>
+                              </View>
 
-              <Text
-                style={[
-                  styles.inputLabel,
-                  {
-                    color: colors.textMuted,
-                  },
-                ]}
-              >
-                Category type
-              </Text>
-
-              <View style={styles.typeButtons}>
-                <Pressable
-                  style={[
-                    styles.typeButton,
-                    {
-                      borderColor: colors.inputBorder,
-                    },
-
-                    type === "Income" && {
-                      backgroundColor: colors.incomeBg,
-                      borderColor: colors.income,
-                    },
-                  ]}
-                  onPress={() => setType("Income")}
-                >
-                  <Text
-                    style={[
-                      styles.typeButtonText,
-                      {
-                        color: colors.textMuted,
-                      },
-
-                      type === "Income" && {
-                        color: colors.income,
-                      },
-                    ]}
-                  >
-                    Income
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  style={[
-                    styles.typeButton,
-                    {
-                      borderColor: colors.inputBorder,
-                    },
-
-                    type === "Expense" && {
-                      backgroundColor: colors.expenseBg,
-                      borderColor: colors.expense,
-                    },
-                  ]}
-                  onPress={() => setType("Expense")}
-                >
-                  <Text
-                    style={[
-                      styles.typeButtonText,
-                      {
-                        color: colors.textMuted,
-                      },
-
-                      type === "Expense" && {
-                        color: colors.expense,
-                      },
-                    ]}
-                  >
-                    Expense
-                  </Text>
-                </Pressable>
-              </View>
-
-              <Text
-                style={[
-                  styles.inputLabel,
-                  {
-                    color: colors.textMuted,
-                  },
-                ]}
-              >
-                Icon
-              </Text>
-
-              <View
-                style={[
-                  styles.iconPreviewRow,
-                  {
-                    borderColor: colors.inputBorder,
-                    backgroundColor: colors.inputBg,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.iconCircle,
-                    styles.iconPreviewCircle,
-                    {
-                      backgroundColor: color,
-                    },
-                  ]}
-                >
-                  <Ionicons name={icon} size={18} color="#FFFFFF" />
+                              <View style={styles.presetCardTextWrap}>
+                                <Text
+                                  numberOfLines={1}
+                                  style={[
+                                    styles.presetCardName,
+                                    { color: colors.text },
+                                    isAdded && { color: colors.textFaint },
+                                  ]}
+                                >
+                                  {preset.name}
+                                </Text>
+                                {isAdded && (
+                                  <Text
+                                    style={[
+                                      styles.addedText,
+                                      { color: colors.textFaint },
+                                    ]}
+                                  >
+                                    Added
+                                  </Text>
+                                )}
+                              </View>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ))}
                 </View>
-
-                <Text
-                  style={[
-                    styles.iconPreviewText,
-                    {
-                      color: colors.textMuted,
-                    },
-                  ]}
-                >
-                  This is how {name.trim() || "the category"} will look
-                </Text>
-              </View>
-
-              <View style={styles.iconGrid}>
-                {ICON_OPTIONS.map((iconName) => (
-                  <Pressable
-                    key={iconName}
-                    onPress={() => setIcon(iconName)}
+              ) : (
+                <View>
+                  <Text
                     style={[
-                      styles.iconOption,
+                      styles.inputLabel,
+                      {
+                        color: colors.textMuted,
+                      },
+                    ]}
+                  >
+                    Name
+                  </Text>
+
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        borderColor: colors.inputBorder,
+                        color: colors.text,
+                      },
+                    ]}
+                    placeholder="e.g. Data & Airtime"
+                    placeholderTextColor={colors.textFaint}
+                    value={name}
+                    onChangeText={setName}
+                  />
+
+                  <Text
+                    style={[
+                      styles.inputLabel,
+                      {
+                        color: colors.textMuted,
+                      },
+                    ]}
+                  >
+                    Type
+                  </Text>
+
+                  <Pressable
+                    onPress={() => setTypeMenuOpen((open) => !open)}
+                    style={[
+                      styles.typeSelect,
                       {
                         borderColor: colors.inputBorder,
                         backgroundColor: colors.inputBg,
                       },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.typeSelectText, { color: colors.text }]}
+                    >
+                      {type}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.typeSelectArrow,
+                        { color: colors.textFaint },
+                      ]}
+                    >
+                      ⌄
+                    </Text>
+                  </Pressable>
 
-                      icon === iconName && {
-                        borderColor: colors.primary,
-                        backgroundColor: colors.incomeBg,
+                  {typeMenuOpen && (
+                    <View
+                      style={[
+                        styles.typeMenu,
+                        {
+                          borderColor: colors.inputBorder,
+                          backgroundColor: colors.card,
+                        },
+                      ]}
+                    >
+                      {["Expense", "Income"].map((option) => (
+                        <Pressable
+                          key={option}
+                          onPress={() => {
+                            setType(option);
+                            setTypeMenuOpen(false);
+                          }}
+                          style={styles.typeMenuOption}
+                        >
+                          <Text
+                            style={[
+                              styles.typeMenuOptionText,
+                              { color: colors.text },
+                            ]}
+                          >
+                            {option}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
+
+                  <Text
+                    style={[
+                      styles.inputLabel,
+                      {
+                        color: colors.textMuted,
                       },
                     ]}
                   >
-                    <Ionicons
-                      name={iconName}
-                      size={17}
-                      color={
-                        icon === iconName ? colors.primary : colors.textMuted
-                      }
-                    />
-                  </Pressable>
-                ))}
-              </View>
+                    Icon
+                  </Text>
 
-              <Text
-                style={[
-                  styles.inputLabel,
-                  {
-                    color: colors.textMuted,
-                  },
-                ]}
-              >
-                Color
-              </Text>
-
-              <View style={styles.swatchRow}>
-                {SWATCHES.map((swatch) => (
-                  <Pressable
-                    key={swatch}
-                    onPress={() => setColor(swatch)}
+                  <ScrollView
                     style={[
-                      styles.swatch,
+                      styles.iconGrid,
                       {
-                        backgroundColor: swatch,
-                      },
-
-                      color === swatch && {
-                        borderColor: colors.text,
+                        borderColor: colors.inputBorder,
+                        backgroundColor: colors.inputBg,
                       },
                     ]}
-                  />
-                ))}
-              </View>
+                    contentContainerStyle={styles.iconGridContent}
+                    showsVerticalScrollIndicator
+                    nestedScrollEnabled
+                  >
+                    {ICON_OPTIONS.map((iconName) => (
+                      <Pressable
+                        key={iconName}
+                        onPress={() => setIcon(iconName)}
+                        style={[
+                          styles.iconOption,
+                          {
+                            borderColor: colors.inputBorder,
+                            backgroundColor: colors.inputBg,
+                          },
 
-              <Pressable
-                style={[
-                  styles.saveButton,
-                  {
-                    backgroundColor: colors.primary,
-                  },
-                ]}
-                onPress={addCategory}
-              >
-                <Text
-                  style={[
-                    styles.saveButtonText,
-                    {
-                      color: colors.primaryText,
-                    },
-                  ]}
-                >
-                  Add category
-                </Text>
-              </Pressable>
+                          icon === iconName && {
+                            borderColor: colors.primary,
+                            backgroundColor: colors.incomeBg,
+                          },
+                        ]}
+                      >
+                        <Text style={styles.optionIconText}>
+                          {getIcon(iconName)}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+
+                  <Text
+                    style={[
+                      styles.inputLabel,
+                      {
+                        color: colors.textMuted,
+                      },
+                    ]}
+                  >
+                    Color
+                  </Text>
+
+                  <View style={styles.swatchRow}>
+                    {SWATCHES.map((swatch) => (
+                      <Pressable
+                        key={swatch}
+                        onPress={() => setColor(swatch)}
+                        style={[
+                          styles.swatch,
+                          {
+                            backgroundColor: swatch,
+                          },
+
+                          color === swatch && {
+                            borderColor: colors.text,
+                          },
+                        ]}
+                      />
+                    ))}
+                  </View>
+
+                  <View
+                    style={[
+                      styles.iconPreviewRow,
+                      {
+                        borderColor: colors.inputBorder,
+                        backgroundColor: colors.inputBg,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.iconCircle,
+                        styles.iconPreviewCircle,
+                        { backgroundColor: color },
+                      ]}
+                    >
+                      <Text style={styles.previewIconText}>
+                        {getIcon(icon)}
+                      </Text>
+                    </View>
+                    <Text
+                      style={[styles.iconPreviewText, { color: colors.text }]}
+                    >
+                      {name.trim() || "Category preview"}
+                    </Text>
+                  </View>
+
+                  <Pressable
+                    style={[
+                      styles.saveButton,
+                      {
+                        backgroundColor: colors.primary,
+                      },
+                    ]}
+                    onPress={addCategory}
+                    disabled={saving}
+                  >
+                    <Text
+                      style={[
+                        styles.saveButtonText,
+                        {
+                          color: colors.primaryText,
+                        },
+                      ]}
+                    >
+                      {saving ? "Saving..." : "Save category"}
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -1059,11 +1206,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  categoryIcon: {
+    fontSize: 16,
+    lineHeight: 21,
+    textAlign: "center",
   },
 
   categoryName: {
@@ -1101,9 +1254,13 @@ const styles = StyleSheet.create({
   },
 
   modalCard: {
-    borderRadius: 16,
-    padding: 20,
-    maxHeight: "85%",
+    width: "100%",
+    maxWidth: 620,
+    alignSelf: "center",
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 24,
+    maxHeight: "90%",
   },
 
   modalHeader: {
@@ -1114,18 +1271,107 @@ const styles = StyleSheet.create({
   },
 
   modalTitle: {
-    fontSize: 13,
+    fontSize: 18,
     fontFamily: "SpaceGrotesk_700Bold",
   },
 
   closeButton: {
-    fontSize: 17,
-    lineHeight: 18,
+    fontSize: 20,
+    lineHeight: 32,
+    fontFamily: "Inter_400Regular",
+  },
+
+  tabRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 20,
+  },
+
+  tabButton: {
+    flex: 1,
+    minHeight: 35,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  tabButtonText: {
+    fontSize: 11,
     fontFamily: "Inter_700Bold",
   },
 
-  inputLabel: {
+  quickAddContent: {
+    paddingBottom: 4,
+  },
+
+  presetSection: {
+    marginBottom: 18,
+  },
+
+  presetSectionTitle: {
     fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
+
+  presetGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+
+  presetCard: {
+    width: "48.7%",
+    minHeight: 45,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+
+  presetCardAdded: {
+    opacity: 0.52,
+  },
+
+  presetCardIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  presetCardIconAdded: {
+    opacity: 0.75,
+  },
+
+  presetCardEmoji: {
+    fontSize: 12,
+    lineHeight: 25,
+    textAlign: "center",
+  },
+
+  presetCardTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  presetCardName: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+  },
+
+  addedText: {
+    fontSize: 8,
+    fontFamily: "Inter_500Medium",
+    marginTop: 1,
+  },
+
+  inputLabel: {
+    fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     marginBottom: 6,
     marginTop: 12,
@@ -1136,7 +1382,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 11,
     paddingHorizontal: 13,
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
   },
 
@@ -1158,15 +1404,21 @@ const styles = StyleSheet.create({
   },
 
   presetChipIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  presetChipText: {
+  presetIconText: {
     fontSize: 10,
+    lineHeight: 18,
+    textAlign: "center",
+  },
+
+  presetChipText: {
+    fontSize: 8,
     fontFamily: "Inter_600SemiBold",
     maxWidth: 90,
   },
@@ -1180,13 +1432,49 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderRadius: 10,
-    paddingVertical: 11,
+    paddingVertical: 9,
     alignItems: "center",
   },
 
   typeButtonText: {
-    fontSize: 11,
+    fontSize: 9,
     fontFamily: "Inter_600SemiBold",
+  },
+
+  typeSelect: {
+    minHeight: 42,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+  },
+
+  typeSelectText: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+  },
+
+  typeSelectArrow: {
+    fontSize: 17,
+  },
+
+  typeMenu: {
+    borderWidth: 1,
+    borderRadius: 10,
+    marginTop: 4,
+    overflow: "hidden",
+  },
+
+  typeMenuOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+
+  typeMenuOptionText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
   },
 
   iconPreviewRow: {
@@ -1197,25 +1485,40 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 12,
+    marginTop: 18,
   },
 
   iconPreviewCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+
+  previewIconText: {
+    fontSize: 15,
+    lineHeight: 18,
+    textAlign: "center",
   },
 
   iconPreviewText: {
-    fontSize: 10,
-    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
     flex: 1,
   },
 
   iconGrid: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderRadius: 12,
+    maxHeight: 170,
+    overflow: "hidden",
+  },
+
+  iconGridContent: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-    marginTop: 10,
+    gap: 7,
+    padding: 10,
   },
 
   iconOption: {
@@ -1227,6 +1530,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  optionIconText: {
+    fontSize: 15,
+    lineHeight: 18,
+    textAlign: "center",
+  },
+
   swatchRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1234,8 +1543,8 @@ const styles = StyleSheet.create({
   },
 
   swatch: {
-    width: 28,
-    height: 28,
+    width: 25,
+    height: 24,
     borderRadius: 14,
     borderWidth: 2,
     borderColor: "transparent",

@@ -384,6 +384,63 @@ function fallbackIconFor(type) {
   return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
 }
 
+const CATEGORY_ICON_MAP = {
+  "fast-food-outline": "🍔",
+  "restaurant-outline": "🍽️",
+  "cafe-outline": "☕",
+  "beer-outline": "🍺",
+  "cart-outline": "🛒",
+  "basket-outline": "🧺",
+  "bus-outline": "🚌",
+  "car-outline": "🚗",
+  "bicycle-outline": "🚲",
+  "train-outline": "🚆",
+  "airplane-outline": "✈️",
+  "home-outline": "🏠",
+  "bed-outline": "🛏️",
+  "flash-outline": "⚡",
+  "water-outline": "💧",
+  "wifi-outline": "📶",
+  "call-outline": "📞",
+  "phone-portrait-outline": "📱",
+  "laptop-outline": "💻",
+  "medkit-outline": "🩺",
+  "fitness-outline": "🏃",
+  "barbell-outline": "🏋️",
+  "school-outline": "🎓",
+  "book-outline": "📚",
+  "film-outline": "🎬",
+  "musical-notes-outline": "🎵",
+  "game-controller-outline": "🎮",
+  "gift-outline": "🎁",
+  "shirt-outline": "👕",
+  "cut-outline": "✂️",
+  "paw-outline": "🐾",
+  "diamond-outline": "💎",
+  "wallet-outline": "👛",
+  "card-outline": "💳",
+  "cash-outline": "💵",
+  "trending-up-outline": "📈",
+  "briefcase-outline": "💼",
+  "business-outline": "🏢",
+  "construct-outline": "🛠️",
+  "heart-outline": "❤️",
+  "ellipsis-horizontal-outline": "•••",
+  "pricetag-outline": "🏷️",
+};
+
+function getCategoryIcon(iconName) {
+  if (!iconName) return CATEGORY_ICON_MAP["pricetag-outline"];
+  const normalizedName = iconName.endsWith("-outline")
+    ? iconName
+    : `${iconName}-outline`;
+  return (
+    CATEGORY_ICON_MAP[iconName] ||
+    CATEGORY_ICON_MAP[normalizedName] ||
+    CATEGORY_ICON_MAP["pricetag-outline"]
+  );
+}
+
 function monthLabel(monthKey) {
   if (!monthKey) return "";
 
@@ -393,6 +450,19 @@ function monthLabel(monthKey) {
 
   return date.toLocaleDateString("en-US", {
     month: "short",
+  });
+}
+
+function formatActivityDate(value) {
+  if (!value) return "No date";
+  const dateOnly = String(value).slice(0, 10);
+  const date = new Date(`${dateOnly}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return dateOnly;
+
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 }
 
@@ -668,6 +738,41 @@ export default function Dashboard() {
 
     return [...grouped.values()].sort((a, b) => b.total - a.total);
   })();
+
+  const recentActivity = [...transactions]
+    .sort((a, b) => {
+      const aDate = a.occurred_on || a.occurredOn || "";
+      const bDate = b.occurred_on || b.occurredOn || "";
+      return (
+        bDate.localeCompare(aDate) || Number(b.id || 0) - Number(a.id || 0)
+      );
+    })
+    .slice(0, 4)
+    .map((transaction) => {
+      const matchedCategory = categoryById.get(transaction.category_id);
+      const type = String(transaction.type || "expense").toLowerCase();
+
+      return {
+        ...transaction,
+        displayName:
+          transaction.category_name ||
+          matchedCategory?.name ||
+          transaction.description ||
+          "Uncategorized",
+        displayColor:
+          transaction.category_color ||
+          matchedCategory?.color ||
+          (type === "income" ? colors.income : colors.expense),
+        displayIcon:
+          transaction.category_icon ||
+          matchedCategory?.icon ||
+          fallbackIconFor(type),
+        displayDate: formatActivityDate(
+          transaction.occurred_on || transaction.occurredOn,
+        ),
+        isIncome: type === "income",
+      };
+    });
 
   const forecast = dashboard?.forecast || {};
 
@@ -1091,11 +1196,11 @@ export default function Dashboard() {
                         },
                       ]}
                     >
-                      <Ionicons
-                        name={segment.icon || fallbackIconFor("expense")}
-                        size={11}
-                        color="#FFFFFF"
-                      />
+                      <Text style={styles.categoryEmoji}>
+                        {getCategoryIcon(
+                          segment.icon || fallbackIconFor("expense"),
+                        )}
+                      </Text>
                     </View>
 
                     <Text
@@ -1133,6 +1238,87 @@ export default function Dashboard() {
               ]}
             >
               No spending data available yet.
+            </Text>
+          )}
+        </View>
+
+        <View
+          style={[
+            styles.sectionCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+            },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Recent activity
+          </Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textFaint }]}>
+            Your last few transactions
+          </Text>
+
+          {recentActivity.length > 0 ? (
+            <View style={styles.activityList}>
+              {recentActivity.map((transaction, index) => (
+                <View
+                  key={transaction.id ?? `${transaction.displayName}-${index}`}
+                  style={[
+                    styles.activityRow,
+                    index > 0 && { borderTopColor: colors.cardBorder },
+                    index > 0 && styles.activityRowBorder,
+                  ]}
+                >
+                  <View style={styles.activityLeft}>
+                    <View
+                      style={[
+                        styles.activityIcon,
+                        { backgroundColor: transaction.displayColor },
+                      ]}
+                    >
+                      <Text style={styles.activityEmoji}>
+                        {getCategoryIcon(transaction.displayIcon)}
+                      </Text>
+                    </View>
+
+                    <View style={styles.activityDetails}>
+                      <Text
+                        numberOfLines={1}
+                        style={[styles.activityName, { color: colors.text }]}
+                      >
+                        {transaction.displayName}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.activityDate,
+                          { color: colors.textFaint },
+                        ]}
+                      >
+                        {transaction.displayDate}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.activityAmount,
+                      {
+                        color: transaction.isIncome
+                          ? colors.income
+                          : colors.expense,
+                      },
+                    ]}
+                  >
+                    {transaction.isIncome ? "+" : "-"}
+                    {formatAmount(Math.abs(Number(transaction.amount || 0)))}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={[styles.noDataText, { color: colors.textFaint }]}>
+              No recent transactions yet.
             </Text>
           )}
         </View>
@@ -1490,11 +1676,17 @@ const styles = StyleSheet.create({
   },
 
   iconCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  categoryEmoji: {
+    fontSize: 14,
+    lineHeight: 19,
+    textAlign: "center",
   },
 
   legendLabel: {
@@ -1513,5 +1705,67 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 10,
     marginTop: 5,
+  },
+
+  activityList: {
+    marginTop: 2,
+  },
+
+  activityRow: {
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingVertical: 10,
+  },
+
+  activityRowBorder: {
+    borderTopWidth: 1,
+  },
+
+  activityLeft: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  activityIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  activityEmoji: {
+    fontSize: 18,
+    lineHeight: 24,
+    textAlign: "center",
+  },
+
+  activityDetails: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  activityName: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+  },
+
+  activityDate: {
+    marginTop: 2,
+    fontSize: 9,
+    fontFamily: "Inter_400Regular",
+  },
+
+  activityAmount: {
+    maxWidth: "46%",
+    textAlign: "right",
+    fontSize: 11,
+    fontFamily: "JetBrainsMono_500Medium",
   },
 });

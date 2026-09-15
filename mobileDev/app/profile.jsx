@@ -20,12 +20,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import * as ImagePicker from "expo-image-picker";
 
-import {
-  getCurrentUser,
-  logoutUser,
-  uploadAvatar,
-  deleteAccount,
-} from "../services/auth";
+import { getCurrentUser, logoutUser, uploadAvatar } from "../services/auth";
+import api from "../services/api";
 
 import { useTheme } from "../contexts/ThemeContext";
 import { useCurrency } from "../contexts/CurrencyContext";
@@ -74,6 +70,10 @@ export default function Profile() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deletePasswordVisible, setDeletePasswordVisible] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
   const [currencySearch, setCurrencySearch] = useState("");
@@ -316,34 +316,41 @@ export default function Profile() {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      "Delete account",
-      "Deleting your account permanently removes all of your data, including your profile, history, and settings. This can't be undone. Are you sure you want to continue?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: performDeleteAccount,
-        },
-      ],
-    );
+    setDeletePassword("");
+    setDeleteError("");
+    setDeletePasswordVisible(false);
+    setDeleteModalVisible(true);
+  };
+
+  const closeDeleteModal = () => {
+    if (deleting) return;
+    setDeleteModalVisible(false);
+    setDeletePassword("");
+    setDeleteError("");
+    setDeletePasswordVisible(false);
   };
 
   const performDeleteAccount = async () => {
+    if (!deletePassword.trim()) {
+      setDeleteError("Enter your password to confirm.");
+      return;
+    }
+
     try {
       setDeleting(true);
+      setDeleteError("");
 
       console.log("🗑️ Deleting BudgetIQ account from backend...");
 
-      const response = await deleteAccount();
+      const response = await api.delete("/auth/account", {
+        data: { password: deletePassword },
+      });
 
       console.log("DELETE ACCOUNT RESPONSE:", response);
 
       await logoutUser();
+
+      setDeleteModalVisible(false);
 
       Alert.alert(
         "Account deleted",
@@ -373,7 +380,7 @@ export default function Profile() {
         error?.error ||
         "Something went wrong while deleting your account. Please try again.";
 
-      Alert.alert("Unable to delete account", message);
+      setDeleteError(message);
     } finally {
       setDeleting(false);
     }
@@ -958,6 +965,131 @@ export default function Profile() {
       />
 
       <Modal
+        visible={deleteModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={closeDeleteModal}
+      >
+        <View style={[styles.modalOverlay, styles.deleteModalOverlay]}>
+          <View
+            style={[
+              styles.deleteModalCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder,
+              },
+            ]}
+          >
+            <View style={styles.modalHeaderRow}>
+              <Text style={[styles.deleteModalTitle, { color: colors.text }]}>
+                Delete account
+              </Text>
+              <TouchableOpacity
+                onPress={closeDeleteModal}
+                disabled={deleting}
+                hitSlop={10}
+              >
+                <Ionicons name="close" size={23} color={colors.textFaint} />
+              </TouchableOpacity>
+            </View>
+
+            <Text
+              style={[styles.deleteModalWarning, { color: colors.textMuted }]}
+            >
+              This permanently deletes your account and all of your data —
+              transactions, budgets, categories, and accounts. This cannot be
+              undone. Enter your password to confirm.
+            </Text>
+
+            <Text
+              style={[styles.deletePasswordLabel, { color: colors.textMuted }]}
+            >
+              Password
+            </Text>
+            <View
+              style={[
+                styles.deletePasswordField,
+                {
+                  backgroundColor: colors.chipBg,
+                  borderColor: deleteError ? colors.danger : colors.cardBorder,
+                },
+              ]}
+            >
+              <TextInput
+                value={deletePassword}
+                onChangeText={(value) => {
+                  setDeletePassword(value);
+                  if (deleteError) setDeleteError("");
+                }}
+                secureTextEntry={!deletePasswordVisible}
+                editable={!deleting}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+                onSubmitEditing={performDeleteAccount}
+                placeholder="Enter your password"
+                placeholderTextColor={colors.textFaint}
+                style={[styles.deletePasswordInput, { color: colors.text }]}
+              />
+              <TouchableOpacity
+                onPress={() => setDeletePasswordVisible((visible) => !visible)}
+                disabled={deleting}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={
+                    deletePasswordVisible ? "eye-off-outline" : "eye-outline"
+                  }
+                  size={20}
+                  color={colors.textFaint}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {deleteError ? (
+              <Text style={[styles.deleteErrorText, { color: colors.danger }]}>
+                {deleteError}
+              </Text>
+            ) : null}
+
+            <View style={styles.deleteModalActions}>
+              <TouchableOpacity
+                style={[
+                  styles.deleteCancelButton,
+                  { backgroundColor: colors.chipBg },
+                ]}
+                onPress={closeDeleteModal}
+                disabled={deleting}
+              >
+                <Text style={[styles.deleteCancelText, { color: colors.text }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.deleteConfirmButton,
+                  { backgroundColor: colors.danger },
+                  (!deletePassword.trim() || deleting) &&
+                    styles.deleteConfirmDisabled,
+                ]}
+                onPress={performDeleteAccount}
+                disabled={!deletePassword.trim() || deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.deleteConfirmText}>
+                    Yes, delete my account
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={currencyModalVisible}
         animationType="slide"
         transparent
@@ -1526,6 +1658,103 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "flex-end",
+  },
+
+  deleteModalOverlay: {
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+
+  deleteModalCard: {
+    width: "100%",
+    maxWidth: 520,
+    alignSelf: "center",
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 20,
+  },
+
+  deleteModalTitle: {
+    fontSize: 20,
+    fontFamily: "SpaceGrotesk_700Bold",
+  },
+
+  deleteModalWarning: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 18,
+    marginTop: 4,
+  },
+
+  deletePasswordLabel: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    marginTop: 18,
+    marginBottom: 6,
+  },
+
+  deletePasswordField: {
+    minHeight: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 13,
+  },
+
+  deletePasswordInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    paddingVertical: 12,
+    paddingRight: 10,
+  },
+
+  deleteErrorText: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    marginTop: 8,
+  },
+
+  deleteModalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 20,
+  },
+
+  deleteCancelButton: {
+    minHeight: 46,
+    borderRadius: 11,
+    paddingHorizontal: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  deleteCancelText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+
+  deleteConfirmButton: {
+    minHeight: 46,
+    flex: 1,
+    maxWidth: 230,
+    borderRadius: 11,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  deleteConfirmDisabled: {
+    opacity: 0.45,
+  },
+
+  deleteConfirmText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "center",
   },
 
   modalSheet: {
