@@ -119,6 +119,17 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const { data } = await apiClient.get('/auth/me');
+      setUser(data.user);
+      localStorage.setItem('budgetiq_user', JSON.stringify(data.user));
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem('budgetiq_token');
     localStorage.removeItem('budgetiq_user');
@@ -138,6 +149,7 @@ export function AuthProvider({ children }) {
         forgotPassword,
         resetPassword,
         updateAvatar,
+        refreshUser,
         logout,
       }}
     >

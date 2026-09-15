@@ -1,4 +1,5 @@
 import { formatCurrency, formatDate } from '../utils/format';
+import { getIcon } from '../utils/categoryIcons';
 
 export default function RecentTransactions({ transactions, currency }) {
   return (
@@ -13,12 +14,21 @@ export default function RecentTransactions({ transactions, currency }) {
           {transactions.map((t) => (
             <div className="list-row" key={t.id}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="cat-dot" style={{ background: t.category_color || '#B9C3D4' }} />
+                <span style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: t.category_color || '#B9C3D4',
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', fontSize: 16, flexShrink: 0,
+                }}>
+                  {getIcon(t.category_icon)}
+                </span>
                 <span>
                   <div style={{ fontSize: 13.5, fontWeight: 500 }}>
                     {t.description || t.category_name || 'Uncategorized'}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>{formatDate(t.occurred_on)}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
+                    {formatDate(t.occurred_on)}
+                  </div>
                 </span>
               </span>
               <span

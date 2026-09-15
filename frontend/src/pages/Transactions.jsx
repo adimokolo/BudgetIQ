@@ -1,10 +1,211 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import apiClient from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import AddTransactionModal, { TRANSACTION_CREATED_EVENT } from '../components/AddTransactionModal';
 import Skeleton from '../components/Skeleton';
 import { formatCurrency, formatDate } from '../utils/format';
 import { exportTransactionsToCsv, exportTransactionsToPdf } from '../utils/exportTransactions';
+import { getIcon } from '../utils/categoryIcons';
+
+function toDateKey(date) {
+  return new Date(date).toISOString().slice(0, 10);
+}
+
+function getDaysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function getFirstDayOfMonth(year, month) {
+  return new Date(year, month, 1).getDay();
+}
+
+function TransactionCalendar({ transactions, selectedDate, onSelectDate, onShowAll, currency }) {
+  const today = new Date();
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [dailyData, setDailyData] = useState({});
+
+  const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  useEffect(() => {
+    const monthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+    apiClient.get(`/dashboard/daily?month=${monthStr}`)
+      .then((res) => {
+        const map = {};
+        (res.data.daily || []).forEach((d) => { map[d.date] = d; });
+        setDailyData(map);
+      })
+      .catch(() => { });
+  }, [viewYear, viewMonth]);
+
+  const dailyBalances = useMemo(() => {
+    const map = {};
+    transactions.forEach((t) => {
+      if (!t.occurred_on) return;
+      const key = toDateKey(t.occurred_on);
+      const amount = t.type === 'income' ? Number(t.amount) : -Number(t.amount);
+      map[key] = (map[key] || 0) + amount;
+    });
+    return map;
+  }, [transactions]);
+
+  const daysInMonth = getDaysInMonth(viewYear, viewMonth);
+  const firstDaySlot = getFirstDayOfMonth(viewYear, viewMonth);
+  const todayKey = toDateKey(today);
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
+    else setViewMonth((m) => m - 1);
+  };
+
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
+    else setViewMonth((m) => m + 1);
+  };
+
+  const goToToday = () => {
+    setViewYear(today.getFullYear());
+    setViewMonth(today.getMonth());
+    onSelectDate(todayKey);
+  };
+
+  const selectedDay = dailyData[selectedDate];
+
+  return (
+    <div className="facet-card" style={{ marginTop: 20, padding: '16px 20px' }}>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <div>
+          <h3 className="section-title" style={{ margin: 0 }}>Calendar</h3>
+          <p style={{ fontSize: 11, color: 'var(--ink-faint)', margin: '2px 0 0' }}>Daily net balance</p>
+        </div>
+        <button type="button" onClick={goToToday}
+          style={{ fontSize: 12, color: 'var(--brand-mid)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+          Today
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '12px 0' }}>
+        <button className="icon-btn" onClick={prevMonth}>&#8249;</button>
+        <span style={{ fontWeight: 700, fontSize: 14 }}>{MONTHS[viewMonth]} {viewYear}</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {selectedDate && (
+            <button className="btn btn--ghost" style={{ fontSize: 11, padding: '3px 10px' }} onClick={onShowAll}>
+              Show all
+            </button>
+          )}
+          <button className="icon-btn" onClick={nextMonth}>&#8250;</button>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
+        {DAYS.map((d, i) => (
+          <div key={d} style={{
+            textAlign: 'center', fontSize: 10, fontWeight: 700,
+            color: i === 0 || i === 6 ? 'var(--brand-mid)' : 'var(--ink-faint)',
+            padding: '2px 0', textTransform: 'uppercase',
+          }}>
+            {d}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+        {Array.from({ length: firstDaySlot }).map((_, i) => <div key={`empty-${i}`} />)}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const dateKey = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const isToday = dateKey === todayKey;
+          const isSelected = selectedDate === dateKey;
+          const balance = dailyBalances[dateKey];
+          const hasActivity = balance !== undefined;
+
+          let bg = 'transparent';
+          let textColor = 'var(--ink)';
+          if (isToday) { bg = 'var(--brand-mid)'; textColor = '#fff'; }
+          else if (isSelected) { bg = 'var(--surface-strong)'; }
+          else if (hasActivity && balance > 0) { bg = 'var(--income-soft)'; }
+          else if (hasActivity && balance < 0) { bg = 'var(--expense-soft)'; }
+
+          const balanceColor = isToday ? '#fff' : balance > 0 ? 'var(--income)' : balance < 0 ? 'var(--expense)' : 'var(--ink-faint)';
+
+          return (
+            <div key={day} onClick={() => hasActivity && onSelectDate(isSelected ? null : dateKey)}
+              style={{
+                borderRadius: 8, cursor: hasActivity ? 'pointer' : 'default',
+                background: bg, padding: '5px 2px', minHeight: 48,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                border: isSelected && !isToday ? '1px solid var(--brand-mid)' : '1px solid transparent',
+              }}
+            >
+              <div style={{
+                width: 24, height: 24, borderRadius: '50%', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                background: isToday ? '#fff' : 'transparent',
+              }}>
+                <span style={{ fontSize: 11, fontWeight: isToday || isSelected ? 700 : 400, color: isToday ? 'var(--brand-mid)' : textColor }}>
+                  {day}
+                </span>
+              </div>
+              {hasActivity ? (
+                <span style={{
+                  fontSize: 8, fontWeight: 600, color: balanceColor, marginTop: 2,
+                  maxWidth: '90%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {balance > 0 ? '+' : ''}{Math.abs(balance) >= 1000 ? `${(balance / 1000).toFixed(1)}k` : balance.toFixed(0)}
+                </span>
+              ) : (
+                <div style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--surface-border)', marginTop: 3 }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--surface-border)' }}>
+        {[
+          { color: 'var(--income)', label: 'Positive' },
+          { color: 'var(--expense)', label: 'Negative' },
+          { color: 'var(--brand-mid)', label: 'Today' },
+        ].map((item) => (
+          <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: item.color }} />
+            <span style={{ fontSize: 10, color: 'var(--ink-faint)' }}>{item.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {selectedDate && selectedDay && (
+        <div style={{
+          marginTop: 14, padding: '12px 16px', borderRadius: 8,
+          background: 'var(--surface-strong)', border: '1px solid var(--surface-border)',
+        }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-faint)', marginBottom: 10 }}>
+            {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+          <div style={{ display: 'flex', gap: 16 }}>
+            {[
+              { label: 'Income', value: selectedDay.income, color: 'var(--income)' },
+              { label: 'Expense', value: selectedDay.expense, color: 'var(--expense)' },
+              {
+                label: 'Net', value: selectedDay.income - selectedDay.expense,
+                color: selectedDay.income - selectedDay.expense >= 0 ? 'var(--income)' : 'var(--expense)'
+              },
+            ].map((item) => (
+              <div key={item.label} style={{ flex: 1, textAlign: 'center' }}>
+                <p style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 4 }}>{item.label}</p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: item.color }}>
+                  {formatCurrency(item.value, currency)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Transactions() {
   const { user } = useAuth();
@@ -13,6 +214,7 @@ export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('');
+  const [selectedDate, setSelectedDate] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   const loadTransactions = (type = filterType) => {
@@ -23,23 +225,13 @@ export default function Transactions() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    loadTransactions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { loadTransactions(); }, []);
+  useEffect(() => { loadTransactions(filterType); }, [filterType]);
 
-  useEffect(() => {
-    loadTransactions(filterType);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterType]);
-
-  // Picks up transactions added from anywhere - the header button below,
-  // or the global floating quick-add button on another page.
   useEffect(() => {
     const handler = () => loadTransactions(filterType);
     window.addEventListener(TRANSACTION_CREATED_EVENT, handler);
     return () => window.removeEventListener(TRANSACTION_CREATED_EVENT, handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterType]);
 
   const handleDelete = async (id) => {
@@ -48,14 +240,23 @@ export default function Transactions() {
     loadTransactions();
   };
 
+  const displayedTransactions = useMemo(() => {
+    if (!selectedDate) return transactions;
+    return transactions.filter((t) => toDateKey(t.occurred_on) === selectedDate);
+  }, [transactions, selectedDate]);
+
+  const totalIncome = useMemo(() => transactions.filter((t) => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0), [transactions]);
+  const totalExpense = useMemo(() => transactions.filter((t) => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0), [transactions]);
+
   return (
     <div>
+
       <div className="page-header">
         <div>
           <h1>Transactions</h1>
-          <p>Every naira in, every naira out.</p>
+          <p>Every money in, every money out.</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <button
             className="btn btn--ghost"
             onClick={() => exportTransactionsToCsv(transactions, currency)}
@@ -76,12 +277,49 @@ export default function Transactions() {
         </div>
       </div>
 
-      <div className="toolbar">
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ maxWidth: 180 }}>
-          <option value="">All types</option>
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
-        </select>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
+        <div className="facet-card" style={{ padding: '14px 18px' }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink-faint)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 }}>
+            Total Income
+          </p>
+          <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--income)' }}>
+            {formatCurrency(totalIncome, currency)}
+          </p>
+        </div>
+        <div className="facet-card" style={{ padding: '14px 18px' }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink-faint)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 }}>
+            Total Expense
+          </p>
+          <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--expense)' }}>
+            {formatCurrency(totalExpense, currency)}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+        <span style={{ fontSize: 13, color: 'var(--ink-soft)', marginRight: 4 }}>Filter:</span>
+        {[
+          { value: '', label: 'All types' },
+          { value: 'income', label: 'Income' },
+          { value: 'expense', label: 'Expense' },
+        ].map((f) => (
+          <button key={f.value} type="button" onClick={() => setFilterType(f.value)}
+            style={{
+              padding: '7px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500,
+              border: '1px solid var(--surface-border)', cursor: 'pointer',
+              background: filterType === f.value ? 'var(--brand-gradient)' : 'var(--surface-strong)',
+              color: filterType === f.value ? '#fff' : 'var(--ink)',
+              transition: 'all 0.15s',
+            }}
+          >
+            {f.label}
+          </button>
+        ))}
+        {selectedDate && (
+          <span style={{ fontSize: 12, color: 'var(--ink-soft)', marginLeft: 8 }}>
+            · {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </span>
+        )}
       </div>
 
       <div className="facet-card facet-card--flush" id="transactions-table-card">
@@ -95,8 +333,10 @@ export default function Transactions() {
               </div>
             ))}
           </div>
-        ) : transactions.length === 0 ? (
-          <div className="empty-state">No transactions match this filter yet.</div>
+        ) : displayedTransactions.length === 0 ? (
+          <div className="empty-state">
+            {selectedDate ? 'No transactions on this date.' : 'No transactions match this filter yet.'}
+          </div>
         ) : (
           <table className="table">
             <thead>
@@ -104,29 +344,39 @@ export default function Transactions() {
                 <th>Date</th>
                 <th>Description</th>
                 <th>Category</th>
+                <th>Account</th>
                 <th>Amount</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {transactions.map((t) => (
+              {displayedTransactions.map((t) => (
                 <tr key={t.id}>
                   <td>{formatDate(t.occurred_on)}</td>
                   <td>{t.description || '—'}</td>
                   <td>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="cat-dot" style={{ background: t.category_color || '#B9C3D4' }} />
+                      <span style={{
+                        width: 28, height: 28, borderRadius: '50%',
+                        background: t.category_color || '#B9C3D4',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, flexShrink: 0,
+                      }}>
+                        {getIcon(t.category_icon)}
+                      </span>
                       {t.category_name || 'Uncategorized'}
                     </span>
                   </td>
+                  <td>
+                    <span style={{ fontWeight: 500 }}>
+                      {t.account_name || '—'}
+                    </span>
+                  </td>
                   <td className="mono" style={{ color: t.type === 'income' ? 'var(--income)' : 'var(--expense)' }}>
-                    {t.type === 'income' ? '+' : '-'}
-                    {formatCurrency(t.amount, currency)}
+                    {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount, currency)}
                   </td>
                   <td>
-                    <button className="icon-btn" onClick={() => handleDelete(t.id)} aria-label="Delete">
-                      ✕
-                    </button>
+                    <button className="icon-btn" onClick={() => handleDelete(t.id)} aria-label="Delete">x</button>
                   </td>
                 </tr>
               ))}
@@ -135,7 +385,16 @@ export default function Transactions() {
         )}
       </div>
 
+      <TransactionCalendar
+        transactions={transactions}
+        selectedDate={selectedDate}
+        onSelectDate={setSelectedDate}
+        onShowAll={() => setSelectedDate(null)}
+        currency={currency}
+      />
+
       {modalOpen && <AddTransactionModal onClose={() => setModalOpen(false)} />}
+
     </div>
   );
 }

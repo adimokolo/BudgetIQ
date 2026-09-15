@@ -1,10 +1,11 @@
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import { formatMonthLabel, formatCurrency } from '../utils/format';
@@ -21,20 +22,20 @@ export default function MonthlyTrendChart({ data, currency }) {
         <div className="empty-state">No transactions yet — add one to see your trend.</div>
       ) : (
         <ResponsiveContainer width="100%" height={260}>
-          <AreaChart data={chartData} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
-            <defs>
-              <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--income)" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="var(--income)" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--expense)" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="var(--expense)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
+          <BarChart data={chartData} margin={{ top: 6, right: 8, left: -18, bottom: 0 }} barGap={4} barCategoryGap="30%">
             <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-border)" vertical={false} />
-            <XAxis dataKey="label" tick={{ fill: 'var(--ink-faint)', fontSize: 12.5 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: 'var(--ink-faint)', fontSize: 12 }} axisLine={false} tickLine={false} width={54} />
+            <XAxis
+              dataKey="label"
+              tick={{ fill: 'var(--ink-faint)', fontSize: 12.5 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fill: 'var(--ink-faint)', fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+              width={54}
+            />
             <Tooltip
               contentStyle={{
                 background: 'var(--surface-strong)',
@@ -42,11 +43,19 @@ export default function MonthlyTrendChart({ data, currency }) {
                 borderRadius: 10,
                 fontSize: 13,
               }}
-              formatter={(value, name) => [formatCurrency(value, currency), name === 'income' ? 'Income' : 'Expense']}
+              cursor={{ fill: 'var(--surface-border)', opacity: 0.5 }}
+              formatter={(value, name) => [
+                formatCurrency(value, currency),
+                name === 'income' ? 'Income' : 'Expense',
+              ]}
             />
-            <Area type="monotone" dataKey="income" stroke="var(--income)" strokeWidth={2} fill="url(#incomeFill)" />
-            <Area type="monotone" dataKey="expense" stroke="var(--expense)" strokeWidth={2} fill="url(#expenseFill)" />
-          </AreaChart>
+            <Legend
+              formatter={(value) => value === 'income' ? 'Income' : 'Expense'}
+              wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+            />
+            <Bar dataKey="income"  fill="var(--income)"  radius={[4, 4, 0, 0]} maxBarSize={32} />
+            <Bar dataKey="expense" fill="var(--expense)" radius={[4, 4, 0, 0]} maxBarSize={32} />
+          </BarChart>
         </ResponsiveContainer>
       )}
     </div>

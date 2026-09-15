@@ -2,9 +2,11 @@ const pool = require('../config/db');
 const asyncHandler = require('../utils/asyncHandler');
 const { predictNextMonth } = require('../utils/predict');
 
-// One combined payload for the dashboard: current-month summary, a 6-month
-// trend line, category breakdown for the current month, and a next-month
-// spending forecast derived from that trend.
+/*
+|--------------------------------------------------------------------------
+| GET SUMMARY
+|--------------------------------------------------------------------------
+*/
 const getSummary = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
@@ -83,8 +85,50 @@ const getSummary = asyncHandler(async (req, res) => {
   });
 });
 
+/*
+|--------------------------------------------------------------------------
+| GET DAILY BREAKDOWN
+| Returns income + expense totals per day for a given month
+| Query param: ?month=2026-09
+|--------------------------------------------------------------------------
+*/
+const getDailyBreakdown = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { month } = req.query;
+
+  const refDate = month
+    ? `${month}-01`
+    : new Date().toISOString().slice(0, 10);
+
+  const result = await pool.query(
+    `SELECT
+       to_char(occurred_on, 'YYYY-MM-DD') AS date,
+       COALESCE(SUM(amount) FILTER (WHERE type = 'income'), 0)  AS income,
+       COALESCE(SUM(amount) FILTER (WHERE type = 'expense'), 0) AS expense
+     FROM transactions
+     WHERE user_id = $1
+       AND date_trunc('month', occurred_on) = date_trunc('month', $2::date)
+     GROUP BY 1
+     ORDER BY 1`,
+    [userId, refDate]
+  );
+
+  res.json({
+    daily: result.rows.map((r) => ({
+      date: r.date,
+      income: Number(r.income),
+      expense: Number(r.expense),
+    })),
+  });
+});
+
+/*
+|--------------------------------------------------------------------------
+| HELPERS
+|--------------------------------------------------------------------------
+*/
 function round2(n) {
   return Math.round(n * 100) / 100;
 }
 
-module.exports = { getSummary };
+module.exports = { getSummary, getDailyBreakdown };

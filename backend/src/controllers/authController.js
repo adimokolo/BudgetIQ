@@ -1215,194 +1215,7 @@ const me = asyncHandler(async (req, res) => {
   });
 });
 
-/*
-|--------------------------------------------------------------------------
-| DELETE ACCOUNT
-|--------------------------------------------------------------------------
-|
-| Permanently deletes the authenticated user's account and all
-| associated data. This is destructive and irreversible, so
-| everything runs inside a single transaction: either all rows
-| are removed, or none are (on any failure, we roll back).
-|--------------------------------------------------------------------------
-*/
 
-const deleteAccount = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
-
-  console.log("");
-  console.log("========================================");
-  console.log("🗑️ BUDGETIQ ACCOUNT DELETION");
-  console.log(`👤 User ID: ${userId}`);
-  console.log("========================================");
-  console.log("");
-
-  const client = await pool.connect();
-
-  try {
-    /*
-     * Start one database transaction.
-     *
-     * This is important because either EVERYTHING gets deleted,
-     * or NOTHING gets deleted if something goes wrong.
-     */
-
-    await client.query("BEGIN");
-
-    /*
-     * Delete transactions
-     */
-
-    await client.query(
-      `
-      DELETE FROM transactions
-      WHERE user_id = $1
-      `,
-      [userId],
-    );
-
-    console.log("✅ Transactions deleted");
-
-    /*
-     * Delete budgets
-     */
-
-    await client.query(
-      `
-      DELETE FROM budgets
-      WHERE user_id = $1
-      `,
-      [userId],
-    );
-
-    console.log("✅ Budgets deleted");
-
-    /*
-     * Delete accounts
-     */
-
-    await client.query(
-      `
-      DELETE FROM accounts
-      WHERE user_id = $1
-      `,
-      [userId],
-    );
-
-    console.log("✅ Accounts deleted");
-
-    /*
-     * Delete categories
-     */
-
-    await client.query(
-      `
-      DELETE FROM categories
-      WHERE user_id = $1
-      `,
-      [userId],
-    );
-
-    console.log("✅ Categories deleted");
-
-    /*
-     * Delete email verification OTPs
-     */
-
-    await client.query(
-      `
-      DELETE FROM otp_codes
-      WHERE user_id = $1
-      `,
-      [userId],
-    );
-
-    console.log("✅ OTP records deleted");
-
-    /*
-     * Delete password reset records
-     */
-
-    await client.query(
-      `
-      DELETE FROM password_resets
-      WHERE user_id = $1
-      `,
-      [userId],
-    );
-
-    console.log("✅ Password reset records deleted");
-
-    /*
-     * Finally delete the user.
-     *
-     * RETURNING lets us confirm that the user actually existed.
-     */
-
-    const result = await client.query(
-      `
-      DELETE FROM users
-      WHERE id = $1
-      RETURNING id, email
-      `,
-      [userId],
-    );
-
-    /*
-     * User does not exist
-     */
-
-    if (result.rowCount === 0) {
-      await client.query("ROLLBACK");
-
-      console.log("⚠️ Account deletion failed: user not found");
-
-      return res.status(404).json({
-        error: "User account not found.",
-      });
-    }
-
-    /*
-     * Everything succeeded.
-     */
-
-    await client.query("COMMIT");
-
-    console.log("");
-    console.log("========================================");
-    console.log("✅ BUDGETIQ ACCOUNT COMPLETELY DELETED");
-    console.log(`📧 Email: ${result.rows[0].email}`);
-    console.log("========================================");
-    console.log("");
-
-    return res.status(200).json({
-      success: true,
-      message:
-        "Your BudgetIQ account and all associated data have been permanently deleted.",
-    });
-  } catch (error) {
-    /*
-     * If ANY deletion fails, restore everything.
-     */
-
-    await client.query("ROLLBACK");
-
-    console.error("");
-    console.error("========================================");
-    console.error("❌ BUDGETIQ ACCOUNT DELETION FAILED");
-    console.error(error);
-    console.error("========================================");
-    console.error("");
-
-    throw error;
-  } finally {
-    /*
-     * Always release the PostgreSQL connection.
-     */
-
-    client.release();
-  }
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -1513,6 +1326,114 @@ const updateAvatar = asyncHandler(async (req, res) => {
 
 /*
 |--------------------------------------------------------------------------
+| CHANGE PASSWORD (logged in)
+|--------------------------------------------------------------------------
+*/
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({
+      error: "Current and new password are required.",
+    });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({
+      error: "New password must be at least 8 characters.",
+    });
+  }
+
+  const result = await pool.query(
+    `SELECT password_hash FROM users WHERE id = $1`,
+    [req.user.id],
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: "User not found." });
+  }
+
+  const matches = await bcrypt.compare(currentPassword, result.rows[0].password_hash);
+  if (!matches) {
+    return res.status(401).json({ error: "Current password is incorrect." });
+  }
+
+  const newHash = await bcrypt.hash(newPassword, 12);
+  await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [
+    newHash,
+    req.user.id,
+  ]);
+
+  return res.json({ message: "Password updated successfully." });
+});
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE BASE CURRENCY
+|--------------------------------------------------------------------------
+|
+| Relabels how amounts are displayed going forward. Does not convert or
+| recalculate any historical transaction, budget, or account amounts.
+|--------------------------------------------------------------------------
+*/
+const updateCurrency = asyncHandler(async (req, res) => {
+  const { currency } = req.body;
+
+  if (!currency || typeof currency !== "string" || currency.length > 8) {
+    return res.status(400).json({ error: "A valid currency code is required." });
+  }
+
+  const result = await pool.query(
+    `UPDATE users SET currency = $1 WHERE id = $2
+     RETURNING id, full_name, email, currency, is_verified, avatar_url, created_at`,
+    [currency.toUpperCase(), req.user.id],
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: "User not found." });
+  }
+
+  return res.json({ user: result.rows[0] });
+});
+
+/*
+|--------------------------------------------------------------------------
+| DELETE ACCOUNT
+|--------------------------------------------------------------------------
+|
+| Permanent, not reversible. Every table referencing users(id) is
+| ON DELETE CASCADE in schema.sql, so this single delete cleans up
+| accounts, categories, transactions, budgets, notifications,
+| otp_codes, and password_resets automatically.
+|--------------------------------------------------------------------------
+*/
+const deleteAccount = asyncHandler(async (req, res) => {
+  const { password } = req.body;
+
+  if (!password) {
+    return res.status(400).json({ error: "Password is required to delete your account." });
+  }
+
+  const result = await pool.query(
+    `SELECT password_hash FROM users WHERE id = $1`,
+    [req.user.id],
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: "User not found." });
+  }
+
+  const matches = await bcrypt.compare(password, result.rows[0].password_hash);
+  if (!matches) {
+    return res.status(401).json({ error: "Incorrect password." });
+  }
+
+  await pool.query(`DELETE FROM users WHERE id = $1`, [req.user.id]);
+
+  return res.json({ message: "Your account has been permanently deleted." });
+});
+
+/*
+|--------------------------------------------------------------------------
 | EXPORTS
 |--------------------------------------------------------------------------
 |
@@ -1548,4 +1469,8 @@ module.exports = {
   // Avatars
   uploadAvatar,
   updateAvatar,
+
+  // Settings page
+  changePassword,
+  updateCurrency,
 };
