@@ -182,6 +182,10 @@ const CATEGORY_ICON_MAP = {
 function getCategoryIcon(iconName) {
   if (!iconName) return CATEGORY_ICON_MAP["pricetag-outline"];
 
+  // Icons picked directly from ICON_OPTIONS are already emoji — return as-is
+  // instead of running them through the "-outline" key normalizer below.
+  if (ICON_OPTIONS.includes(iconName)) return iconName;
+
   const normalizedName = iconName.endsWith("-outline")
     ? iconName
     : `${iconName}-outline`;
@@ -1557,6 +1561,12 @@ function TransactionCard({
           <Text style={styles.transactionMeta} numberOfLines={1}>
             {transaction.category} • {transaction.date}
           </Text>
+
+          {transaction.accountName ? (
+            <Text style={styles.transactionAccount} numberOfLines={1}>
+              {transaction.accountName}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -1596,6 +1606,10 @@ function mapTransaction(raw) {
     categoryColor: raw.category_color,
 
     categoryIcon: raw.category_icon,
+
+    accountId: raw.account_id ?? null,
+
+    accountName: raw.account_name || raw.account?.name || null,
 
     amount: Number(raw.amount || 0),
 
@@ -1781,6 +1795,11 @@ export default function Transactions() {
     [allCategories],
   );
 
+  const accountById = useMemo(
+    () => new Map(accounts.map((account) => [account.id, account])),
+    [accounts],
+  );
+
   const filteredTransactions = transactions
     .filter((transaction) => {
       if (filter !== "All types" && transaction.type !== filter) {
@@ -1795,6 +1814,7 @@ export default function Transactions() {
     })
     .map((transaction) => {
       const matchedCategory = categoryById.get(transaction.categoryId);
+      const matchedAccount = accountById.get(transaction.accountId);
 
       return {
         ...transaction,
@@ -1803,6 +1823,7 @@ export default function Transactions() {
           transaction.categoryIcon ||
           fallbackIconFor(transaction.type),
         categoryColor: matchedCategory?.color || transaction.categoryColor,
+        accountName: matchedAccount?.name || transaction.accountName,
       };
     });
 
@@ -2104,6 +2125,22 @@ export default function Transactions() {
                 </View>
               )}
             </View>
+          </View>
+        </View>
+
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>TOTAL INCOME</Text>
+            <Text style={styles.incomeSummary}>
+              {formatCurrency(totalIncome, currency)}
+            </Text>
+          </View>
+
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>TOTAL EXPENSE</Text>
+            <Text style={styles.expenseSummary}>
+              {formatCurrency(totalExpense, currency)}
+            </Text>
           </View>
         </View>
 
@@ -3028,14 +3065,14 @@ const createStyles = (colors) =>
     },
 
     incomeSummary: {
-      fontSize: 14,
-      fontFamily: fonts.monoMedium,
+      fontSize: 18,
+      fontFamily: fonts.displayBold,
       color: colors.income,
     },
 
     expenseSummary: {
-      fontSize: 14,
-      fontFamily: fonts.monoMedium,
+      fontSize: 18,
+      fontFamily: fonts.displayBold,
       color: colors.expense,
     },
 
@@ -3156,6 +3193,13 @@ const createStyles = (colors) =>
       fontFamily: fonts.bodyRegular,
       color: colors.textFaint,
       marginTop: 4,
+    },
+
+    transactionAccount: {
+      fontSize: 9,
+      fontFamily: fonts.bodySemiBold,
+      color: colors.primary,
+      marginTop: 2,
     },
 
     transactionAmount: {

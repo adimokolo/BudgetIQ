@@ -55,21 +55,21 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
-        name="account"
-        options={{
-          title: "Account",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" color={color} size={size} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
         name="budgets"
         options={{
           title: "Budgets",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="pie-chart-outline" color={color} size={size} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="account"
+        options={{
+          title: "Account",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" color={color} size={size} />
           ),
         }}
       />

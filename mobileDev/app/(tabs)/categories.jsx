@@ -148,8 +148,17 @@ const ICON_MAP = {
   "pricetag-outline": "🏷️",
 };
 
+// Store stable icon keys in the backend; getIcon converts them to emojis for
+// display. This keeps Categories, Transactions, Budgets, and Dashboard aligned.
+const ICON_OPTIONS = Object.keys(ICON_MAP).filter(
+  (iconName) => iconName !== "pricetag-outline",
+);
+
 function getIcon(iconName) {
   if (!iconName) return ICON_MAP["pricetag-outline"];
+
+  // Also display legacy records that may already contain a raw emoji.
+  if (EMOJI_OPTIONS.includes(iconName)) return iconName;
 
   const normalizedName = iconName.endsWith("-outline")
     ? iconName
@@ -163,34 +172,114 @@ function getIcon(iconName) {
 }
 
 const CATEGORY_PRESETS = [
-  { name: "Food & Dining", type: "expense", icon: "🍔", color: "#F59E0B" },
-  { name: "Groceries", type: "expense", icon: "🧺", color: "#22C55E" },
-  { name: "Transport", type: "expense", icon: "🚌", color: "#3B82F6" },
-  { name: "Fuel", type: "expense", icon: "⛽", color: "#0EA5E9" },
-  { name: "Rent", type: "expense", icon: "🏠", color: "#174E78" },
-  { name: "Utilities", type: "expense", icon: "⚡", color: "#EF4444" },
-  { name: "Internet & Airtime", type: "expense", icon: "📶", color: "#A855F7" },
-  { name: "Shopping", type: "expense", icon: "🛍️", color: "#EC4899" },
-  { name: "Subscriptions", type: "expense", icon: "💳", color: "#7C6FF0" },
-  { name: "Entertainment", type: "expense", icon: "🎬", color: "#7C6FF0" },
-  { name: "Health", type: "expense", icon: "🏥", color: "#16A34A" },
-  { name: "Fitness", type: "expense", icon: "🏋️", color: "#F97316" },
-  { name: "Education", type: "expense", icon: "🏫", color: "#3B82F6" },
-  { name: "Travel", type: "expense", icon: "✈️", color: "#2DD4BF" },
-  { name: "Personal Care", type: "expense", icon: "✂️", color: "#F472B6" },
-  { name: "Pets", type: "expense", icon: "🐾", color: "#84CC16" },
-  { name: "Gifts & Donations", type: "expense", icon: "🎁", color: "#EC4899" },
-  { name: "Repairs", type: "expense", icon: "🛠️", color: "#F59E0B" },
-  { name: "Salary", type: "income", icon: "💵", color: "#16A34A" },
-  { name: "Freelance", type: "income", icon: "💼", color: "#2DD4BF" },
-  { name: "Business", type: "income", icon: "🏢", color: "#174E78" },
-  { name: "Investment", type: "income", icon: "📈", color: "#22C55E" },
-  { name: "Gift", type: "income", icon: "🎁", color: "#F472B6" },
-  { name: "Other Income", type: "income", icon: "👛", color: "#FBBF24" },
+  {
+    name: "Food & Dining",
+    type: "expense",
+    icon: "fast-food-outline",
+    color: "#F59E0B",
+  },
+  {
+    name: "Groceries",
+    type: "expense",
+    icon: "basket-outline",
+    color: "#22C55E",
+  },
+  { name: "Transport", type: "expense", icon: "bus-outline", color: "#3B82F6" },
+  { name: "Fuel", type: "expense", icon: "car-outline", color: "#0EA5E9" },
+  { name: "Rent", type: "expense", icon: "home-outline", color: "#174E78" },
+  {
+    name: "Utilities",
+    type: "expense",
+    icon: "flash-outline",
+    color: "#EF4444",
+  },
+  {
+    name: "Internet & Airtime",
+    type: "expense",
+    icon: "wifi-outline",
+    color: "#A855F7",
+  },
+  { name: "Shopping", type: "expense", icon: "cart-outline", color: "#EC4899" },
+  {
+    name: "Subscriptions",
+    type: "expense",
+    icon: "card-outline",
+    color: "#7C6FF0",
+  },
+  {
+    name: "Entertainment",
+    type: "expense",
+    icon: "film-outline",
+    color: "#7C6FF0",
+  },
+  { name: "Health", type: "expense", icon: "medkit-outline", color: "#16A34A" },
+  {
+    name: "Fitness",
+    type: "expense",
+    icon: "barbell-outline",
+    color: "#F97316",
+  },
+  {
+    name: "Education",
+    type: "expense",
+    icon: "school-outline",
+    color: "#3B82F6",
+  },
+  {
+    name: "Travel",
+    type: "expense",
+    icon: "airplane-outline",
+    color: "#2DD4BF",
+  },
+  {
+    name: "Personal Care",
+    type: "expense",
+    icon: "cut-outline",
+    color: "#F472B6",
+  },
+  { name: "Pets", type: "expense", icon: "paw-outline", color: "#84CC16" },
+  {
+    name: "Gifts & Donations",
+    type: "expense",
+    icon: "gift-outline",
+    color: "#EC4899",
+  },
+  {
+    name: "Repairs",
+    type: "expense",
+    icon: "construct-outline",
+    color: "#F59E0B",
+  },
+  { name: "Salary", type: "income", icon: "cash-outline", color: "#16A34A" },
+  {
+    name: "Freelance",
+    type: "income",
+    icon: "briefcase-outline",
+    color: "#2DD4BF",
+  },
+  {
+    name: "Business",
+    type: "income",
+    icon: "business-outline",
+    color: "#174E78",
+  },
+  {
+    name: "Investment",
+    type: "income",
+    icon: "trending-up-outline",
+    color: "#22C55E",
+  },
+  { name: "Gift", type: "income", icon: "gift-outline", color: "#F472B6" },
+  {
+    name: "Other Income",
+    type: "income",
+    icon: "wallet-outline",
+    color: "#FBBF24",
+  },
 ];
 
 function fallbackIconFor(type) {
-  return type?.toLowerCase() === "income" ? "💵" : "🏷️";
+  return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
 }
 
 function CategoryRow({ category, onDelete, colors }) {
@@ -370,7 +459,7 @@ export default function Categories() {
   const resetForm = () => {
     setName("");
     setType("Expense");
-    setIcon(EMOJI_OPTIONS[0]);
+    setIcon(ICON_OPTIONS[0]);
     setColor(SWATCHES[0]);
     setModalTab("quick");
     setTypeMenuOpen(false);
@@ -576,8 +665,6 @@ export default function Categories() {
                 >
                   New category
                 </Text>
-              </Pressable>
-            </View>
 
                 <Pressable
                   onPress={() => {
@@ -656,7 +743,7 @@ export default function Categories() {
 
                       <View style={styles.presetGrid}>
                         {CATEGORY_PRESETS.filter(
-                          (preset) => preset.type === presetType,
+                          (preset) => preset.type === presetType.toLowerCase(),
                         ).map((preset) => {
                           const isAdded = existingNames.has(
                             preset.name.toLowerCase(),
@@ -819,7 +906,6 @@ export default function Categories() {
                         color: colors.textMuted,
                       },
                     ]}
-                    onPress={() => setTypeDropdownOpen((open) => !open)}
                   >
                     Icon
                   </Text>
