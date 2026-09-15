@@ -1215,8 +1215,6 @@ const me = asyncHandler(async (req, res) => {
   });
 });
 
-
-
 /*
 |--------------------------------------------------------------------------
 | MOBILE PROFILE AVATAR
@@ -1352,7 +1350,10 @@ const changePassword = asyncHandler(async (req, res) => {
     return res.status(404).json({ error: "User not found." });
   }
 
-  const matches = await bcrypt.compare(currentPassword, result.rows[0].password_hash);
+  const matches = await bcrypt.compare(
+    currentPassword,
+    result.rows[0].password_hash,
+  );
   if (!matches) {
     return res.status(401).json({ error: "Current password is incorrect." });
   }
@@ -1379,7 +1380,9 @@ const updateCurrency = asyncHandler(async (req, res) => {
   const { currency } = req.body;
 
   if (!currency || typeof currency !== "string" || currency.length > 8) {
-    return res.status(400).json({ error: "A valid currency code is required." });
+    return res
+      .status(400)
+      .json({ error: "A valid currency code is required." });
   }
 
   const result = await pool.query(
@@ -1410,7 +1413,9 @@ const deleteAccount = asyncHandler(async (req, res) => {
   const { password } = req.body;
 
   if (!password) {
-    return res.status(400).json({ error: "Password is required to delete your account." });
+    return res
+      .status(400)
+      .json({ error: "Password is required to delete your account." });
   }
 
   const result = await pool.query(
