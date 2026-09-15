@@ -64,18 +64,19 @@ async function createAccount(req, res) {
       });
     }
 
-    if (
+    // ✅ NEW: Allow empty amount and default it to 0.00
+    const amount =
       initialAmount === undefined ||
       initialAmount === null ||
-      initialAmount === "" ||
-      Number.isNaN(Number(initialAmount))
-    ) {
+      String(initialAmount).trim() === ""
+        ? 0
+        : Number(initialAmount);
+
+    if (Number.isNaN(amount)) {
       return res.status(400).json({
-        error: "Initial amount is required.",
+        error: "Initial amount must be a valid number.",
       });
     }
-
-    const amount = Number(initialAmount);
 
     if (amount < 0) {
       return res.status(400).json({
@@ -83,9 +84,6 @@ async function createAccount(req, res) {
       });
     }
 
-    // Basic sanity check on the color so the column doesn't fill up
-    // with junk if a client sends something unexpected. Accepts hex
-    // codes like "#174E78"; anything else is stored as null.
     const isValidHexColor =
       typeof color === "string" && /^#[0-9A-Fa-f]{6}$/.test(color.trim());
 
@@ -116,7 +114,7 @@ async function createAccount(req, res) {
         currency.trim().toUpperCase(),
         amount,
         notes ? notes.trim() : null,
-        isValidHexColor ? color.trim() : '#6366F1',
+        isValidHexColor ? color.trim() : "#6366F1",
       ],
     );
 
@@ -142,7 +140,6 @@ async function createAccount(req, res) {
 async function updateAccount(req, res) {
   try {
     const userId = req.user.id;
-
     const { id } = req.params;
 
     const { name, currency, initialAmount, notes, color } = req.body;
@@ -159,18 +156,19 @@ async function updateAccount(req, res) {
       });
     }
 
-    if (
+    // ✅ NEW: Allow blank balance and treat it as 0.00
+    const amount =
       initialAmount === undefined ||
       initialAmount === null ||
-      initialAmount === "" ||
-      Number.isNaN(Number(initialAmount))
-    ) {
+      String(initialAmount).trim() === ""
+        ? 0
+        : Number(initialAmount);
+
+    if (Number.isNaN(amount)) {
       return res.status(400).json({
-        error: "Balance is required.",
+        error: "Balance must be a valid number.",
       });
     }
-
-    const amount = Number(initialAmount);
 
     if (amount < 0) {
       return res.status(400).json({
@@ -242,7 +240,6 @@ async function updateAccount(req, res) {
 async function deleteAccount(req, res) {
   try {
     const userId = req.user.id;
-
     const { id } = req.params;
 
     const result = await pool.query(

@@ -1001,8 +1001,8 @@ function CurrencyConverterCard({
         keyboardType="numeric"
       />
 
-      <View style={styles.converterRow}>
-        <View style={{ flex: 1 }}>
+      <View style={styles.converterColumn}>
+        <View>
           <Dropdown
             label="From"
             value={currencyLabel(fromCurrency)}
@@ -1033,11 +1033,11 @@ function CurrencyConverterCard({
               },
             ]}
           >
-            ⇄
+            ⇅ Swap
           </Text>
         </Pressable>
 
-        <View style={{ flex: 1 }}>
+        <View>
           <Dropdown
             label="To"
             value={currencyLabel(toCurrency)}
@@ -1597,6 +1597,12 @@ export default function Transactions() {
 
   const [showExportMenu, setShowExportMenu] = useState(false);
 
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFromDate, setExportFromDate] = useState(null);
+  const [exportToDate, setExportToDate] = useState(null);
+  const [showExportFromPicker, setShowExportFromPicker] = useState(false);
+  const [showExportToPicker, setShowExportToPicker] = useState(false);
+
   const [transactions, setTransactions] = useState([]);
 
   const [allCategories, setAllCategories] = useState([]);
@@ -1866,28 +1872,70 @@ export default function Transactions() {
     }
   };
 
-  const handleExportCsv = async () => {
+  const openExportModal = () => {
     if (transactions.length === 0) {
       Alert.alert(
         "Nothing to export",
         "There are no transactions available to export.",
       );
-
       return;
     }
 
+    setShowExportMenu(false);
+    setShowExportModal(true);
+  };
+
+  const getTransactionsForExportRange = async () => {
+    if (!exportFromDate || !exportToDate) {
+      Alert.alert(
+        "Select date range",
+        "Please select both the From and To dates.",
+      );
+      return null;
+    }
+
+    const fromKey = getLocalDateString(exportFromDate);
+    const toKey = getLocalDateString(exportToDate);
+
+    if (fromKey > toKey) {
+      Alert.alert(
+        "Invalid date range",
+        "The From date cannot be later than the To date.",
+      );
+      return null;
+    }
+
+    const data = await getTransactions();
+    const rawTransactions = data.transactions || [];
+
+    const rangedTransactions = rawTransactions.filter((transaction) => {
+      if (!transaction.occurred_on) return false;
+      const transactionDate = String(transaction.occurred_on).slice(0, 10);
+      return transactionDate >= fromKey && transactionDate <= toKey;
+    });
+
+    if (rangedTransactions.length === 0) {
+      Alert.alert(
+        "Nothing to export",
+        "There are no transactions within the selected date range.",
+      );
+      return null;
+    }
+
+    return rangedTransactions;
+  };
+
+  const handleExportCsv = async () => {
     try {
       setExporting(true);
-      setShowExportMenu(false);
 
-      const data = await getTransactions();
-
-      const rawTransactions = data.transactions || [];
+      const rawTransactions = await getTransactionsForExportRange();
+      if (!rawTransactions) return;
 
       await exportTransactionsToCsv(rawTransactions, currency);
+      setShowExportModal(false);
     } catch (error) {
       console.log("CSV export error:", error);
-
       Alert.alert(
         "Export failed",
         error.message || "Unable to export transactions as CSV.",
@@ -1898,27 +1946,16 @@ export default function Transactions() {
   };
 
   const handleExportPdf = async () => {
-    if (transactions.length === 0) {
-      Alert.alert(
-        "Nothing to export",
-        "There are no transactions available to export.",
-      );
-
-      return;
-    }
-
     try {
       setExporting(true);
-      setShowExportMenu(false);
 
-      const data = await getTransactions();
-
-      const rawTransactions = data.transactions || [];
+      const rawTransactions = await getTransactionsForExportRange();
+      if (!rawTransactions) return;
 
       await exportTransactionsToPdf(rawTransactions, currency);
+      setShowExportModal(false);
     } catch (error) {
       console.log("PDF export error:", error);
-
       Alert.alert(
         "Export failed",
         error.message || "Unable to export transactions as PDF.",
@@ -1974,17 +2011,6 @@ export default function Transactions() {
               <Text style={styles.addButtonText}>+ Add transaction</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.convertButton}
-              onPress={() => setShowConverter((current) => !current)}
-              disabled={exporting}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.convertButtonText}>
-                {showConverter ? "Hide converter" : "⇄ Convert"}
-              </Text>
-            </TouchableOpacity>
-
             <View style={styles.exportMenuContainer}>
               <TouchableOpacity
                 style={styles.moreButton}
@@ -1999,7 +2025,7 @@ export default function Transactions() {
                 <View style={styles.exportMenu}>
                   <TouchableOpacity
                     style={styles.exportMenuItem}
-                    onPress={handleExportCsv}
+                    onPress={openExportModal}
                     disabled={exporting}
                     activeOpacity={0.7}
                   >
@@ -2010,7 +2036,7 @@ export default function Transactions() {
 
                   <TouchableOpacity
                     style={styles.exportMenuItem}
-                    onPress={handleExportPdf}
+                    onPress={openExportModal}
                     disabled={exporting}
                     activeOpacity={0.7}
                   >
@@ -2021,33 +2047,6 @@ export default function Transactions() {
                 </View>
               )}
             </View>
-          </View>
-        </View>
-
-        {showConverter && (
-          <CurrencyConverterCard
-            colors={colors}
-            styles={styles}
-            defaultCurrency={currency}
-            onAddResult={handleConverterAdd}
-          />
-        )}
-
-        <View style={styles.summaryContainer}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>TOTAL INCOME</Text>
-
-            <Text style={styles.incomeSummary}>
-              {formatCurrency(totalIncome, currency)}
-            </Text>
-          </View>
-
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>TOTAL EXPENSE</Text>
-
-            <Text style={styles.expenseSummary}>
-              {formatCurrency(totalExpense, currency)}
-            </Text>
           </View>
         </View>
 
@@ -2116,6 +2115,143 @@ export default function Transactions() {
           styles={styles}
         />
       </ScrollView>
+
+      <Modal
+        visible={showExportModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowExportModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.exportModalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Export Transactions</Text>
+                <Text style={styles.exportModalSubtitle}>
+                  Select the transaction history period to export.
+                </Text>
+              </View>
+
+              <Pressable onPress={() => setShowExportModal(false)} hitSlop={10}>
+                <Text style={styles.closeButton}>×</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.exportDateRow}>
+              <View style={styles.exportDateColumn}>
+                <Text style={styles.inputLabel}>From</Text>
+                <Pressable
+                  style={styles.exportDateField}
+                  onPress={() => setShowExportFromPicker(true)}
+                >
+                  <Text
+                    style={[
+                      styles.exportDateText,
+                      !exportFromDate && { color: colors.textFaint },
+                    ]}
+                  >
+                    {exportFromDate
+                      ? exportFromDate.toLocaleDateString("en-US", {
+                          month: "2-digit",
+                          day: "2-digit",
+                          year: "numeric",
+                        })
+                      : "mm/dd/yyyy"}
+                  </Text>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={colors.text}
+                  />
+                </Pressable>
+              </View>
+
+              <View style={styles.exportDateColumn}>
+                <Text style={styles.inputLabel}>To</Text>
+                <Pressable
+                  style={styles.exportDateField}
+                  onPress={() => setShowExportToPicker(true)}
+                >
+                  <Text
+                    style={[
+                      styles.exportDateText,
+                      !exportToDate && { color: colors.textFaint },
+                    ]}
+                  >
+                    {exportToDate
+                      ? exportToDate.toLocaleDateString("en-US", {
+                          month: "2-digit",
+                          day: "2-digit",
+                          year: "numeric",
+                        })
+                      : "mm/dd/yyyy"}
+                  </Text>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={colors.text}
+                  />
+                </Pressable>
+              </View>
+            </View>
+
+            {showExportFromPicker && (
+              <DateTimePicker
+                value={exportFromDate || new Date()}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                maximumDate={exportToDate || new Date()}
+                onChange={(event, selected) => {
+                  setShowExportFromPicker(Platform.OS === "ios");
+                  if (selected) setExportFromDate(selected);
+                }}
+              />
+            )}
+
+            {showExportToPicker && (
+              <DateTimePicker
+                value={exportToDate || new Date()}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                minimumDate={exportFromDate || undefined}
+                maximumDate={new Date()}
+                onChange={(event, selected) => {
+                  setShowExportToPicker(Platform.OS === "ios");
+                  if (selected) setExportToDate(selected);
+                }}
+              />
+            )}
+
+            <View style={styles.exportModalActions}>
+              <Pressable
+                style={[
+                  styles.exportCsvButton,
+                  exporting && styles.saveButtonDisabled,
+                ]}
+                onPress={handleExportCsv}
+                disabled={exporting}
+              >
+                <Text style={styles.exportCsvButtonText}>Export CSV</Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.exportPdfButton,
+                  exporting && styles.saveButtonDisabled,
+                ]}
+                onPress={handleExportPdf}
+                disabled={exporting}
+              >
+                {exporting ? (
+                  <ActivityIndicator color={colors.primaryText} />
+                ) : (
+                  <Text style={styles.exportPdfButtonText}>Export PDF</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={showConverterAccountPicker}
@@ -2315,216 +2451,244 @@ export default function Transactions() {
               </Pressable>
             </View>
 
-            <Dropdown
-              label="Type"
-              value={type}
-              options={TYPES}
-              onSelect={handleTypeChange}
-              styles={styles}
-            />
-
-            <Text style={styles.inputLabel}>Account</Text>
-
-            <Pressable
-              style={[
-                styles.accountSelectField,
-                {
-                  borderColor: colors.inputBorder,
-                  backgroundColor: colors.inputBg,
-                },
-              ]}
-              onPress={() => setShowConverterAccountPicker(true)}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.addModalScrollContent}
             >
-              <View style={styles.accountSelectContent}>
-                <View
-                  style={[
-                    styles.accountSelectIcon,
-                    {
-                      backgroundColor: selectedAccount?.color || colors.chipBg,
-                    },
-                  ]}
-                >
-                  {!selectedAccount?.color && (
-                    <Ionicons
-                      name="wallet-outline"
-                      size={15}
-                      color={colors.primary}
-                    />
-                  )}
-                </View>
-
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      styles.accountSelectName,
-                      {
-                        color: selectedAccount ? colors.text : colors.textFaint,
-                      },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {selectedAccount?.name || "Select an account"}
-                  </Text>
-
-                  {selectedAccount ? (
-                    <Text
-                      style={[
-                        styles.accountSelectBalance,
-                        {
-                          color: colors.textFaint,
-                        },
-                      ]}
-                    >
-                      {formatCurrency(
-                        Number(selectedAccount.balance || 0),
-                        selectedAccount.currency || currency,
-                      )}
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
-
-              <Text style={styles.dropdownArrow}>⌄</Text>
-            </Pressable>
-
-            <Text style={styles.inputLabel}>Amount</Text>
-
-            <View style={styles.amountRow}>
-              <TextInput
-                style={[styles.input, styles.amountInput]}
-                placeholder={formatCurrency(0, currency)}
-                placeholderTextColor={colors.textFaint}
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="numeric"
+              <Dropdown
+                label="Type"
+                value={type}
+                options={TYPES}
+                onSelect={handleTypeChange}
+                styles={styles}
               />
+
+              <Text style={styles.inputLabel}>Account</Text>
 
               <Pressable
                 style={[
-                  styles.calcOpenButton,
+                  styles.accountSelectField,
                   {
-                    backgroundColor: colors.chipBg,
                     borderColor: colors.inputBorder,
+                    backgroundColor: colors.inputBg,
                   },
                 ]}
-                onPress={() => setShowCalculator(true)}
-                android_ripple={{
-                  color: colors.divider,
-                }}
+                onPress={() => setShowConverterAccountPicker(true)}
               >
-                <Ionicons
-                  name="calculator-outline"
-                  size={20}
-                  color={colors.primary}
-                />
-              </Pressable>
-            </View>
-
-            <Text style={styles.inputLabel}>Category</Text>
-
-            <Pressable
-              style={[
-                styles.categoryField,
-                {
-                  borderColor: colors.inputBorder,
-                  backgroundColor: colors.inputBg,
-                },
-              ]}
-              onPress={() => setShowCategoryPicker(true)}
-            >
-              {selectedCategory ? (
-                <View style={styles.categoryFieldContent}>
+                <View style={styles.accountSelectContent}>
                   <View
                     style={[
-                      styles.iconCircle,
+                      styles.accountSelectIcon,
                       {
                         backgroundColor:
-                          selectedCategory.color || colors.primary,
+                          selectedAccount?.color || colors.chipBg,
                       },
                     ]}
                   >
-                    <CategoryIconGlyph
-                      icon={selectedCategory.icon}
-                      type={selectedCategory.type}
-                      size={14}
-                      color="#FFFFFF"
-                      styles={styles}
-                    />
+                    {!selectedAccount?.color && (
+                      <Ionicons
+                        name="wallet-outline"
+                        size={15}
+                        color={colors.primary}
+                      />
+                    )}
                   </View>
 
-                  <Text style={styles.categoryFieldText}>
-                    {selectedCategory.name}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.accountSelectName,
+                        {
+                          color: selectedAccount
+                            ? colors.text
+                            : colors.textFaint,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {selectedAccount?.name || "Select an account"}
+                    </Text>
+
+                    {selectedAccount ? (
+                      <Text
+                        style={[
+                          styles.accountSelectBalance,
+                          {
+                            color: colors.textFaint,
+                          },
+                        ]}
+                      >
+                        {formatCurrency(
+                          Number(selectedAccount.balance || 0),
+                          selectedAccount.currency || currency,
+                        )}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
-              ) : (
-                <Text
+
+                <Text style={styles.dropdownArrow}>⌄</Text>
+              </Pressable>
+
+              <Text style={styles.inputLabel}>Amount</Text>
+
+              <View style={styles.amountRow}>
+                <TextInput
+                  style={[styles.input, styles.amountInput]}
+                  placeholder={formatCurrency(0, currency)}
+                  placeholderTextColor={colors.textFaint}
+                  value={amount}
+                  onChangeText={setAmount}
+                  keyboardType="numeric"
+                />
+
+                <Pressable
                   style={[
-                    styles.categoryFieldText,
+                    styles.calcOpenButton,
                     {
-                      color: colors.textFaint,
+                      backgroundColor: colors.chipBg,
+                      borderColor: colors.inputBorder,
                     },
                   ]}
+                  onPress={() => setShowCalculator(true)}
+                  android_ripple={{
+                    color: colors.divider,
+                  }}
                 >
-                  {categoryOptions.length > 0
-                    ? "Select a category"
-                    : `No ${type.toLowerCase()} categories yet`}
-                </Text>
-              )}
+                  <Ionicons
+                    name="calculator-outline"
+                    size={20}
+                    color={colors.primary}
+                  />
+                </Pressable>
+              </View>
 
-              <Text style={styles.dropdownArrow}>⌄</Text>
-            </Pressable>
+              <Text style={styles.inputLabel}>Category</Text>
 
-            <Text style={styles.inputLabel}>Description</Text>
+              <Pressable
+                style={[
+                  styles.categoryField,
+                  {
+                    borderColor: colors.inputBorder,
+                    backgroundColor: colors.inputBg,
+                  },
+                ]}
+                onPress={() => setShowCategoryPicker(true)}
+              >
+                {selectedCategory ? (
+                  <View style={styles.categoryFieldContent}>
+                    <View
+                      style={[
+                        styles.iconCircle,
+                        {
+                          backgroundColor:
+                            selectedCategory.color || colors.primary,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          selectedCategory.icon ||
+                          fallbackIconFor(selectedCategory.type)
+                        }
+                        size={14}
+                        color="#FFFFFF"
+                      />
+                    </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Optional note"
-              placeholderTextColor={colors.textFaint}
-              value={description}
-              onChangeText={setDescription}
-            />
+                    <Text style={styles.categoryFieldText}>
+                      {selectedCategory.name}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text
+                    style={[
+                      styles.categoryFieldText,
+                      {
+                        color: colors.textFaint,
+                      },
+                    ]}
+                  >
+                    {categoryOptions.length > 0
+                      ? "Select a category"
+                      : `No ${type.toLowerCase()} categories yet`}
+                  </Text>
+                )}
 
-            <Text style={styles.inputLabel}>Date</Text>
+                <Text style={styles.dropdownArrow}>⌄</Text>
+              </Pressable>
 
-            <Pressable
-              style={styles.input}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Text style={styles.dateText}>
-                {date.toLocaleDateString("en-US", {
-                  month: "2-digit",
-                  day: "2-digit",
-                  year: "numeric",
-                })}
-              </Text>
-            </Pressable>
+              <Text style={styles.inputLabel}>Description</Text>
 
-            {showDatePicker && (
-              <DateTimePicker
-                value={date}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(Platform.OS === "ios");
-
-                  if (selectedDate) {
-                    setDate(selectedDate);
-                  }
-                }}
+              <TextInput
+                style={styles.input}
+                placeholder="Optional note"
+                placeholderTextColor={colors.textFaint}
+                value={description}
+                onChangeText={setDescription}
               />
-            )}
 
-            <Pressable
-              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-              onPress={addTransaction}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={colors.primaryText} />
-              ) : (
-                <Text style={styles.saveButtonText}>Save transaction</Text>
+              <Text style={styles.inputLabel}>Date</Text>
+
+              <Pressable
+                style={styles.input}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={styles.dateText}>
+                  {date.toLocaleDateString("en-US", {
+                    month: "2-digit",
+                    day: "2-digit",
+                    year: "numeric",
+                  })}
+                </Text>
+              </Pressable>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={(event, selectedDate) => {
+                    setShowDatePicker(Platform.OS === "ios");
+
+                    if (selectedDate) {
+                      setDate(selectedDate);
+                    }
+                  }}
+                />
               )}
-            </Pressable>
+
+              <Pressable
+                style={styles.modalConverterToggle}
+                onPress={() => setShowConverter((current) => !current)}
+              >
+                <Text style={styles.modalConverterToggleText}>
+                  {showConverter ? "× Hide converter" : "⇄ Currency converter"}
+                </Text>
+              </Pressable>
+
+              {showConverter && (
+                <CurrencyConverterCard
+                  colors={colors}
+                  styles={styles}
+                  defaultCurrency={currency}
+                  onAddResult={handleConverterAdd}
+                />
+              )}
+
+              <Pressable
+                style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+                onPress={addTransaction}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator color={colors.primaryText} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save transaction</Text>
+                )}
+              </Pressable>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -2634,6 +2798,91 @@ const createStyles = (colors) =>
       color: colors.text,
       fontSize: 10,
       fontFamily: fonts.bodySemiBold,
+    },
+
+    exportModalCard: {
+      width: "92%",
+      maxWidth: 620,
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      padding: 20,
+    },
+
+    exportModalSubtitle: {
+      fontSize: 11,
+      fontFamily: fonts.bodyRegular,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+
+    exportDateRow: {
+      flexDirection: "row",
+      gap: 12,
+      marginTop: 12,
+    },
+
+    exportDateColumn: {
+      flex: 1,
+    },
+
+    exportDateField: {
+      minHeight: 52,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      backgroundColor: colors.inputBg,
+      paddingHorizontal: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+
+    exportDateText: {
+      flex: 1,
+      fontSize: 12,
+      fontFamily: fonts.bodyMedium,
+      color: colors.text,
+      marginRight: 8,
+    },
+
+    exportModalActions: {
+      flexDirection: "row",
+      gap: 12,
+      marginTop: 22,
+    },
+
+    exportCsvButton: {
+      flex: 1,
+      minHeight: 50,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      backgroundColor: colors.inputBg,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    exportCsvButtonText: {
+      fontSize: 12,
+      fontFamily: fonts.bodySemiBold,
+      color: colors.text,
+    },
+
+    exportPdfButton: {
+      flex: 1,
+      minHeight: 50,
+      borderRadius: 12,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    exportPdfButtonText: {
+      fontSize: 12,
+      fontFamily: fonts.bodySemiBold,
+      color: colors.primaryText,
     },
 
     exportMenuContainer: {
@@ -3061,6 +3310,28 @@ const createStyles = (colors) =>
       borderWidth: 1,
       borderColor: colors.cardBorder,
       maxHeight: "90%",
+    },
+
+    addModalScrollContent: {
+      paddingBottom: 4,
+    },
+
+    modalConverterToggle: {
+      marginTop: 18,
+      minHeight: 48,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      backgroundColor: colors.inputBg,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 14,
+    },
+
+    modalConverterToggleText: {
+      fontSize: 12,
+      fontFamily: fonts.bodySemiBold,
+      color: colors.text,
     },
 
     modalHeader: {
@@ -3627,7 +3898,8 @@ const createStyles = (colors) =>
       borderRadius: 16,
       borderWidth: 1,
       padding: 16,
-      marginTop: 15,
+      marginTop: 14,
+      marginBottom: 2,
     },
 
     converterTitle: {
@@ -3637,21 +3909,21 @@ const createStyles = (colors) =>
       marginBottom: 4,
     },
 
-    converterRow: {
-      flexDirection: "row",
-      alignItems: "flex-end",
-      gap: 8,
+    converterColumn: {
+      gap: 4,
       marginTop: 4,
     },
 
     converterSwapButton: {
-      width: 38,
-      height: 38,
+      minWidth: 110,
+      height: 42,
+      paddingHorizontal: 18,
       borderRadius: 10,
       borderWidth: 1,
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: 6,
+      alignSelf: "center",
+      marginVertical: 4,
     },
 
     converterSwapText: {

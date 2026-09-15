@@ -1199,7 +1199,6 @@ const changePassword = asyncHandler(async (req, res) => {
     currentPassword,
     result.rows[0].password_hash,
   );
-
   if (!matches) {
     return res.status(401).json({
       error: "Current password is incorrect.",
@@ -1233,9 +1232,9 @@ const updateCurrency = asyncHandler(async (req, res) => {
   const { currency } = req.body;
 
   if (!currency || typeof currency !== "string" || currency.length > 8) {
-    return res.status(400).json({
-      error: "A valid currency code is required.",
-    });
+    return res
+      .status(400)
+      .json({ error: "A valid currency code is required." });
   }
 
   const result = await pool.query(
@@ -1259,9 +1258,46 @@ const updateCurrency = asyncHandler(async (req, res) => {
     });
   }
 
-  return res.json({
-    user: result.rows[0],
-  });
+  return res.json({ user: result.rows[0] });
+});
+
+/*
+|--------------------------------------------------------------------------
+| DELETE ACCOUNT
+|--------------------------------------------------------------------------
+|
+| Permanent, not reversible. Every table referencing users(id) is
+| ON DELETE CASCADE in schema.sql, so this single delete cleans up
+| accounts, categories, transactions, budgets, notifications,
+| otp_codes, and password_resets automatically.
+|--------------------------------------------------------------------------
+*/
+const deleteAccount = asyncHandler(async (req, res) => {
+  const { password } = req.body;
+
+  if (!password) {
+    return res
+      .status(400)
+      .json({ error: "Password is required to delete your account." });
+  }
+
+  const result = await pool.query(
+    `SELECT password_hash FROM users WHERE id = $1`,
+    [req.user.id],
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: "User not found." });
+  }
+
+  const matches = await bcrypt.compare(password, result.rows[0].password_hash);
+  if (!matches) {
+    return res.status(401).json({ error: "Incorrect password." });
+  }
+
+  await pool.query(`DELETE FROM users WHERE id = $1`, [req.user.id]);
+
+  return res.json({ message: "Your account has been permanently deleted." });
 });
 
 /*
