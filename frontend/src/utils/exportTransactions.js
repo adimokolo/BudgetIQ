@@ -135,7 +135,6 @@ export function exportTransactionsToPdf(transactions, currency = 'NGN') {
     },
 
     didParseCell(data) {
-      console.log('didParseCell fired:', data.section, data.column.index);
       if (data.section !== 'body' || data.column.index !== 4) return;
 
       const isCredit = data.row.raw[1] === 'Credit';
