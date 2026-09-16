@@ -53,7 +53,7 @@ const TERMS_SECTIONS = [
 
       "If you use BudgetIQ for an organisation, you confirm that you have authority to bind that organisation.",
 
-      "BudgetIQ is designed primarily for users in Nigeria, although parts of the service may be accessible elsewhere.",
+      "BudgetIQ is designed primarily for users in Nigeria, although services are also accessible around the world.",
     ],
   },
 
@@ -66,9 +66,9 @@ const TERMS_SECTIONS = [
       "Account registration, email verification, login, password recovery, profile management and account deletion.",
       "Manual financial accounts, balances, notes, categories, income and expense transactions.",
       "Monthly budgets, spending progress, dashboard summaries, notifications, forecasts, reports and exports.",
-      "Display and conversion of amounts in NGN and other supported currencies using reference exchange rates.",
+      "Display and conversion of amounts in more than 70 currencies using reference exchange rates.",
       "Optional connection to eligible bank accounts through an approved financial-data provider.",
-      "Features may differ between the mobile and web applications. Both applications may use the same BudgetIQ account, backend and database.",
+      "Features may differ between the mobile and web applications. Both applications uses same BudgetIQ account, backend and database across platforms.",
     ],
   },
 
