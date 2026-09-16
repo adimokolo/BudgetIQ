@@ -3065,14 +3065,14 @@ const createStyles = (colors) =>
     },
 
     incomeSummary: {
-      fontSize: 18,
-      fontFamily: fonts.displayBold,
+      fontSize: 15,
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.income,
     },
 
     expenseSummary: {
-      fontSize: 18,
-      fontFamily: fonts.displayBold,
+      fontSize: 15,
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.expense,
     },
 
@@ -3638,15 +3638,15 @@ const createStyles = (colors) =>
     },
 
     iconCircle: {
-      width: 34,
-      height: 34,
+      width: 32,
+      height: 32,
       borderRadius: 17,
       alignItems: "center",
       justifyContent: "center",
     },
 
     categoryEmoji: {
-      fontSize: 16,
+      fontSize: 14,
       lineHeight: 21,
       textAlign: "center",
     },
@@ -3701,7 +3701,7 @@ const createStyles = (colors) =>
     },
 
     categoryPreviewEmoji: {
-      fontSize: 18,
+      fontSize: 17,
       lineHeight: 24,
       textAlign: "center",
     },
@@ -3720,12 +3720,13 @@ const createStyles = (colors) =>
     },
 
     iconOption: {
-      width: 36,
-      height: 36,
+      width: 38,
+      height: 38,
       borderRadius: 10,
       borderWidth: 1,
       alignItems: "center",
       justifyContent: "center",
+      marginLeft: 10,
     },
 
     categoryOptionEmoji: {
@@ -4033,8 +4034,8 @@ const createStyles = (colors) =>
     },
 
     converterSwapButton: {
-      minWidth: 110,
-      height: 42,
+      minWidth: 100,
+      height: 38,
       paddingHorizontal: 18,
       borderRadius: 10,
       borderWidth: 1,
@@ -4042,10 +4043,12 @@ const createStyles = (colors) =>
       justifyContent: "center",
       alignSelf: "center",
       marginVertical: 4,
+      marginTop: 10,
+      marginBottom: -18,
     },
 
     converterSwapText: {
-      fontSize: 16,
+      fontSize: 14,
       fontFamily: fonts.bodySemiBold,
     },
 

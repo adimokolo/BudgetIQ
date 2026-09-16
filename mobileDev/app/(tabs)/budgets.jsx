@@ -371,8 +371,9 @@ export default function Budgets() {
 
       console.log("Budgets API response:", budgetsResponse);
 
-      const loadedBudgets =
-        budgetsResponse?.budgets || budgetsResponse?.data || [];
+      const loadedBudgets = Array.isArray(budgetsResponse)
+        ? budgetsResponse
+        : budgetsResponse?.budgets || budgetsResponse?.data || [];
 
       setBudgets(loadedBudgets);
 
