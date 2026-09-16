@@ -1733,15 +1733,15 @@ const styles = StyleSheet.create({
   },
 
   activityIcon: {
-    width: 38,
-    height: 38,
+    width: 29,
+    height: 29,
     borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
   },
 
   activityEmoji: {
-    fontSize: 18,
+    fontSize: 14,
     lineHeight: 24,
     textAlign: "center",
   },
