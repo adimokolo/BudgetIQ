@@ -381,7 +381,7 @@ function GroupedBarChart({
 }
 
 function fallbackIconFor(type) {
-  return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
+  return type?.toLowerCase() === "income" ? "💵" : "🏷️";
 }
 
 const CATEGORY_ICON_MAP = {

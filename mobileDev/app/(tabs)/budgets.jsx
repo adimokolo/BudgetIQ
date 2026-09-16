@@ -16,7 +16,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 
 import {
@@ -52,9 +51,9 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useCurrency } from "../../contexts/CurrencyContext";
 import { formatCurrency, getCurrencySymbol } from "../../utils/currency";
 
-// Fallback icon whenever a category predates icons (same logic as Categories).
+// Fallback emoji whenever a category predates icons (same logic as Categories).
 function fallbackIconFor(type) {
-  return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
+  return type?.toLowerCase() === "income" ? "💵" : "🏷️";
 }
 
 const CATEGORY_ICON_MAP = {
@@ -1165,6 +1164,12 @@ const styles = StyleSheet.create({
   categoryEmojiSmall: {
     fontSize: 13,
     lineHeight: 18,
+    textAlign: "center",
+  },
+
+  categoryIconEmojiSmall: {
+    fontSize: 11,
+    lineHeight: 14,
     textAlign: "center",
   },
 

@@ -89,47 +89,47 @@ const CURRENCY_DROPDOWN_OPTIONS = ALL_CURRENCIES.map((c) => ({
 }));
 
 const ICON_OPTIONS = [
-  "fast-food-outline",
-  "restaurant-outline",
-  "cafe-outline",
-  "beer-outline",
-  "cart-outline",
-  "basket-outline",
-  "bus-outline",
-  "car-outline",
-  "bicycle-outline",
-  "train-outline",
-  "airplane-outline",
-  "home-outline",
-  "bed-outline",
-  "flash-outline",
-  "water-outline",
-  "wifi-outline",
-  "call-outline",
-  "phone-portrait-outline",
-  "laptop-outline",
-  "medkit-outline",
-  "fitness-outline",
-  "barbell-outline",
-  "school-outline",
-  "book-outline",
-  "film-outline",
-  "musical-notes-outline",
-  "game-controller-outline",
-  "gift-outline",
-  "shirt-outline",
-  "cut-outline",
-  "paw-outline",
-  "diamond-outline",
-  "wallet-outline",
-  "card-outline",
-  "cash-outline",
-  "trending-up-outline",
-  "briefcase-outline",
-  "business-outline",
-  "construct-outline",
-  "heart-outline",
-  "ellipsis-horizontal-outline",
+  "🍔",
+  "🍽️",
+  "☕",
+  "🍺",
+  "🛒",
+  "🧺",
+  "🚌",
+  "🚗",
+  "🚲",
+  "🚂",
+  "✈️",
+  "🏠",
+  "🛏️",
+  "⚡",
+  "💧",
+  "📶",
+  "📞",
+  "📱",
+  "💻",
+  "🏥",
+  "🏃",
+  "🏋️",
+  "🏫",
+  "📚",
+  "🎬",
+  "🎵",
+  "🎮",
+  "🎁",
+  "👕",
+  "✂️",
+  "🐾",
+  "💎",
+  "👛",
+  "💳",
+  "💵",
+  "📈",
+  "💼",
+  "🏢",
+  "🛠️",
+  "❤️",
+  "🏷️",
 ];
 
 // Category icon keys stay unchanged in the shared backend. This mapping only
@@ -182,6 +182,10 @@ const CATEGORY_ICON_MAP = {
 function getCategoryIcon(iconName) {
   if (!iconName) return CATEGORY_ICON_MAP["pricetag-outline"];
 
+  // Icons picked directly from ICON_OPTIONS are already emoji — return as-is
+  // instead of running them through the "-outline" key normalizer below.
+  if (ICON_OPTIONS.includes(iconName)) return iconName;
+
   const normalizedName = iconName.endsWith("-outline")
     ? iconName
     : `${iconName}-outline`;
@@ -212,7 +216,35 @@ const SWATCHES = [
 ];
 
 function fallbackIconFor(type) {
-  return type?.toLowerCase() === "income" ? "cash-outline" : "pricetag-outline";
+  return type?.toLowerCase() === "income" ? "💵" : "🏷️";
+}
+
+function isLegacyIonicon(icon) {
+  return (
+    typeof icon === "string" &&
+    /^[a-z0-9-]+$/i.test(icon) &&
+    (icon.includes("-") || icon.endsWith("outline"))
+  );
+}
+
+function CategoryIconGlyph({
+  icon,
+  type,
+  size = 14,
+  color = "#FFFFFF",
+  styles,
+}) {
+  const resolvedIcon = icon || fallbackIconFor(type);
+
+  if (isLegacyIonicon(resolvedIcon)) {
+    return <Ionicons name={resolvedIcon} size={size} color={color} />;
+  }
+
+  return (
+    <Text style={[styles.categoryIconEmoji, { fontSize: size }]}>
+      {resolvedIcon}
+    </Text>
+  );
 }
 
 function getLocalDateString(date = new Date()) {
@@ -1529,6 +1561,12 @@ function TransactionCard({
           <Text style={styles.transactionMeta} numberOfLines={1}>
             {transaction.category} • {transaction.date}
           </Text>
+
+          {transaction.accountName ? (
+            <Text style={styles.transactionAccount} numberOfLines={1}>
+              {transaction.accountName}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -1563,9 +1601,15 @@ function mapTransaction(raw) {
 
     category: raw.category_name || "Uncategorized",
 
+    categoryId: raw.category_id ?? null,
+
     categoryColor: raw.category_color,
 
     categoryIcon: raw.category_icon,
+
+    accountId: raw.account_id ?? null,
+
+    accountName: raw.account_name || raw.account?.name || null,
 
     amount: Number(raw.amount || 0),
 
@@ -1746,17 +1790,42 @@ export default function Transactions() {
     return balances;
   }, [transactions]);
 
-  const filteredTransactions = transactions.filter((transaction) => {
-    if (filter !== "All types" && transaction.type !== filter) {
-      return false;
-    }
+  const categoryById = useMemo(
+    () => new Map(allCategories.map((category) => [category.id, category])),
+    [allCategories],
+  );
 
-    if (selectedDate && transaction.rawDate !== selectedDate) {
-      return false;
-    }
+  const accountById = useMemo(
+    () => new Map(accounts.map((account) => [account.id, account])),
+    [accounts],
+  );
 
-    return true;
-  });
+  const filteredTransactions = transactions
+    .filter((transaction) => {
+      if (filter !== "All types" && transaction.type !== filter) {
+        return false;
+      }
+
+      if (selectedDate && transaction.rawDate !== selectedDate) {
+        return false;
+      }
+
+      return true;
+    })
+    .map((transaction) => {
+      const matchedCategory = categoryById.get(transaction.categoryId);
+      const matchedAccount = accountById.get(transaction.accountId);
+
+      return {
+        ...transaction,
+        categoryIcon:
+          matchedCategory?.icon ||
+          transaction.categoryIcon ||
+          fallbackIconFor(transaction.type),
+        categoryColor: matchedCategory?.color || transaction.categoryColor,
+        accountName: matchedAccount?.name || transaction.accountName,
+      };
+    });
 
   const totalIncome = transactions
     .filter((item) => item.type === "Income")
@@ -2059,6 +2128,22 @@ export default function Transactions() {
           </View>
         </View>
 
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>TOTAL INCOME</Text>
+            <Text style={styles.incomeSummary}>
+              {formatCurrency(totalIncome, currency)}
+            </Text>
+          </View>
+
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>TOTAL EXPENSE</Text>
+            <Text style={styles.expenseSummary}>
+              {formatCurrency(totalExpense, currency)}
+            </Text>
+          </View>
+        </View>
+
         <View style={styles.filterContainer}>
           <Text style={styles.filterLabel}>Filter transactions</Text>
 
@@ -2095,6 +2180,7 @@ export default function Transactions() {
                 currency={currency}
                 onDelete={deleteTransaction}
                 styles={styles}
+                colors={colors}
               />
             ))
           ) : (
@@ -2979,14 +3065,14 @@ const createStyles = (colors) =>
     },
 
     incomeSummary: {
-      fontSize: 14,
-      fontFamily: fonts.monoMedium,
+      fontSize: 18,
+      fontFamily: fonts.displayBold,
       color: colors.income,
     },
 
     expenseSummary: {
-      fontSize: 14,
-      fontFamily: fonts.monoMedium,
+      fontSize: 18,
+      fontFamily: fonts.displayBold,
       color: colors.expense,
     },
 
@@ -3107,6 +3193,13 @@ const createStyles = (colors) =>
       fontFamily: fonts.bodyRegular,
       color: colors.textFaint,
       marginTop: 4,
+    },
+
+    transactionAccount: {
+      fontSize: 9,
+      fontFamily: fonts.bodySemiBold,
+      color: colors.primary,
+      marginTop: 2,
     },
 
     transactionAmount: {

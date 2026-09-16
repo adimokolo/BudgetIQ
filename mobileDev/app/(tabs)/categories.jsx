@@ -39,65 +39,65 @@ import {
 } from "@expo-google-fonts/jetbrains-mono";
 
 const SWATCHES = [
-  "#174E78",
-  "#2DD4BF",
-  "#7C6FF0",
-  "#F472B6",
-  "#EC4899",
-  "#FBBF24",
-  "#16A34A",
   "#F59E0B",
+  "#22C55E",
   "#3B82F6",
   "#EF4444",
-  "#0EA5E9",
-  "#22C55E",
   "#A855F7",
+  "#EC4899",
+  "#2DD4BF",
   "#F97316",
+  "#0EA5E9",
   "#84CC16",
+  "#FBBF24",
+  "#7C6FF0",
+  "#174E78",
+  "#16A34A",
+  "#F472B6",
 ];
 
-const ICON_OPTIONS = [
-  "fast-food-outline",
-  "restaurant-outline",
-  "cafe-outline",
-  "beer-outline",
-  "cart-outline",
-  "basket-outline",
-  "bus-outline",
-  "car-outline",
-  "bicycle-outline",
-  "train-outline",
-  "airplane-outline",
-  "home-outline",
-  "bed-outline",
-  "flash-outline",
-  "water-outline",
-  "wifi-outline",
-  "call-outline",
-  "phone-portrait-outline",
-  "laptop-outline",
-  "medkit-outline",
-  "fitness-outline",
-  "barbell-outline",
-  "school-outline",
-  "book-outline",
-  "film-outline",
-  "musical-notes-outline",
-  "game-controller-outline",
-  "gift-outline",
-  "shirt-outline",
-  "cut-outline",
-  "paw-outline",
-  "diamond-outline",
-  "wallet-outline",
-  "card-outline",
-  "cash-outline",
-  "trending-up-outline",
-  "briefcase-outline",
-  "business-outline",
-  "construct-outline",
-  "heart-outline",
-  "ellipsis-horizontal-outline",
+// Emoji icon set (used for both the custom-icon grid and preset/preview rendering)
+const EMOJI_OPTIONS = [
+  "🍔",
+  "🍽️",
+  "☕",
+  "🍺",
+  "🛒",
+  "🧺",
+  "🚌",
+  "🚗",
+  "🚲",
+  "🚂",
+  "✈️",
+  "🏠",
+  "🛏️",
+  "⚡",
+  "💧",
+  "📶",
+  "📞",
+  "📱",
+  "💻",
+  "🏥",
+  "🏃",
+  "🏋️",
+  "🏫",
+  "📚",
+  "🎬",
+  "🎵",
+  "🎮",
+  "🎁",
+  "👕",
+  "✂️",
+  "🐾",
+  "💎",
+  "👛",
+  "💳",
+  "💵",
+  "📈",
+  "💼",
+  "🏢",
+  "🛠️",
+  "❤️",
 ];
 
 // These keys are still saved to the shared backend, so the web and mobile
@@ -148,8 +148,17 @@ const ICON_MAP = {
   "pricetag-outline": "🏷️",
 };
 
+// Store stable icon keys in the backend; getIcon converts them to emojis for
+// display. This keeps Categories, Transactions, Budgets, and Dashboard aligned.
+const ICON_OPTIONS = Object.keys(ICON_MAP).filter(
+  (iconName) => iconName !== "pricetag-outline",
+);
+
 function getIcon(iconName) {
   if (!iconName) return ICON_MAP["pricetag-outline"];
+
+  // Also display legacy records that may already contain a raw emoji.
+  if (EMOJI_OPTIONS.includes(iconName)) return iconName;
 
   const normalizedName = iconName.endsWith("-outline")
     ? iconName
@@ -165,105 +174,105 @@ function getIcon(iconName) {
 const CATEGORY_PRESETS = [
   {
     name: "Food & Dining",
-    type: "Expense",
+    type: "expense",
     icon: "fast-food-outline",
     color: "#F59E0B",
   },
   {
     name: "Groceries",
-    type: "Expense",
+    type: "expense",
     icon: "basket-outline",
     color: "#22C55E",
   },
-  { name: "Transport", type: "Expense", icon: "bus-outline", color: "#3B82F6" },
-  { name: "Fuel", type: "Expense", icon: "car-outline", color: "#0EA5E9" },
-  { name: "Rent", type: "Expense", icon: "home-outline", color: "#174E78" },
+  { name: "Transport", type: "expense", icon: "bus-outline", color: "#3B82F6" },
+  { name: "Fuel", type: "expense", icon: "car-outline", color: "#0EA5E9" },
+  { name: "Rent", type: "expense", icon: "home-outline", color: "#174E78" },
   {
     name: "Utilities",
-    type: "Expense",
+    type: "expense",
     icon: "flash-outline",
     color: "#EF4444",
   },
   {
     name: "Internet & Airtime",
-    type: "Expense",
+    type: "expense",
     icon: "wifi-outline",
     color: "#A855F7",
   },
-  { name: "Shopping", type: "Expense", icon: "cart-outline", color: "#EC4899" },
+  { name: "Shopping", type: "expense", icon: "cart-outline", color: "#EC4899" },
   {
     name: "Subscriptions",
-    type: "Expense",
+    type: "expense",
     icon: "card-outline",
     color: "#7C6FF0",
   },
   {
     name: "Entertainment",
-    type: "Expense",
+    type: "expense",
     icon: "film-outline",
     color: "#7C6FF0",
   },
-  { name: "Health", type: "Expense", icon: "medkit-outline", color: "#16A34A" },
+  { name: "Health", type: "expense", icon: "medkit-outline", color: "#16A34A" },
   {
     name: "Fitness",
-    type: "Expense",
+    type: "expense",
     icon: "barbell-outline",
     color: "#F97316",
   },
   {
     name: "Education",
-    type: "Expense",
+    type: "expense",
     icon: "school-outline",
     color: "#3B82F6",
   },
   {
     name: "Travel",
-    type: "Expense",
+    type: "expense",
     icon: "airplane-outline",
     color: "#2DD4BF",
   },
   {
     name: "Personal Care",
-    type: "Expense",
+    type: "expense",
     icon: "cut-outline",
     color: "#F472B6",
   },
-  { name: "Pets", type: "Expense", icon: "paw-outline", color: "#84CC16" },
+  { name: "Pets", type: "expense", icon: "paw-outline", color: "#84CC16" },
   {
     name: "Gifts & Donations",
-    type: "Expense",
+    type: "expense",
     icon: "gift-outline",
     color: "#EC4899",
   },
   {
     name: "Repairs",
-    type: "Expense",
+    type: "expense",
     icon: "construct-outline",
     color: "#F59E0B",
   },
-  { name: "Salary", type: "Income", icon: "cash-outline", color: "#16A34A" },
+  { name: "Salary", type: "income", icon: "cash-outline", color: "#16A34A" },
   {
     name: "Freelance",
-    type: "Income",
+    type: "income",
     icon: "briefcase-outline",
     color: "#2DD4BF",
   },
   {
     name: "Business",
-    type: "Income",
+    type: "income",
     icon: "business-outline",
     color: "#174E78",
   },
   {
     name: "Investment",
-    type: "Income",
+    type: "income",
     icon: "trending-up-outline",
     color: "#22C55E",
   },
-  { name: "Gift", type: "Income", icon: "gift-outline", color: "#F472B6" },
+  { name: "Gift", type: "income", icon: "gift-outline", color: "#F472B6" },
   {
     name: "Other Income",
-    type: "Income",
+    type: "income",
     icon: "wallet-outline",
     color: "#FBBF24",
   },
@@ -275,21 +284,12 @@ function fallbackIconFor(type) {
 
 function CategoryRow({ category, onDelete, colors }) {
   return (
-    <View
-      style={[
-        styles.categoryRow,
-        {
-          borderTopColor: colors.divider,
-        },
-      ]}
-    >
+    <View style={[styles.categoryRow, { borderTopColor: colors.divider }]}>
       <View style={styles.categoryLeft}>
         <View
           style={[
             styles.iconCircle,
-            {
-              backgroundColor: category.color || colors.primary,
-            },
+            { backgroundColor: category.color || colors.primary },
           ]}
         >
           <Text style={styles.categoryIcon}>
@@ -297,14 +297,7 @@ function CategoryRow({ category, onDelete, colors }) {
           </Text>
         </View>
 
-        <Text
-          style={[
-            styles.categoryName,
-            {
-              color: colors.textMuted,
-            },
-          ]}
-        >
+        <Text style={[styles.categoryName, { color: colors.textMuted }]}>
           {category.name}
         </Text>
       </View>
@@ -312,21 +305,9 @@ function CategoryRow({ category, onDelete, colors }) {
       <Pressable
         onPress={() => onDelete(category.id)}
         hitSlop={8}
-        style={[
-          styles.deleteButton,
-          {
-            backgroundColor: colors.divider,
-          },
-        ]}
+        style={[styles.deleteButton, { backgroundColor: colors.divider }]}
       >
-        <Text
-          style={[
-            styles.deleteButtonText,
-            {
-              color: colors.textFaint,
-            },
-          ]}
-        >
+        <Text style={[styles.deleteButtonText, { color: colors.textFaint }]}>
           ×
         </Text>
       </Pressable>
@@ -341,31 +322,12 @@ function CategorySection({ title, categories, onDelete, colors }) {
     <View
       style={[
         styles.sectionCard,
-        {
-          backgroundColor: colors.card,
-          borderColor: colors.cardBorder,
-        },
+        { backgroundColor: colors.card, borderColor: colors.cardBorder },
       ]}
     >
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: colors.text,
-          },
-        ]}
-      >
-        {title}
-      </Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
 
-      <Text
-        style={[
-          styles.sectionSubtitle,
-          {
-            color: colors.textFaint,
-          },
-        ]}
-      >
+      <Text style={[styles.sectionSubtitle, { color: colors.textFaint }]}>
         {count} {count === 1 ? "category" : "categories"}
       </Text>
 
@@ -382,14 +344,7 @@ function CategorySection({ title, categories, onDelete, colors }) {
         </View>
       ) : (
         <View style={styles.emptyState}>
-          <Text
-            style={[
-              styles.emptyText,
-              {
-                color: colors.textFaint,
-              },
-            ]}
-          >
+          <Text style={[styles.emptyText, { color: colors.textFaint }]}>
             No categories yet.
           </Text>
         </View>
@@ -438,6 +393,8 @@ export default function Categories() {
       loadCategories();
     }
   }, [fontsLoaded]);
+
+  const allCategories = [...incomeCategories, ...expenseCategories];
 
   const loadCategories = async () => {
     try {
@@ -583,25 +540,17 @@ export default function Categories() {
       "Delete Category",
       "Are you sure you want to delete this category?",
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-
+        { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
-
           onPress: async () => {
             try {
               await deleteCategory(id);
-
               Alert.alert("Success", "Category deleted successfully.");
-
               await loadCategories();
             } catch (error) {
               console.log("Delete category error:", error);
-
               Alert.alert(
                 "Error",
                 error.message || "Unable to delete category.",
@@ -616,24 +565,11 @@ export default function Categories() {
   if (!fontsLoaded || loading) {
     return (
       <SafeAreaView
-        style={[
-          styles.screen,
-          {
-            backgroundColor: colors.background,
-          },
-        ]}
+        style={[styles.screen, { backgroundColor: colors.background }]}
       >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-
-          <Text
-            style={[
-              styles.loadingText,
-              {
-                color: colors.textMuted,
-              },
-            ]}
-          >
+          <Text style={[styles.loadingText, { color: colors.textMuted }]}>
             Loading categories...
           </Text>
         </View>
@@ -643,12 +579,7 @@ export default function Categories() {
 
   return (
     <SafeAreaView
-      style={[
-        styles.screen,
-        {
-          backgroundColor: colors.background,
-        },
-      ]}
+      style={[styles.screen, { backgroundColor: colors.background }]}
     >
       <ScrollView
         contentContainerStyle={styles.container}
@@ -664,47 +595,20 @@ export default function Categories() {
       >
         <View style={styles.header}>
           <View>
-            <Text
-              style={[
-                styles.heading,
-                {
-                  color: colors.text,
-                },
-              ]}
-            >
+            <Text style={[styles.heading, { color: colors.text }]}>
               Categories
             </Text>
-
-            <Text
-              style={[
-                styles.subheading,
-                {
-                  color: colors.textMuted,
-                },
-              ]}
-            >
+            <Text style={[styles.subheading, { color: colors.textMuted }]}>
               Organize income and spending so patterns are easy to spot.
             </Text>
           </View>
 
           <TouchableOpacity
-            style={[
-              styles.addButton,
-              {
-                backgroundColor: colors.primary,
-              },
-            ]}
+            style={[styles.addButton, { backgroundColor: colors.primary }]}
             onPress={() => setShowAddModal(true)}
             activeOpacity={0.8}
           >
-            <Text
-              style={[
-                styles.addButtonText,
-                {
-                  color: colors.primaryText,
-                },
-              ]}
-            >
+            <Text style={[styles.addButtonText, { color: colors.primaryText }]}>
               + New category
             </Text>
           </TouchableOpacity>
@@ -735,12 +639,7 @@ export default function Categories() {
         }}
       >
         <View
-          style={[
-            styles.modalOverlay,
-            {
-              backgroundColor: colors.overlay,
-            },
-          ]}
+          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
         >
           <View
             style={[
@@ -844,7 +743,7 @@ export default function Categories() {
 
                       <View style={styles.presetGrid}>
                         {CATEGORY_PRESETS.filter(
-                          (preset) => preset.type === presetType,
+                          (preset) => preset.type === presetType.toLowerCase(),
                         ).map((preset) => {
                           const isAdded = existingNames.has(
                             preset.name.toLowerCase(),
@@ -1267,7 +1166,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 14,
   },
 
   modalTitle: {
@@ -1386,14 +1285,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
   },
 
-  presetRow: {
-    flexDirection: "row",
-    gap: 8,
-    paddingVertical: 2,
-    paddingRight: 6,
-  },
-
-  presetChip: {
+  dropdownButton: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
