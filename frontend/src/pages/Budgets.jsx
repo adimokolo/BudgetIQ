@@ -1,37 +1,39 @@
-import { useEffect, useState } from 'react';
-import apiClient from '../api/client';
-import { useAuth } from '../context/AuthContext';
-import Modal from '../components/Modal';
-import Skeleton from '../components/Skeleton';
-import KebabMenu from '../components/KebabMenu';
-import { getIcon, fallbackIconFor } from '../utils/categoryIcons';
-import { formatCurrency } from '../utils/format';
-import { TRANSACTION_CREATED_EVENT } from '../components/AddTransactionModal';
+import { useEffect, useState } from "react";
+import apiClient from "../api/client";
+import { useAuth } from "../context/AuthContext";
+import Modal from "../components/Modal";
+import Skeleton from "../components/Skeleton";
+import KebabMenu from "../components/KebabMenu";
+import { getIcon, fallbackIconFor } from "../utils/categoryIcons";
+import { formatCurrency } from "../utils/format";
+import { TRANSACTION_CREATED_EVENT } from "../components/AddTransactionModal";
 
 export default function Budgets() {
   const { user } = useAuth();
-  const currency = user?.currency || 'NGN';
+  const currency = user?.currency || "NGN";
 
   const [budgets, setBudgets] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null); // null = creating, object = editing
-  const [form, setForm] = useState({ categoryId: '', monthlyLimit: '' });
+  const [form, setForm] = useState({ categoryId: "", monthlyLimit: "" });
   const [error, setError] = useState(null);
 
   const loadBudgets = () => {
     setLoading(true);
     apiClient
-      .get('/budgets')
+      .get("/budgets")
       .then((res) => setBudgets(res.data.budgets))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    apiClient.get('/categories').then((res) =>
-      setCategories(res.data.categories.filter((c) => c.type === 'expense'))
-    );
+    apiClient
+      .get("/categories")
+      .then((res) =>
+        setCategories(res.data.categories.filter((c) => c.type === "expense")),
+      );
     loadBudgets();
   }, []);
 
@@ -39,19 +41,21 @@ export default function Budgets() {
     const handler = () => loadBudgets();
     window.addEventListener(TRANSACTION_CREATED_EVENT, handler);
     return () => window.removeEventListener(TRANSACTION_CREATED_EVENT, handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openCreateModal = () => {
     setEditingBudget(null);
-    setForm({ categoryId: '', monthlyLimit: '' });
+    setForm({ categoryId: "", monthlyLimit: "" });
     setError(null);
     setModalOpen(true);
   };
 
   const openEditModal = (budget) => {
     setEditingBudget(budget);
-    setForm({ categoryId: budget.category_id || '', monthlyLimit: String(budget.monthly_limit) });
+    setForm({
+      categoryId: budget.category_id || "",
+      monthlyLimit: String(budget.monthly_limit),
+    });
     setError(null);
     setModalOpen(true);
   };
@@ -65,22 +69,22 @@ export default function Budgets() {
           monthlyLimit: Number(form.monthlyLimit),
         });
       } else {
-        await apiClient.post('/budgets', {
+        await apiClient.post("/budgets", {
           categoryId: form.categoryId || null,
           monthlyLimit: Number(form.monthlyLimit),
         });
       }
       setModalOpen(false);
       setEditingBudget(null);
-      setForm({ categoryId: '', monthlyLimit: '' });
+      setForm({ categoryId: "", monthlyLimit: "" });
       loadBudgets();
     } catch (err) {
-      setError(err.response?.data?.error || 'Could not save budget.');
+      setError(err.response?.data?.error || "Could not save budget.");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Remove this budget limit?')) return;
+    if (!window.confirm("Remove this budget limit?")) return;
     await apiClient.delete(`/budgets/${id}`);
     loadBudgets();
   };
@@ -108,59 +112,91 @@ export default function Budgets() {
           ))}
         </div>
       ) : budgets.length === 0 ? (
-        <div className="facet-card empty-state">No budgets yet — set a monthly limit to start tracking.</div>
+        <div className="facet-card empty-state">
+          No budgets yet — set a monthly limit to start tracking.
+        </div>
       ) : (
         <div className="grid grid--stats">
           {budgets.map((b) => {
             const over = b.percent_used >= 100;
             return (
               <div className="facet-card" key={b.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 14.5 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      fontWeight: 600,
+                      fontSize: 14.5,
+                    }}
+                  >
                     <span
                       style={{
                         width: 30,
                         height: 30,
-                        borderRadius: '50%',
-                        background: b.category_color || '#647089',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        borderRadius: "50%",
+                        background: b.category_color || "#647089",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         flexShrink: 0,
                         fontSize: 14,
                       }}
                     >
                       {getIcon(
-                        categories.find((c) => String(c.id) === String(b.category_id))?.icon ||
-                        fallbackIconFor('expense')
+                        categories.find(
+                          (c) => String(c.id) === String(b.category_id),
+                        )?.icon || fallbackIconFor("expense"),
                       )}
                     </span>
-                    {b.category_name || 'Overall'}
+                    {b.category_name || "Overall"}
                   </span>
                   <KebabMenu
-                    ariaLabel={`Options for ${b.category_name || 'Overall'} budget`}
+                    ariaLabel={`Options for ${b.category_name || "Overall"} budget`}
                     items={[
-                      { label: 'Edit limit', onClick: () => openEditModal(b) },
-                      { label: 'Delete', danger: true, onClick: () => handleDelete(b.id) },
+                      { label: "Edit limit", onClick: () => openEditModal(b) },
+                      {
+                        label: "Delete",
+                        danger: true,
+                        onClick: () => handleDelete(b.id),
+                      },
                     ]}
                   />
                 </div>
 
-                <div className="stat-value" style={{ fontSize: 20, marginTop: 12 }}>
-                  {formatCurrency(b.spent_this_month, currency)}{' '}
-                  <span style={{ fontSize: 13, color: 'var(--ink-faint)', fontWeight: 400 }}>
+                <div
+                  className="stat-value"
+                  style={{ fontSize: 20, marginTop: 12 }}
+                >
+                  {formatCurrency(b.spent_this_month, currency)}{" "}
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color: "var(--ink-faint)",
+                      fontWeight: 400,
+                    }}
+                  >
                     / {formatCurrency(b.monthly_limit, currency)}
                   </span>
                 </div>
 
                 <div className="progress-track">
                   <div
-                    className={`progress-fill${over ? ' progress-fill--over' : ''}`}
+                    className={`progress-fill${over ? " progress-fill--over" : ""}`}
                     style={{ width: `${Math.min(100, b.percent_used)}%` }}
                   />
                 </div>
                 <p className="helper-text" style={{ marginTop: 8 }}>
-                  {over ? `${b.percent_used}% used — over limit` : `${b.percent_used}% of monthly limit used`}
+                  {over
+                    ? `${b.percent_used}% used — over limit`
+                    : `${b.percent_used}% of monthly limit used`}
                 </p>
               </div>
             );
@@ -169,14 +205,19 @@ export default function Budgets() {
       )}
 
       {modalOpen && (
-        <Modal title={editingBudget ? 'Edit budget limit' : 'Set a budget limit'} onClose={() => setModalOpen(false)}>
+        <Modal
+          title={editingBudget ? "Edit budget limit" : "Set a budget limit"}
+          onClose={() => setModalOpen(false)}
+        >
           <form onSubmit={handleSubmit}>
             <div className="field">
               <label htmlFor="budgetCategory">Category</label>
               <select
                 id="budgetCategory"
                 value={form.categoryId}
-                onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, categoryId: e.target.value })
+                }
                 disabled={Boolean(editingBudget)}
               >
                 <option value="">Overall spending</option>
@@ -187,7 +228,10 @@ export default function Budgets() {
                 ))}
               </select>
               {editingBudget && (
-                <p className="helper-text">Category can't be changed on an existing budget — delete and create a new one instead.</p>
+                <p className="helper-text">
+                  Category can't be changed on an existing budget — delete and
+                  create a new one instead.
+                </p>
               )}
             </div>
             <div className="field">
@@ -198,13 +242,19 @@ export default function Budgets() {
                 min="1"
                 step="0.01"
                 value={form.monthlyLimit}
-                onChange={(e) => setForm({ ...form, monthlyLimit: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, monthlyLimit: e.target.value })
+                }
                 required
               />
             </div>
-            {error && <p className="error-text" style={{ marginBottom: 12 }}>{error}</p>}
+            {error && (
+              <p className="error-text" style={{ marginBottom: 12 }}>
+                {error}
+              </p>
+            )}
             <button className="btn btn--primary btn--block" type="submit">
-              {editingBudget ? 'Save changes' : 'Save budget'}
+              {editingBudget ? "Save changes" : "Save budget"}
             </button>
           </form>
         </Modal>

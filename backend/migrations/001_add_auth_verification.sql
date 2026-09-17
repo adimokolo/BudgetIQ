@@ -1,8 +1,3 @@
--- Migration: adds email verification (OTP) and forgot-password support
--- to a database that was created before this feature existed.
--- Safe to run on a fresh database too (schema.sql already includes all of this).
---
--- Run with: psql -h $PGHOST -U $PGUSER -d $PGDATABASE -f migrations/001_add_auth_verification.sql
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT FALSE;
 
@@ -29,6 +24,4 @@ CREATE TABLE IF NOT EXISTS password_resets (
 
 CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (user_id);
 
--- Mark any pre-existing test users (created before verification existed) as
--- already verified, so they aren't suddenly locked out.
 UPDATE users SET is_verified = TRUE WHERE is_verified = FALSE;

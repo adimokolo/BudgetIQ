@@ -42,7 +42,6 @@
   }
 }
 
-/* ---- Sidebar (the "crystal rail") ---- */
 .sidebar {
   padding: 26px 18px;
   display: flex;
@@ -133,7 +132,6 @@
   gap: 10px;
 }
 
-/* ---- Profile menu (top-right avatar + dropdown) ---- */
 .profile-menu {
   position: relative;
 }
@@ -150,7 +148,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: box-shadow 0.2s ease, transform 0.15s ease;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
 }
 
 .avatar-trigger:hover {
@@ -171,7 +171,7 @@
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 15px;
-  color: #FFFFFF;
+  color: #ffffff;
   background: var(--brand-gradient);
   width: 100%;
   height: 100%;
@@ -197,7 +197,7 @@
   position: absolute;
   inset: auto 0 0 0;
   background: rgba(6, 12, 22, 0.55);
-  color: #FFFFFF;
+  color: #ffffff;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -256,7 +256,6 @@
   width: 100%;
 }
 
-/* ---- Notification bell ---- */
 .notification-menu {
   position: relative;
 }
@@ -275,7 +274,7 @@
   padding: 0 4px;
   border-radius: 999px;
   background: var(--expense);
-  color: #FFFFFF;
+  color: #ffffff;
   font-size: 10px;
   font-weight: 700;
   display: flex;
@@ -386,7 +385,9 @@
   font-size: 10.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .theme-segmented-btn span:first-child {
@@ -539,12 +540,13 @@
   color: var(--ink-faint);
 }
 
-/* ---- Skeleton loaders ---- */
 .skeleton {
-  background: linear-gradient(90deg,
-      var(--surface-strong) 25%,
-      var(--surface-border) 37%,
-      var(--surface-strong) 63%);
+  background: linear-gradient(
+    90deg,
+    var(--surface-strong) 25%,
+    var(--surface-border) 37%,
+    var(--surface-strong) 63%
+  );
   background-size: 400% 100%;
   animation: skeleton-shimmer 1.4s ease infinite;
 }
@@ -617,7 +619,7 @@
 
 .auth-logo-tagline {
   font-size: 12.5px;
-  /* was baked into the image at ~10px equivalent - bumped up for readability */
+
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -685,7 +687,6 @@
   padding: 20px;
 }
 
-
 .modal-card {
   width: 100%;
   max-width: 440px;
@@ -694,13 +695,13 @@
   overflow: visible;
 }
 
-.modal-card>form {
+.modal-card > form {
   max-height: calc(94vh - 110px);
   overflow-y: auto;
   padding-right: 4px;
 }
 
-.modal-card>form {
+.modal-card > form {
   max-height: calc(94vh - 110px);
   overflow-y: auto;
   padding-right: 4px;
@@ -727,7 +728,6 @@
   line-height: 1;
 }
 
-/* ---- Kebab (3-dot) menu ---- */
 .kebab-menu {
   position: relative;
 }
@@ -774,7 +774,6 @@
   color: var(--expense);
 }
 
-/* ---- Floating quick-add button ---- */
 .fab {
   position: fixed;
   right: 32px;
@@ -784,7 +783,7 @@
   border-radius: 50%;
   border: none;
   background: var(--brand-gradient);
-  color: #FFFFFF;
+  color: #ffffff;
   font-size: 28px;
   font-weight: 400;
   line-height: 1;
@@ -794,7 +793,9 @@
   cursor: pointer;
   box-shadow: 0 10px 28px rgba(11, 76, 130, 0.35);
   z-index: 45;
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
 }
 
 .fab:hover {
@@ -812,7 +813,6 @@
   }
 }
 
-/* ---- Settings page ---- */
 .settings-page {
   max-width: 640px;
 }
@@ -878,7 +878,6 @@
   padding: 0;
 }
 
-/* Currency picker modal - taller, scrollable list */
 .currency-picker-list {
   max-height: 380px;
   overflow-y: auto;
@@ -960,7 +959,6 @@
   padding: 0 4px 12px;
 }
 
-/* Generic modal action row (used by delete-account confirm, etc.) */
 .modal__actions {
   display: flex;
   justify-content: flex-end;
@@ -968,12 +966,9 @@
   margin-top: 4px;
 }
 
-/* Currency picker modal needs more height than the default modal-card */
-.currency-picker-list~* {
+.currency-picker-list ~ * {
   margin-top: 0;
 }
-
-/* Transaction category picker */
 
 .category-picker-trigger {
   width: 100%;
@@ -1036,7 +1031,9 @@
   font-size: 13px;
 
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .category-picker-chip:hover {
@@ -1086,8 +1083,6 @@
   color: var(--ink);
   border-color: var(--prism-1);
 }
-
-/* Account color picker */
 
 .account-color-info {
   display: flex;

@@ -1,11 +1,4 @@
-/* ==========================================================================
-   BudgetIQ — "Crystal Clear" design system
-   Signature: faceted glass cards with a clipped corner and a prism-gradient
-   edge that only fully resolves on hover — money you can see straight through.
-   ========================================================================== */
-
 :root {
-  /* ---- Light mode (default): sunlit ice / cut-glass on frost ---- */
   --bg: #f3f8fe;
   --bg-radial: radial-gradient(
     circle at 15% 0%,
@@ -24,11 +17,11 @@
   --ink-faint: #7e8ca3;
 
   --prism-1: #38c6ff;
-  /* cyan facet   */
+
   --prism-2: #8c6bff;
-  /* violet facet */
+
   --prism-3: #35e6c0;
-  /* mint facet   */
+
   --prism-gradient: linear-gradient(
     115deg,
     var(--prism-1) 0%,
@@ -36,8 +29,6 @@
     var(--prism-3) 100%
   );
 
-  /* Brand blues sampled directly from the BudgetIQ logo, used for primary actions
-     so buttons read as part of the same mark instead of an unrelated accent. */
   --brand-mid: #0f71b4;
   --brand-deep: #073e6e;
   --brand-gradient: linear-gradient(
@@ -177,7 +168,6 @@ select option {
   color: white;
 }
 
-/* Visible focus ring for keyboard navigation, respected everywhere */
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
@@ -194,12 +184,6 @@ select option {
   }
 }
 
-/* ---------------------------------------------------------------------
-   Facet Card — the signature element.
-   A glass panel with one clipped ("cut") corner and a prism-gradient
-   border that sits dim until hover, when it sweeps to full brightness —
-   like tilting a gemstone to catch the light.
-   --------------------------------------------------------------------- */
 .facet-card {
   position: relative;
   background: var(--surface);
@@ -253,8 +237,6 @@ select option {
   overflow: hidden;
 }
 
-/* Prism divider used as a section rule where it means something (a boundary
-   between periods / categories), not as decoration everywhere. */
 .prism-rule {
   height: 2px;
   border: none;
@@ -263,7 +245,6 @@ select option {
   opacity: 0.5;
 }
 
-/* Pill badges for trend / status */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -289,7 +270,6 @@ select option {
   color: var(--warning);
 }
 
-/* Buttons */
 .btn {
   font-family: var(--font-body);
   font-weight: 600;

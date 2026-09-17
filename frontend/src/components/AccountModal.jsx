@@ -1,33 +1,31 @@
-// frontend/src/components/AccountModal.jsx
-
-import { useState } from 'react';
-import { createAccount, updateAccount } from '../services/accounts';
-import { ALL_CURRENCIES } from '../utils/currency';
+import { useState } from "react";
+import { createAccount, updateAccount } from "../services/accounts";
+import { ALL_CURRENCIES } from "../utils/currency";
 
 const ACCOUNT_COLORS = [
-  '#6366F1',
-  '#2563EB',
-  '#06B6D4',
-  '#10B981',
-  '#22C55E',
-  '#84CC16',
-  '#EAB308',
-  '#F97316',
-  '#EF4444',
-  '#EC4899',
-  '#A855F7',
-  '#64748B',
+  "#6366F1",
+  "#2563EB",
+  "#06B6D4",
+  "#10B981",
+  "#22C55E",
+  "#84CC16",
+  "#EAB308",
+  "#F97316",
+  "#EF4444",
+  "#EC4899",
+  "#A855F7",
+  "#64748B",
 ];
 
 export default function AccountModal({ account, onClose }) {
   const isEditing = !!account;
 
   const [form, setForm] = useState({
-    name: account?.name || '',
-    currency: account?.currency || 'NGN',
-    initialAmount: account?.initialAmount || '',
-    notes: account?.notes || '',
-    color: account?.color || '#6366F1',
+    name: account?.name || "",
+    currency: account?.currency || "NGN",
+    initialAmount: account?.initialAmount || "",
+    notes: account?.notes || "",
+    color: account?.color || "#6366F1",
   });
 
   const [loading, setLoading] = useState(false);
@@ -54,7 +52,7 @@ export default function AccountModal({ account, onClose }) {
 
       onClose();
     } catch (err) {
-      setError(err.error || 'Something went wrong.');
+      setError(err.error || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -63,12 +61,11 @@ export default function AccountModal({ account, onClose }) {
   return (
     <div className="modal-backdrop">
       <div className="modal-card">
-        <h2>{isEditing ? 'Edit Account' : 'Add Account'}</h2>
+        <h2>{isEditing ? "Edit Account" : "Add Account"}</h2>
 
         {error && <p className="error-text">{error}</p>}
 
         <form onSubmit={handleSubmit}>
-          {/* Account Name */}
           <div className="field">
             <label>Account Name</label>
             <input
@@ -80,7 +77,6 @@ export default function AccountModal({ account, onClose }) {
             />
           </div>
 
-          {/* Currency */}
           <div className="field">
             <label>Currency</label>
             <select
@@ -96,7 +92,6 @@ export default function AccountModal({ account, onClose }) {
             </select>
           </div>
 
-          {/* Account Color */}
           <div className="field">
             <label>Account Color</label>
 
@@ -106,9 +101,7 @@ export default function AccountModal({ account, onClose }) {
                 style={{ backgroundColor: form.color }}
               />
 
-              <span>
-                Choose a color to help identify this account.
-              </span>
+              <span>Choose a color to help identify this account.</span>
             </div>
 
             <div className="account-color-picker">
@@ -119,10 +112,9 @@ export default function AccountModal({ account, onClose }) {
                   <button
                     key={color}
                     type="button"
-                    className={`account-color-swatch${isSelected
-                        ? ' account-color-swatch--selected'
-                        : ''
-                      }`}
+                    className={`account-color-swatch${
+                      isSelected ? " account-color-swatch--selected" : ""
+                    }`}
                     style={{ backgroundColor: color }}
                     onClick={() =>
                       setForm((prev) => ({
@@ -138,7 +130,6 @@ export default function AccountModal({ account, onClose }) {
             </div>
           </div>
 
-          {/* Opening Balance */}
           <div className="field">
             <label>Opening Balance</label>
             <input
@@ -152,7 +143,6 @@ export default function AccountModal({ account, onClose }) {
             />
           </div>
 
-          {/* Notes */}
           <div className="field">
             <label>Notes (optional)</label>
             <input
@@ -163,13 +153,8 @@ export default function AccountModal({ account, onClose }) {
             />
           </div>
 
-          {/* Actions */}
           <div className="modal__actions">
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={onClose}
-            >
+            <button type="button" className="btn btn--ghost" onClick={onClose}>
               Cancel
             </button>
 
@@ -178,11 +163,7 @@ export default function AccountModal({ account, onClose }) {
               className="btn btn--primary"
               disabled={loading}
             >
-              {loading
-                ? 'Saving…'
-                : isEditing
-                  ? 'Save Changes'
-                  : 'Add Account'}
+              {loading ? "Saving…" : isEditing ? "Save Changes" : "Add Account"}
             </button>
           </div>
         </form>

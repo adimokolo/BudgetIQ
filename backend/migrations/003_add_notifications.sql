@@ -1,6 +1,3 @@
--- Adds in-app notifications, starting with budget-exceeded alerts (the same
--- event that triggers the email alert also writes one of these).
--- Run with: psql -h $PGHOST -U $PGUSER -d $PGDATABASE -f migrations/003_add_notifications.sql
 
 CREATE TABLE IF NOT EXISTS notifications (
     id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

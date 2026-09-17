@@ -13,8 +13,6 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Prefill the email (and check the box) if a previous login remembered it -
-  // this only ever stores the email itself, never the password.
   useEffect(() => {
     const remembered = localStorage.getItem(REMEMBERED_EMAIL_KEY);
     if (remembered) {

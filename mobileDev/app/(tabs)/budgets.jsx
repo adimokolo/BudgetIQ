@@ -51,7 +51,6 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useCurrency } from "../../contexts/CurrencyContext";
 import { formatCurrency, getCurrencySymbol } from "../../utils/currency";
 
-// Fallback emoji whenever a category predates icons (same logic as Categories).
 function fallbackIconFor(type) {
   return type?.toLowerCase() === "income" ? "💵" : "🏷️";
 }
@@ -325,9 +324,6 @@ function BudgetCard({ budget, currency, onEdit, onDelete, colors }) {
 export default function Budgets() {
   const { colors } = useTheme();
 
-  // Base currency now comes from the shared CurrencyContext (populated
-  // from Profile / signup) instead of a separate getCurrentUser() call
-  // here, so it stays in sync with every other screen.
   const { baseCurrency: currency, currencyReady } = useCurrency();
 
   const [fontsLoaded] = useFonts({
