@@ -7,19 +7,19 @@
  * @returns {{ predictedAmount: number, trend: 'up'|'down'|'flat', confidence: 'low'|'medium'|'high' }}
  */
 function predictNextMonth(monthlyTotals) {
-  const values = (monthlyTotals || []).filter((v) => typeof v === 'number' && !Number.isNaN(v));
+  const values = (monthlyTotals || []).filter(
+    (v) => typeof v === "number" && !Number.isNaN(v),
+  );
 
   if (values.length === 0) {
-    return { predictedAmount: 0, trend: 'flat', confidence: 'low' };
+    return { predictedAmount: 0, trend: "flat", confidence: "low" };
   }
 
   if (values.length < 3) {
-    // Not enough history for a trend line - use a simple average as a safe estimate.
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    return { predictedAmount: round2(avg), trend: 'flat', confidence: 'low' };
+    return { predictedAmount: round2(avg), trend: "flat", confidence: "low" };
   }
 
-  // Least squares linear regression: y = a + b*x
   const n = values.length;
   const xs = values.map((_, i) => i);
   const sumX = xs.reduce((a, b) => a + b, 0);
@@ -31,13 +31,14 @@ function predictNextMonth(monthlyTotals) {
   const slope = denominator === 0 ? 0 : (n * sumXY - sumX * sumY) / denominator;
   const intercept = (sumY - slope * sumX) / n;
 
-  const nextX = n; // the next, unseen month
+  const nextX = n;
   let predicted = intercept + slope * nextX;
-  predicted = Math.max(0, predicted); // spending can't be negative
+  predicted = Math.max(0, predicted);
 
   const avg = sumY / n;
-  const trend = Math.abs(slope) < avg * 0.02 ? 'flat' : slope > 0 ? 'up' : 'down';
-  const confidence = n >= 6 ? 'high' : 'medium';
+  const trend =
+    Math.abs(slope) < avg * 0.02 ? "flat" : slope > 0 ? "up" : "down";
+  const confidence = n >= 6 ? "high" : "medium";
 
   return { predictedAmount: round2(predicted), trend, confidence };
 }

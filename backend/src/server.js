@@ -1,9 +1,5 @@
 require("dotenv").config();
 
-// =========================================================
-// MONO KEY CHECK
-// =========================================================
-
 const monoKey = process.env.MONO_SEC_KEY?.trim();
 
 console.log("========== MONO KEY CHECK ==========");
@@ -17,19 +13,11 @@ console.log({
 
 console.log("====================================");
 
-// =========================================================
-// IMPORTS
-// =========================================================
-
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const path = require("path");
-
-// =========================================================
-// ROUTES
-// =========================================================
 
 const authRoutes = require("./routes/auth");
 const categoryRoutes = require("./routes/categories");
@@ -41,21 +29,9 @@ const accountRoutes = require("./routes/accounts");
 const notificationRoutes = require("./routes/notifications");
 const bankSyncRoutes = require("./routes/bankSync");
 
-// =========================================================
-// APP
-// =========================================================
-
 const app = express();
 
-// =========================================================
-// SECURITY
-// =========================================================
-
 app.use(helmet());
-
-// =========================================================
-// CORS
-// =========================================================
 
 app.use(
   cors({
@@ -65,27 +41,11 @@ app.use(
   }),
 );
 
-// =========================================================
-// BODY PARSER
-// =========================================================
-
 app.use(express.json());
-
-// =========================================================
-// LOGGING
-// =========================================================
 
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
-// =========================================================
-// STATIC FILES
-// =========================================================
-
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// =========================================================
-// HEALTH CHECK
-// =========================================================
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -95,43 +55,23 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// =========================================================
-// API ROUTES
-// =========================================================
-
-// Authentication
 app.use("/api/auth", authRoutes);
 
-// Categories
 app.use("/api/categories", categoryRoutes);
 
-// Transactions
 app.use("/api/transactions", transactionRoutes);
 
-// Budgets
 app.use("/api/budgets", budgetRoutes);
 
-// Dashboard
 app.use("/api/dashboard", dashboardRoutes);
 
-// Profile
 app.use("/api/profile", profileRoutes);
 
-// Notifications
 app.use("/api/notifications", notificationRoutes);
 
-// Manual accounts
 app.use("/api/accounts", accountRoutes);
 
-// =========================================================
-// BANK SYNCHRONIZATION / MONO
-// =========================================================
-
 app.use("/api/bank-sync", bankSyncRoutes);
-
-// =========================================================
-// 404 HANDLER
-// =========================================================
 
 app.use((req, res) => {
   console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
@@ -144,11 +84,6 @@ app.use((req, res) => {
   });
 });
 
-// =========================================================
-// CENTRAL ERROR HANDLER
-// =========================================================
-
-// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error("========================================");
 
@@ -163,10 +98,6 @@ app.use((err, req, res, next) => {
     error: err.message || "Something went wrong on our end. Please try again.",
   });
 });
-
-// =========================================================
-// SERVER
-// =========================================================
 
 const PORT = process.env.PORT || 5000;
 
@@ -187,9 +118,5 @@ app.listen(PORT, "0.0.0.0", () => {
 
   console.log("========================================");
 });
-
-// =========================================================
-// EXPORT APP
-// =========================================================
 
 module.exports = app;

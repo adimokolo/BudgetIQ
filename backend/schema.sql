@@ -1,9 +1,7 @@
--- BudgetIQ Database Schema (PostgreSQL / Amazon RDS)
--- Run with: psql -h $PGHOST -U $PGUSER -d $PGDATABASE -f schema.sql
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Users
+
 CREATE TABLE IF NOT EXISTS users (
     id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     full_name     VARCHAR(120) NOT NULL,
@@ -17,11 +15,6 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 
-/*
-|--------------------------------------------------------------------------
-| ACCOUNTS
-|--------------------------------------------------------------------------
-*/
 
 CREATE TABLE IF NOT EXISTS accounts (
   id SERIAL PRIMARY KEY,
@@ -47,8 +40,6 @@ BEFORE UPDATE ON accounts
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
--- One-time codes emailed to verify a user's address after registration.
--- code_hash stores sha256(code), never the plaintext code.
 CREATE TABLE IF NOT EXISTS otp_codes (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -61,8 +52,6 @@ CREATE TABLE IF NOT EXISTS otp_codes (
 
 CREATE INDEX IF NOT EXISTS idx_otp_codes_user ON otp_codes (user_id, purpose);
 
--- Password reset tokens. token_hash stores sha256(token) - the raw token is
--- only ever emailed to the user, never persisted.
 CREATE TABLE IF NOT EXISTS password_resets (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -74,7 +63,6 @@ CREATE TABLE IF NOT EXISTS password_resets (
 
 CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (user_id);
 
--- Categories (each user has their own set; a few seeded as defaults on signup)
 CREATE TABLE IF NOT EXISTS categories (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -86,7 +74,6 @@ CREATE TABLE IF NOT EXISTS categories (
     UNIQUE (user_id, name, type)
 );
 
--- Transactions
 CREATE TABLE IF NOT EXISTS transactions (
     id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -102,7 +89,6 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions (user_id, occurred_on DESC);
 CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions (category_id);
 
--- Budgets (a monthly spending limit per category, or an overall limit when category_id is NULL)
 CREATE TABLE IF NOT EXISTS budgets (
     id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -114,7 +100,6 @@ CREATE TABLE IF NOT EXISTS budgets (
     UNIQUE (user_id, category_id)
 );
 
--- In-app notifications (starting with budget-exceeded alerts).
 CREATE TABLE IF NOT EXISTS notifications (
     id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -128,7 +113,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_user_created
     ON notifications (user_id, created_at DESC);
 
--- Keep updated_at fresh
+
 
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$

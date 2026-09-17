@@ -78,9 +78,6 @@ const createTransaction = asyncHandler(async (req, res) => {
     await client.query("BEGIN");
 
     if (accountId) {
-      // Lock the account row and confirm it belongs to this user before
-      // touching its balance — prevents pointing a transaction at someone
-      // else's account.
       const accountResult = await client.query(
         "SELECT id FROM accounts WHERE id = $1 AND user_id = $2 FOR UPDATE",
         [accountId, req.user.id],
@@ -128,9 +125,6 @@ const createTransaction = asyncHandler(async (req, res) => {
   res.status(201).json({ transaction });
 });
 
-// Emails the user once per budget per calendar month the first time their
-// spend crosses that budget's limit. Covers both category-specific budgets
-// and the "overall" budget (category_id IS NULL).
 async function checkBudgetAlerts(userId, categoryId) {
   try {
     const budgetsResult = await pool.query(
@@ -234,16 +228,12 @@ const updateTransaction = asyncHandler(async (req, res) => {
     }
     const existing = existingResult.rows[0];
 
-    // accountId/amount are optional in the payload (COALESCE-style update);
-    // distinguish "not sent" from "explicitly cleared" so we don't
-    // accidentally re-apply the old account when the caller didn't touch it.
     const nextAccountId =
       accountId !== undefined ? accountId : existing.account_id;
     const nextAmount =
       amount !== undefined ? Number(amount) : Number(existing.amount);
-    const type = existing.type; // type isn't editable via this route today
+    const type = existing.type;
 
-    // Reverse the old transaction's effect on its old account, if any.
     if (existing.account_id) {
       const reverseDelta =
         existing.type === "income"
@@ -255,7 +245,6 @@ const updateTransaction = asyncHandler(async (req, res) => {
       );
     }
 
-    // Apply the (possibly same, possibly new) account's new effect.
     if (nextAccountId) {
       const accountCheck = await client.query(
         "SELECT id FROM accounts WHERE id = $1 AND user_id = $2 FOR UPDATE",

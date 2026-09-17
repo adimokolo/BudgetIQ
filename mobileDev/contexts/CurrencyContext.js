@@ -29,10 +29,6 @@ export function CurrencyProvider({ children }) {
   const [baseCurrency, setBaseCurrencyState] = useState(DEFAULT_CURRENCY);
   const [currencyReady, setCurrencyReady] = useState(false);
 
-  // Tracks the currency we know the server has, so screens like
-  // Profile can safely skip re-syncing a value we already applied
-  // (this replaces any per-screen "hasSynced" ref, which resets on
-  // every remount and can stomp a locally-changed value).
   const knownServerCurrency = useRef(null);
 
   useEffect(() => {
@@ -54,7 +50,6 @@ export function CurrencyProvider({ children }) {
     async (code) => {
       const previousCurrency = baseCurrency;
 
-      // Optimistic update so the UI feels instant.
       setBaseCurrencyState(code);
 
       try {
@@ -65,7 +60,6 @@ export function CurrencyProvider({ children }) {
       } catch (error) {
         console.log("Failed to persist base currency:", error);
 
-        // Roll back so the UI doesn't silently show an unsaved value.
         setBaseCurrencyState(previousCurrency);
 
         try {
@@ -86,11 +80,6 @@ export function CurrencyProvider({ children }) {
     [baseCurrency],
   );
 
-  // Call this when you fetch the user's profile from the server
-  // (e.g. on Profile screen load) instead of calling setBaseCurrency
-  // directly. It only updates local state when the server value is
-  // actually different from what we last confirmed, so it can't
-  // undo a change the user just made that's still in flight.
   const hydrateBaseCurrency = useCallback((code) => {
     if (!code) {
       return;

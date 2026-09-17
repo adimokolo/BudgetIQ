@@ -4,11 +4,6 @@ const router = express.Router();
 
 const MONO_API_URL = "https://api.withmono.com";
 
-/**
- * ==========================================
- * BANK SYNC HEALTH CHECK
- * ==========================================
- */
 router.get("/health", (req, res) => {
   res.json({
     success: true,
@@ -17,11 +12,6 @@ router.get("/health", (req, res) => {
   });
 });
 
-/**
- * ==========================================
- * INITIATE MONO BANK CONNECTION
- * ==========================================
- */
 router.post("/initiate", async (req, res) => {
   try {
     const secretKey = process.env.MONO_SEC_KEY;
@@ -138,11 +128,6 @@ router.post("/initiate", async (req, res) => {
   }
 });
 
-/**
- * ==========================================
- * AUTHORIZE MONO ACCOUNT
- * ==========================================
- */
 router.post("/accounts", async (req, res) => {
   try {
     const secretKey = process.env.MONO_SEC_KEY;
@@ -210,11 +195,6 @@ router.post("/accounts", async (req, res) => {
   }
 });
 
-/**
- * ==========================================
- * GET MONO ACCOUNT
- * ==========================================
- */
 router.get("/account/:accountId", async (req, res) => {
   try {
     const secretKey = process.env.MONO_SEC_KEY;
@@ -278,11 +258,6 @@ router.get("/account/:accountId", async (req, res) => {
   }
 });
 
-/**
- * ==========================================
- * GET MONO ACCOUNT TRANSACTIONS
- * ==========================================
- */
 router.get("/account/:accountId/transactions", async (req, res) => {
   try {
     const secretKey = process.env.MONO_SEC_KEY;
@@ -348,11 +323,6 @@ router.get("/account/:accountId/transactions", async (req, res) => {
   }
 });
 
-/**
- * ==========================================
- * MONO WEBHOOK
- * ==========================================
- */
 router.post("/webhook", async (req, res) => {
   try {
     console.log("====================================");

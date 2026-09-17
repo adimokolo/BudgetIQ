@@ -55,8 +55,6 @@ const SWATCHES = [
   "#16A34A",
   "#F472B6",
 ];
-
-// Emoji icon set (used for both the custom-icon grid and preset/preview rendering)
 const EMOJI_OPTIONS = [
   "🍔",
   "🍽️",
@@ -100,9 +98,6 @@ const EMOJI_OPTIONS = [
   "❤️",
 ];
 
-// These keys are still saved to the shared backend, so the web and mobile
-// apps remain compatible. Mobile renders the same filled emoji-style icons
-// used by the frontend instead of thin platform outlines.
 const ICON_MAP = {
   "fast-food-outline": "🍔",
   "restaurant-outline": "🍽️",
@@ -148,8 +143,6 @@ const ICON_MAP = {
   "pricetag-outline": "🏷️",
 };
 
-// Store stable icon keys in the backend; getIcon converts them to emojis for
-// display. This keeps Categories, Transactions, Budgets, and Dashboard aligned.
 const ICON_OPTIONS = Object.keys(ICON_MAP).filter(
   (iconName) => iconName !== "pricetag-outline",
 );
@@ -157,7 +150,6 @@ const ICON_OPTIONS = Object.keys(ICON_MAP).filter(
 function getIcon(iconName) {
   if (!iconName) return ICON_MAP["pricetag-outline"];
 
-  // Also display legacy records that may already contain a raw emoji.
   if (EMOJI_OPTIONS.includes(iconName)) return iconName;
 
   const normalizedName = iconName.endsWith("-outline")

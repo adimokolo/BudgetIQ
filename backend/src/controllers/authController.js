@@ -65,12 +65,6 @@ const DEFAULT_CATEGORIES = [
   },
 ];
 
-/*
-|--------------------------------------------------------------------------
-| JWT
-|--------------------------------------------------------------------------
-*/
-
 function signToken(user) {
   return jwt.sign(
     {
@@ -84,12 +78,6 @@ function signToken(user) {
   );
 }
 
-/*
-|--------------------------------------------------------------------------
-| ISSUE EMAIL VERIFICATION OTP
-|--------------------------------------------------------------------------
-*/
-
 async function issueOtp(client, userId, email, fullName) {
   const code = generateOtp();
 
@@ -101,11 +89,6 @@ async function issueOtp(client, userId, email, fullName) {
     [userId, hashSecret(code), minutesFromNow(OTP_TTL_MINUTES)],
   );
 
-  /*
-   * Log OTP during development.
-   * This allows mobile testing even when SMTP is unavailable.
-   */
-
   if (process.env.NODE_ENV !== "production") {
     console.log("");
     console.log("========================================");
@@ -116,13 +99,6 @@ async function issueOtp(client, userId, email, fullName) {
     console.log("========================================");
     console.log("");
   }
-
-  /*
-   * Send email.
-   *
-   * In development, don't prevent registration if SMTP fails.
-   * The OTP is already available in the terminal.
-   */
 
   try {
     await sendEmail({
@@ -170,12 +146,6 @@ async function issueOtp(client, userId, email, fullName) {
     console.log(`🔐 DEVELOPMENT OTP: ${code}`);
   }
 }
-
-/*
-|--------------------------------------------------------------------------
-| REGISTER
-|--------------------------------------------------------------------------
-*/
 
 const register = asyncHandler(async (req, res) => {
   const { fullName, email, password, currency } = req.body;
@@ -275,12 +245,6 @@ const register = asyncHandler(async (req, res) => {
     client.release();
   }
 });
-
-/*
-|--------------------------------------------------------------------------
-| VERIFY EMAIL OTP
-|--------------------------------------------------------------------------
-*/
 
 const verifyOTP = asyncHandler(async (req, res) => {
   const { email, code, otp } = req.body;
@@ -401,12 +365,6 @@ const verifyOTP = asyncHandler(async (req, res) => {
   });
 });
 
-/*
-|--------------------------------------------------------------------------
-| RESEND EMAIL VERIFICATION OTP
-|--------------------------------------------------------------------------
-*/
-
 const resendOTP = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
@@ -476,12 +434,6 @@ const resendOTP = asyncHandler(async (req, res) => {
   });
 });
 
-/*
-|--------------------------------------------------------------------------
-| LOGIN
-|--------------------------------------------------------------------------
-*/
-
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -543,12 +495,6 @@ const login = asyncHandler(async (req, res) => {
     user,
   });
 });
-
-/*
-|--------------------------------------------------------------------------
-| FORGOT PASSWORD — RESET LINK
-|--------------------------------------------------------------------------
-*/
 
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
@@ -634,12 +580,6 @@ This link expires in ${RESET_TOKEN_TTL_MINUTES} minutes.
     message: "If that email is registered, a reset link has been sent.",
   });
 });
-
-/*
-|--------------------------------------------------------------------------
-| RESET PASSWORD — RESET LINK
-|--------------------------------------------------------------------------
-*/
 
 const resetPassword = asyncHandler(async (req, res) => {
   const { email, token, newPassword } = req.body;
@@ -738,12 +678,6 @@ const resetPassword = asyncHandler(async (req, res) => {
     message: "Password updated. You can now log in with your new password.",
   });
 });
-
-/*
-|--------------------------------------------------------------------------
-| FORGOT PASSWORD — OTP
-|--------------------------------------------------------------------------
-*/
 
 const forgotPasswordOtp = asyncHandler(async (req, res) => {
   const { email } = req.body;
@@ -852,12 +786,6 @@ It expires in ${OTP_TTL_MINUTES} minutes.
   });
 });
 
-/*
-|--------------------------------------------------------------------------
-| VERIFY PASSWORD RESET OTP
-|--------------------------------------------------------------------------
-*/
-
 const verifyResetOtp = asyncHandler(async (req, res) => {
   const { email, code, otp } = req.body;
 
@@ -919,12 +847,6 @@ const verifyResetOtp = asyncHandler(async (req, res) => {
     verified: true,
   });
 });
-
-/*
-|--------------------------------------------------------------------------
-| RESET PASSWORD — OTP
-|--------------------------------------------------------------------------
-*/
 
 const resetPasswordWithOtp = asyncHandler(async (req, res) => {
   const { email, code, otp, newPassword } = req.body;
@@ -1028,12 +950,6 @@ const resetPasswordWithOtp = asyncHandler(async (req, res) => {
   });
 });
 
-/*
-|--------------------------------------------------------------------------
-| CURRENT USER
-|--------------------------------------------------------------------------
-*/
-
 const me = asyncHandler(async (req, res) => {
   const result = await pool.query(
     `
@@ -1061,12 +977,6 @@ const me = asyncHandler(async (req, res) => {
     user: result.rows[0],
   });
 });
-
-/*
-|--------------------------------------------------------------------------
-| MOBILE PROFILE AVATAR
-|--------------------------------------------------------------------------
-*/
 
 const uploadAvatar = asyncHandler(async (req, res) => {
   if (!req.file) {
@@ -1107,12 +1017,6 @@ const uploadAvatar = asyncHandler(async (req, res) => {
   });
 });
 
-/*
-|--------------------------------------------------------------------------
-| WEB PROFILE AVATAR
-|--------------------------------------------------------------------------
-*/
-
 const updateAvatar = asyncHandler(async (req, res) => {
   const { avatarDataUrl } = req.body;
 
@@ -1125,10 +1029,6 @@ const updateAvatar = asyncHandler(async (req, res) => {
       error: "A valid image is required.",
     });
   }
-
-  /*
-   * Guard against excessively large images.
-   */
 
   if (avatarDataUrl.length > 600000) {
     return res.status(413).json({
@@ -1162,12 +1062,6 @@ const updateAvatar = asyncHandler(async (req, res) => {
     user: result.rows[0],
   });
 });
-
-/*
-|--------------------------------------------------------------------------
-| CHANGE PASSWORD
-|--------------------------------------------------------------------------
-*/
 
 const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
@@ -1217,17 +1111,6 @@ const changePassword = asyncHandler(async (req, res) => {
   });
 });
 
-/*
-|--------------------------------------------------------------------------
-| UPDATE BASE CURRENCY
-|--------------------------------------------------------------------------
-|
-| Relabels how amounts are displayed going forward.
-| Does not convert or recalculate historical transaction,
-| budget, or account amounts.
-|--------------------------------------------------------------------------
-*/
-
 const updateCurrency = asyncHandler(async (req, res) => {
   const { currency } = req.body;
 
@@ -1261,17 +1144,6 @@ const updateCurrency = asyncHandler(async (req, res) => {
   return res.json({ user: result.rows[0] });
 });
 
-/*
-|--------------------------------------------------------------------------
-| DELETE ACCOUNT
-|--------------------------------------------------------------------------
-|
-| Permanent, not reversible. Every table referencing users(id) is
-| ON DELETE CASCADE in schema.sql, so this single delete cleans up
-| accounts, categories, transactions, budgets, notifications,
-| otp_codes, and password_resets automatically.
-|--------------------------------------------------------------------------
-*/
 const deleteAccount = asyncHandler(async (req, res) => {
   const { password } = req.body;
 
@@ -1300,47 +1172,28 @@ const deleteAccount = asyncHandler(async (req, res) => {
   return res.json({ message: "Your account has been permanently deleted." });
 });
 
-/*
-|--------------------------------------------------------------------------
-| EXPORTS
-|--------------------------------------------------------------------------
-|
-| IMPORTANT:
-| deleteAccount is exported ONLY ONCE because the same backend
-| controller is shared by the web frontend and mobile app.
-|--------------------------------------------------------------------------
-*/
-
 module.exports = {
   register,
 
-  // Email verification
   verifyOTP,
   resendOTP,
 
-  // Login
   login,
 
-  // Password reset — link
   forgotPassword,
   resetPassword,
 
-  // Password reset — OTP
   forgotPasswordOtp,
   verifyResetOtp,
   resetPasswordWithOtp,
 
-  // Current user
   me,
 
-  // Account deletion
   deleteAccount,
 
-  // Avatars
   uploadAvatar,
   updateAvatar,
 
-  // Settings
   changePassword,
   updateCurrency,
 };

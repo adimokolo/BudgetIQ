@@ -1,12 +1,11 @@
-// frontend/src/components/BankSyncModal.jsx
-import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { initiateSync } from '../services/bankSync';
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { initiateSync } from "../services/bankSync";
 
 export default function BankSyncModal({ onClose }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
+  const [error, setError] = useState(null);
 
   const handleConnect = async () => {
     setError(null);
@@ -17,13 +16,12 @@ export default function BankSyncModal({ onClose }) {
         email: user.email,
       });
 
-      // Mono returns a link — open it in a new tab
       if (data.link) {
-        window.open(data.link, '_blank');
+        window.open(data.link, "_blank");
         onClose();
       }
     } catch (err) {
-      setError(err.error || 'Unable to connect bank. Try again.');
+      setError(err.error || "Unable to connect bank. Try again.");
     } finally {
       setLoading(false);
     }
@@ -34,8 +32,8 @@ export default function BankSyncModal({ onClose }) {
       <div className="modal-card">
         <h2>🏦 Sync Your Bank Account</h2>
         <p>
-          Connect your Nigerian bank account securely via Mono.
-          Your credentials are never stored by BudgetIQ.
+          Connect your Nigerian bank account securely via Mono. Your credentials
+          are never stored by BudgetIQ.
         </p>
 
         {error && <p className="error-text">{error}</p>}
@@ -49,7 +47,7 @@ export default function BankSyncModal({ onClose }) {
             onClick={handleConnect}
             disabled={loading}
           >
-            {loading ? 'Connecting…' : 'Connect Bank'}
+            {loading ? "Connecting…" : "Connect Bank"}
           </button>
         </div>
       </div>

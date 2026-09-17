@@ -1,8 +1,7 @@
-// frontend/src/services/accounts.js
-import apiClient from '../api/client';
+import apiClient from "../api/client";
 
 export const getAccounts = async () => {
-  const response = await apiClient.get('/accounts');
+  const response = await apiClient.get("/accounts");
   return response.data;
 };
 
@@ -11,23 +10,21 @@ export const createAccount = async ({
   currency,
   initialAmount,
   notes,
-  color
+  color,
 }) => {
-
-
-  const response = await apiClient.post('/accounts', {
+  const response = await apiClient.post("/accounts", {
     name,
     currency,
     initialAmount,
     notes,
-    color
+    color,
   });
   return response.data;
 };
 
 export const updateAccount = async (
   accountId,
-  { name, currency, initialAmount, notes, color }
+  { name, currency, initialAmount, notes, color },
 ) => {
   const response = await apiClient.put(`/accounts/${accountId}`, {
     name,

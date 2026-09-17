@@ -14,12 +14,6 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../contexts/ThemeContext";
 
-/*
-|--------------------------------------------------------------------------
-| UPDATE THESE DETAILS BEFORE PUBLISHING
-|--------------------------------------------------------------------------
-*/
-
 const LEGAL_DETAILS = {
   operatorName: "BudgetIQ",
   businessAddress: "Lagos, Nigeria",
@@ -27,12 +21,6 @@ const LEGAL_DETAILS = {
   privacyEmail: "privacy@budgetiq.app",
   website: "https://budgetiq.app",
 };
-
-/*
-|--------------------------------------------------------------------------
-| TERMS OF SERVICE
-|--------------------------------------------------------------------------
-*/
 
 const TERMS_SECTIONS = [
   {
@@ -291,12 +279,6 @@ const TERMS_SECTIONS = [
   },
 ];
 
-/*
-|--------------------------------------------------------------------------
-| PRIVACY POLICY
-|--------------------------------------------------------------------------
-*/
-
 const PRIVACY_SECTIONS = [
   {
     title: "Introduction",
@@ -539,12 +521,6 @@ const PRIVACY_SECTIONS = [
     ],
   },
 ];
-
-/*
-|--------------------------------------------------------------------------
-| SCREEN
-|--------------------------------------------------------------------------
-*/
 
 export default function TermsAndPrivacyScreen() {
   const router = useRouter();

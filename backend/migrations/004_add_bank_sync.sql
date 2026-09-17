@@ -1,4 +1,3 @@
--- BudgetIQ bank synchronization (Mono)
 
 CREATE TABLE IF NOT EXISTS mono_webhook_events (
     event_id VARCHAR(180) PRIMARY KEY,

@@ -230,7 +230,6 @@ export default function LoginScreen() {
 
           <Text style={styles.label}>Password</Text>
 
-          {/* Password input with eye button */}
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
@@ -408,13 +407,6 @@ const createStyles = (colors) =>
       color: colors.text,
       marginBottom: 16,
     },
-
-    /*
-    |--------------------------------------------------------------------------
-    | PASSWORD INPUT
-    |--------------------------------------------------------------------------
-    */
-
     passwordContainer: {
       width: "100%",
       position: "relative",
