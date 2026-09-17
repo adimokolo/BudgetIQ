@@ -163,6 +163,19 @@ export default function SignupScreen() {
     setTermsAccepted((current) => !current);
   };
 
+  const openLegalSection = (section) => {
+    if (loading) {
+      return;
+    }
+
+    router.push({
+      pathname: "/terms-and-privacy",
+      params: {
+        section,
+      },
+    });
+  };
+
   const handleSignup = async () => {
     if (!fullName.trim()) {
       Alert.alert("Full Name Required", "Please enter your full name.");
@@ -357,24 +370,41 @@ export default function SignupScreen() {
             styles={styles}
           />
 
-          <TouchableOpacity
-            style={styles.termsRow}
-            onPress={handleTermsToggle}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            <View
+          <View style={styles.termsRow}>
+            <TouchableOpacity
               style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}
+              onPress={handleTermsToggle}
+              disabled={loading}
+              activeOpacity={0.8}
+              accessibilityRole="checkbox"
+              accessibilityLabel="Accept the Terms of Service and Privacy Policy"
+              accessibilityState={{
+                checked: termsAccepted,
+                disabled: loading,
+              }}
             >
               {termsAccepted && <Text style={styles.checkmark}>✓</Text>}
-            </View>
+            </TouchableOpacity>
 
             <Text style={styles.termsText}>
               I agree to the{" "}
-              <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
-              <Text style={styles.termsLink}>Privacy Policy</Text>
+              <Text
+                style={styles.termsLink}
+                onPress={() => openLegalSection("terms")}
+                accessibilityRole="link"
+              >
+                Terms of Service
+              </Text>{" "}
+              and{" "}
+              <Text
+                style={styles.termsLink}
+                onPress={() => openLegalSection("privacy")}
+                accessibilityRole="link"
+              >
+                Privacy Policy
+              </Text>
             </Text>
-          </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={[styles.signupButton, loading && styles.buttonDisabled]}
@@ -683,6 +713,7 @@ const createStyles = (colors) =>
     termsLink: {
       color: colors.primary,
       fontFamily: "Inter_600SemiBold",
+      textDecorationLine: "underline",
     },
 
     signupButton: {
