@@ -4,7 +4,7 @@ BudgetIQ is a full-stack personal finance and expense-tracking application desig
 
 The project currently includes a **React web application**, a **Node.js/Express REST API**, and an **Expo/React Native mobile application** under active development.
 
-Built by **Adim Barnabas Okolo**, **Pedro Olatunde**, and **Murtala Adedapo** as a portfolio and production-oriented project.
+Built by **Adim Barnabas Okolo** and **Pedro Olatunde** as a portfolio and production-oriented project.
 
 ---
 
