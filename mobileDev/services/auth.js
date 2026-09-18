@@ -1,7 +1,24 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "./api";
-import { TOKEN_KEY, USER_KEY } from "./constants";
-import * as ImagePicker from "expo-image-picker";
+import api, { saveToken, readToken, removeToken } from "./api";
+import { USER_KEY } from "./constants";
+
+// Logs only safe fields, and only in development.
+// Never log the raw axios error: it includes request headers (JWT) and body (passwords).
+const logApiError = (label, error) => {
+  if (!__DEV__) return;
+
+  console.log(`${label}:`, {
+    message: error?.message,
+    status: error?.response?.status,
+    data: error?.response?.data,
+  });
+};
+
+// Normalises whatever went wrong into an object with a `message`.
+const toApiError = (error, fallbackMessage) =>
+  error?.response?.data || {
+    message: error?.message || fallbackMessage,
+  };
 
 export const registerUser = async (userData) => {
   try {
@@ -9,15 +26,9 @@ export const registerUser = async (userData) => {
 
     return response.data;
   } catch (error) {
-    console.log("REGISTER API ERROR:", error);
-    console.log("STATUS:", error.response?.status);
-    console.log("DATA:", error.response?.data);
+    logApiError("REGISTER API ERROR", error);
 
-    throw (
-      error.response?.data || {
-        message: error.message || "Registration failed",
-      }
-    );
+    throw toApiError(error, "Registration failed");
   }
 };
 
@@ -30,10 +41,8 @@ export const verifyOTP = async (email, otp) => {
 
     const data = response.data;
 
-    console.log("OTP VERIFICATION RESPONSE:", data);
-
     if (data.token) {
-      await AsyncStorage.setItem(TOKEN_KEY, data.token);
+      await saveToken(data.token);
     }
 
     if (data.user) {
@@ -42,15 +51,9 @@ export const verifyOTP = async (email, otp) => {
 
     return data;
   } catch (error) {
-    console.log("OTP VERIFICATION ERROR:", error);
-    console.log("STATUS:", error.response?.status);
-    console.log("DATA:", error.response?.data);
+    logApiError("OTP VERIFICATION ERROR", error);
 
-    throw (
-      error.response?.data || {
-        message: error.message || "OTP verification failed",
-      }
-    );
+    throw toApiError(error, "OTP verification failed");
   }
 };
 
@@ -62,13 +65,9 @@ export const resendOTP = async (email) => {
 
     return response.data;
   } catch (error) {
-    console.log("RESEND OTP ERROR:", error);
+    logApiError("RESEND OTP ERROR", error);
 
-    throw (
-      error.response?.data || {
-        message: error.message || "Unable to resend OTP",
-      }
-    );
+    throw toApiError(error, "Unable to resend OTP");
   }
 };
 
@@ -81,10 +80,8 @@ export const loginUser = async (email, password) => {
 
     const data = response.data;
 
-    console.log("LOGIN RESPONSE:", data);
-
     if (data.token) {
-      await AsyncStorage.setItem(TOKEN_KEY, data.token);
+      await saveToken(data.token);
     }
 
     if (data.user) {
@@ -93,30 +90,31 @@ export const loginUser = async (email, password) => {
 
     return data;
   } catch (error) {
-    console.log("LOGIN API ERROR:", error);
-    console.log("STATUS:", error.response?.status);
-    console.log("DATA:", error.response?.data);
+    logApiError("LOGIN API ERROR", error);
 
-    throw (
-      error.response?.data || {
-        message: error.message || "Login failed",
-      }
-    );
+    throw toApiError(error, "Login failed");
   }
 };
 
 export const getToken = async () => {
-  return await AsyncStorage.getItem(TOKEN_KEY);
+  return await readToken();
 };
 
 export const getSavedUser = async () => {
-  const user = await AsyncStorage.getItem(USER_KEY);
+  try {
+    const user = await AsyncStorage.getItem(USER_KEY);
 
-  return user ? JSON.parse(user) : null;
+    return user ? JSON.parse(user) : null;
+  } catch (error) {
+    // Corrupted or unreadable saved user: treat as logged out
+    await AsyncStorage.removeItem(USER_KEY);
+
+    return null;
+  }
 };
 
 export const logoutUser = async () => {
-  await AsyncStorage.removeItem(TOKEN_KEY);
+  await removeToken();
   await AsyncStorage.removeItem(USER_KEY);
 };
 
@@ -126,13 +124,9 @@ export const getCurrentUser = async () => {
 
     return response.data;
   } catch (error) {
-    console.log("GET CURRENT USER ERROR:", error);
+    logApiError("GET CURRENT USER ERROR", error);
 
-    throw (
-      error.response?.data || {
-        message: error.message || "Unable to get current user",
-      }
-    );
+    throw toApiError(error, "Unable to get current user");
   }
 };
 
@@ -140,21 +134,11 @@ export const deleteAccount = async () => {
   try {
     const response = await api.delete("/auth/account");
 
-    console.log("DELETE ACCOUNT RESPONSE:", response.data);
-
     return response.data;
   } catch (error) {
-    console.log("DELETE ACCOUNT API ERROR:", error);
+    logApiError("DELETE ACCOUNT API ERROR", error);
 
-    console.log("DELETE ACCOUNT STATUS:", error?.response?.status);
-
-    console.log("DELETE ACCOUNT DATA:", error?.response?.data);
-
-    throw (
-      error?.response?.data || {
-        message: error?.message || "Unable to delete your account.",
-      }
-    );
+    throw toApiError(error, "Unable to delete your account.");
   }
 };
 
@@ -166,11 +150,9 @@ export const forgotPassword = async (email) => {
 
     return response.data;
   } catch (error) {
-    throw (
-      error.response?.data || {
-        message: error.message || "Unable to process password reset",
-      }
-    );
+    logApiError("FORGOT PASSWORD ERROR", error);
+
+    throw toApiError(error, "Unable to process password reset");
   }
 };
 
@@ -183,11 +165,9 @@ export const verifyResetOTP = async (email, otp) => {
 
     return response.data;
   } catch (error) {
-    throw (
-      error.response?.data || {
-        message: error.message || "Unable to verify reset OTP",
-      }
-    );
+    logApiError("VERIFY RESET OTP ERROR", error);
+
+    throw toApiError(error, "Unable to verify reset OTP");
   }
 };
 
@@ -201,11 +181,9 @@ export const resetPassword = async (email, otp, newPassword) => {
 
     return response.data;
   } catch (error) {
-    throw (
-      error.response?.data || {
-        message: error.message || "Unable to reset password",
-      }
-    );
+    logApiError("RESET PASSWORD ERROR", error);
+
+    throw toApiError(error, "Unable to reset password");
   }
 };
 
@@ -217,14 +195,8 @@ export const uploadAvatar = async (avatarDataUrl) => {
 
     return response.data;
   } catch (error) {
-    console.log("UPLOAD AVATAR ERROR:", error);
-    console.log("STATUS:", error.response?.status);
-    console.log("DATA:", error.response?.data);
+    logApiError("UPLOAD AVATAR ERROR", error);
 
-    throw (
-      error.response?.data || {
-        message: error.message || "Unable to upload profile picture",
-      }
-    );
+    throw toApiError(error, "Unable to upload profile picture");
   }
 };
