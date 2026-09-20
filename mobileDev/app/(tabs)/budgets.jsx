@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -354,6 +354,16 @@ export default function Budgets() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // FIX: only the very first load blocks the screen with the loading card.
+  // Every later focus refetches silently, so the list never blanks out.
+  const hasLoadedOnce = useRef(false);
+
+  // Sum of every budget's monthly limit. Recalculates whenever `budgets` changes.
+  const totalBudget = budgets.reduce(
+    (sum, budget) => sum + Number(budget.monthly_limit || 0),
+    0,
+  );
+
   const loadBudgets = useCallback(async (showLoader = true) => {
     try {
       if (showLoader) {
@@ -397,19 +407,18 @@ export default function Budgets() {
           "Something went wrong while loading your budgets.",
       );
     } finally {
-      if (showLoader) {
-        setLoading(false);
-      }
+      hasLoadedOnce.current = true;
+      setLoading(false);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      loadBudgets(true);
+      loadBudgets(!hasLoadedOnce.current);
     }, [loadBudgets]),
   );
 
-  const refreshBudgets = async () => {
+  const refreshBudgets = useCallback(async () => {
     try {
       setRefreshing(true);
 
@@ -419,7 +428,7 @@ export default function Budgets() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [loadBudgets]);
 
   const resetForm = () => {
     setSelectedCategory(null);
@@ -520,7 +529,8 @@ export default function Budgets() {
       resetForm();
       setShowAddModal(false);
 
-      await loadBudgets(true);
+      // Refresh in place rather than blanking the list behind a spinner.
+      await loadBudgets(false);
     } catch (error) {
       console.log("Save budget error:", error);
 
@@ -642,27 +652,42 @@ export default function Budgets() {
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.addButton,
-              {
-                backgroundColor: colors.primary,
-              },
-            ]}
-            onPress={openAddModal}
-            disabled={loading}
-          >
-            <Text
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: colors.primary }]}
+              onPress={openAddModal}
+              disabled={loading}
+            >
+              <Text
+                style={[styles.addButtonText, { color: colors.primaryText }]}
+              >
+                + Set budget
+              </Text>
+            </TouchableOpacity>
+
+            <View
               style={[
-                styles.addButtonText,
+                styles.totalBox,
                 {
-                  color: colors.primaryText,
+                  backgroundColor: colors.card,
+                  borderColor: colors.cardBorder,
                 },
               ]}
             >
-              + Set budget
-            </Text>
-          </TouchableOpacity>
+              <Text style={[styles.totalLabel, { color: colors.textFaint }]}>
+                Total
+              </Text>
+
+              <Text
+                style={[styles.totalValue, { color: colors.text }]}
+                numberOfLines={1}
+              >
+                {loading || !currencyReady
+                  ? "—"
+                  : formatCurrency(totalBudget, currency)}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {loading || !currencyReady ? (
@@ -1023,6 +1048,7 @@ const styles = StyleSheet.create({
   headerTextContainer: {
     flex: 1,
   },
+
   heading: {
     fontSize: 18,
     fontFamily: "SpaceGrotesk_700Bold",
@@ -1035,12 +1061,38 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
 
-  addButton: {
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
     marginTop: 15,
+  },
+
+  totalBox: {
+    flexShrink: 1,
+    alignItems: "flex-end",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+
+  totalLabel: {
+    fontSize: 9,
+    fontFamily: "Inter_500Medium",
+  },
+
+  totalValue: {
+    fontSize: 12,
+    fontFamily: "JetBrainsMono_500Medium",
+    marginTop: 1,
+  },
+
+  addButton: {
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 10,
-    alignSelf: "flex-start",
   },
 
   addButtonText: {
@@ -1135,7 +1187,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Same colored-circle and emoji treatment used by Categories.
   iconCircle: {
     width: 34,
     height: 34,

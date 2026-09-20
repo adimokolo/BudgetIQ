@@ -121,6 +121,17 @@ export default function Account() {
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [currencySearch, setCurrencySearch] = useState("");
 
+  const totalAccountBalance = accounts.reduce(
+    (sum, account) => sum + Number(account.balance || 0),
+    0,
+  );
+
+  const totalCurrency =
+    currentUser?.currency ||
+    currentUser?.base_currency ||
+    accounts[0]?.currency ||
+    "NGN";
+
   const getCurrencySymbol = (code) => {
     try {
       const formatted = formatCurrency(0, code);
@@ -579,26 +590,51 @@ export default function Account() {
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.addButton,
-              {
-                backgroundColor: colors.primary,
-              },
-            ]}
-            onPress={openAddModal}
-          >
-            <Text
+          <View style={styles.headerActions}>
+            <TouchableOpacity
               style={[
-                styles.addButtonText,
+                styles.addButton,
                 {
-                  color: colors.primaryText,
+                  backgroundColor: colors.primary,
+                },
+              ]}
+              onPress={openAddModal}
+            >
+              <Text
+                style={[
+                  styles.addButtonText,
+                  {
+                    color: colors.primaryText,
+                  },
+                ]}
+              >
+                + Add account
+              </Text>
+            </TouchableOpacity>
+
+            <View
+              style={[
+                styles.totalBox,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.cardBorder,
                 },
               ]}
             >
-              + Add account
-            </Text>
-          </TouchableOpacity>
+              <Text style={[styles.totalLabel, { color: colors.textFaint }]}>
+                Total balance
+              </Text>
+
+              <Text
+                style={[styles.totalValue, { color: colors.text }]}
+                numberOfLines={1}
+              >
+                {accountsLoading
+                  ? "—"
+                  : formatCurrency(totalAccountBalance, totalCurrency)}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {bankSyncLoading && (
@@ -1815,12 +1851,38 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
 
-  addButton: {
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
     marginTop: 15,
+  },
+
+  totalBox: {
+    flexShrink: 1,
+    alignItems: "flex-end",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+
+  totalLabel: {
+    fontSize: 9,
+    fontFamily: "Inter_500Medium",
+  },
+
+  totalValue: {
+    fontSize: 12,
+    fontFamily: "JetBrainsMono_500Medium",
+    marginTop: 1,
+  },
+
+  addButton: {
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 10,
-    alignSelf: "flex-start",
   },
 
   addButtonText: {

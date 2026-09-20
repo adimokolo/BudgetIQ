@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 
 import {
   View,
@@ -16,6 +22,8 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useFocusEffect } from "expo-router";
 
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -43,6 +51,7 @@ import {
 import {
   getTransactions,
   createTransaction,
+  updateTransaction,
   deleteTransaction as deleteTransactionApi,
 } from "../../services/transactions";
 
@@ -1520,9 +1529,11 @@ function TransactionCard({
   transaction,
   categories,
   currency,
+  onEdit,
   onDelete,
   styles,
 }) {
+  const [showActions, setShowActions] = useState(false);
   const isIncome = transaction.type === "Income";
   const matchedCategory = categories.find(
     (category) =>
@@ -1538,7 +1549,12 @@ function TransactionCard({
     fallbackIconFor(transaction.type);
 
   return (
-    <View style={styles.transactionCard}>
+    <View
+      style={[
+        styles.transactionCard,
+        showActions && styles.transactionCardMenuOpen,
+      ]}
+    >
       <View style={styles.transactionLeft}>
         <View
           style={[
@@ -1581,13 +1597,57 @@ function TransactionCard({
           {formatCurrency(transaction.amount, currency)}
         </Text>
 
-        <Pressable
-          onPress={() => onDelete(transaction.id)}
-          hitSlop={8}
-          style={styles.deleteButton}
-        >
-          <Text style={styles.deleteButtonText}>×</Text>
-        </Pressable>
+        <View style={styles.transactionMenuWrap}>
+          <Pressable
+            onPress={() => setShowActions((current) => !current)}
+            hitSlop={8}
+            style={styles.kebabButton}
+            accessibilityRole="button"
+            accessibilityLabel="Transaction actions"
+          >
+            <Ionicons
+              name="ellipsis-vertical"
+              size={17}
+              style={styles.kebabIcon}
+            />
+          </Pressable>
+
+          {showActions ? (
+            <View style={styles.transactionMenu}>
+              <Pressable
+                style={styles.transactionMenuItem}
+                onPress={() => {
+                  setShowActions(false);
+                  onEdit(transaction);
+                }}
+              >
+                <Ionicons
+                  name="create-outline"
+                  size={16}
+                  style={styles.menuEditIcon}
+                />
+                <Text style={styles.transactionMenuText}>Edit</Text>
+              </Pressable>
+
+              <View style={styles.transactionMenuDivider} />
+
+              <Pressable
+                style={styles.transactionMenuItem}
+                onPress={() => {
+                  setShowActions(false);
+                  onDelete(transaction);
+                }}
+              >
+                <Ionicons
+                  name="trash-outline"
+                  size={16}
+                  style={styles.menuDeleteIcon}
+                />
+                <Text style={styles.transactionMenuDeleteText}>Delete</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
       </View>
     </View>
   );
@@ -1598,6 +1658,8 @@ function mapTransaction(raw) {
     id: raw.id,
 
     title: raw.description || raw.category_name || "Transaction",
+
+    description: raw.description || "",
 
     category: raw.category_name || "Uncategorized",
 
@@ -1650,6 +1712,11 @@ export default function Transactions() {
 
   const currentSystemDate = useMemo(() => getLocalDateString(new Date()), []);
 
+  // FIX: only the very first load blocks the screen with a spinner. Without
+  // this, returning to the tab flashes "Loading transactions..." over data
+  // that is already on screen.
+  const hasLoadedOnce = useRef(false);
+
   const [selectedDate, setSelectedDate] = useState(currentSystemDate);
 
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -1661,6 +1728,8 @@ export default function Transactions() {
   const [filter, setFilter] = useState("All types");
 
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const [editingTransaction, setEditingTransaction] = useState(null);
 
   const [showConverter, setShowConverter] = useState(false);
 
@@ -1706,8 +1775,12 @@ export default function Transactions() {
 
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
-  const loadTransactions = useCallback(async () => {
+  const loadTransactions = useCallback(async (showLoader = true) => {
     try {
+      if (showLoader) {
+        setLoading(true);
+      }
+
       const data = await getTransactions();
 
       console.log("Transactions API response:", data);
@@ -1720,6 +1793,7 @@ export default function Transactions() {
 
       Alert.alert("Error", error.message || "Unable to load transactions.");
     } finally {
+      hasLoadedOnce.current = true;
       setLoading(false);
       setRefreshing(false);
     }
@@ -1752,19 +1826,24 @@ export default function Transactions() {
     }
   }, []);
 
-  useEffect(() => {
-    loadTransactions();
+  // FIX: this screen stays mounted in the tab navigator, so a mount-only
+  // useEffect meant categories added on the Categories tab and accounts added
+  // on the Account tab never appeared in the "Add transaction" modal.
+  useFocusEffect(
+    useCallback(() => {
+      loadTransactions(!hasLoadedOnce.current);
+      loadCategories();
+      loadAccounts();
+    }, [loadTransactions, loadCategories, loadAccounts]),
+  );
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+
+    loadTransactions(false);
     loadCategories();
     loadAccounts();
   }, [loadTransactions, loadCategories, loadAccounts]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-
-    loadTransactions();
-    loadCategories();
-    loadAccounts();
-  };
 
   const categoryOptions = allCategories.filter(
     (c) => c.type?.toLowerCase() === type.toLowerCase(),
@@ -1843,6 +1922,41 @@ export default function Transactions() {
     setDate(new Date());
     setSelectedAccount(null);
     setPendingConvertedResult(null);
+    setEditingTransaction(null);
+  };
+
+  const closeTransactionModal = () => {
+    setShowAddModal(false);
+    resetForm();
+  };
+
+  const openAddTransaction = () => {
+    resetForm();
+    setShowAddModal(true);
+  };
+
+  const openEditTransaction = (transaction) => {
+    const matchedCategory = allCategories.find(
+      (category) => String(category.id) === String(transaction.categoryId),
+    );
+    const matchedAccount = accounts.find(
+      (account) => String(account.id) === String(transaction.accountId),
+    );
+
+    setEditingTransaction(transaction);
+    setType(transaction.type);
+    setAmount(String(transaction.amount));
+    setSelectedCategory(matchedCategory || null);
+    setDescription(transaction.description || "");
+    setDate(
+      transaction.rawDate
+        ? new Date(`${transaction.rawDate}T12:00:00`)
+        : new Date(),
+    );
+    setSelectedAccount(matchedAccount || null);
+    setPendingConvertedResult(null);
+    setShowConverter(false);
+    setShowAddModal(true);
   };
 
   const handleConverterAdd = (convertedResult) => {
@@ -1864,10 +1978,15 @@ export default function Transactions() {
 
   const handleConverterAccountSelect = (account) => {
     setSelectedAccount(account);
-    setAmount(String(pendingConvertedResult?.amount ?? ""));
-    setType("Expense");
+    if (pendingConvertedResult) {
+      setAmount(String(pendingConvertedResult.amount ?? ""));
+      setType("Expense");
+    }
     setShowConverterAccountPicker(false);
-    setShowAddModal(true);
+    if (pendingConvertedResult) {
+      setShowAddModal(true);
+    }
+    setPendingConvertedResult(null);
   };
 
   const handleTypeChange = (newType) => {
@@ -1883,7 +2002,7 @@ export default function Transactions() {
     }
   };
 
-  const addTransaction = async () => {
+  const saveTransaction = async () => {
     if (!amount.trim()) {
       Alert.alert("Missing information", "Please enter an amount.");
 
@@ -1916,31 +2035,57 @@ export default function Transactions() {
 
       console.log("Sending transaction:", payload);
 
-      const response = await createTransaction(payload);
+      const response = editingTransaction
+        ? await updateTransaction(editingTransaction.id, payload)
+        : await createTransaction(payload);
 
       console.log("Create transaction response:", response);
 
-      await loadTransactions();
+      // FIX: accounts are reloaded too, otherwise the balance shown in the
+      // account picker stays at its pre-transaction value.
+      await Promise.all([loadTransactions(false), loadAccounts()]);
 
       resetForm();
 
       setShowAddModal(false);
     } catch (error) {
-      console.log("Add transaction error:", error);
+      console.log("Save transaction error:", error);
 
-      Alert.alert("Error", error.message || "Unable to save transaction.");
+      Alert.alert(
+        "Error",
+        error.message ||
+          `Unable to ${editingTransaction ? "update" : "save"} transaction.`,
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  const deleteTransaction = async (id) => {
+  const deleteTransaction = (transaction) => {
+    Alert.alert(
+      "Delete transaction?",
+      `This will permanently delete “${transaction.title}”.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => confirmDeleteTransaction(transaction.id),
+        },
+      ],
+    );
+  };
+
+  const confirmDeleteTransaction = async (id) => {
     const previous = transactions;
 
     setTransactions((current) => current.filter((t) => t.id !== id));
 
     try {
       await deleteTransactionApi(id);
+
+      // Deleting a transaction moves the account balance back.
+      await loadAccounts();
     } catch (error) {
       console.log("Delete transaction error:", error);
 
@@ -2082,7 +2227,7 @@ export default function Transactions() {
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => setShowAddModal(true)}
+              onPress={openAddTransaction}
               disabled={exporting}
               activeOpacity={0.8}
             >
@@ -2178,6 +2323,7 @@ export default function Transactions() {
                 transaction={transaction}
                 categories={allCategories}
                 currency={currency}
+                onEdit={openEditTransaction}
                 onDelete={deleteTransaction}
                 styles={styles}
                 colors={colors}
@@ -2534,14 +2680,16 @@ export default function Transactions() {
         visible={showAddModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowAddModal(false)}
+        onRequestClose={closeTransactionModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add transaction</Text>
+              <Text style={styles.modalTitle}>
+                {editingTransaction ? "Edit transaction" : "Add transaction"}
+              </Text>
 
-              <Pressable onPress={() => setShowAddModal(false)}>
+              <Pressable onPress={closeTransactionModal}>
                 <Text style={styles.closeButton}>×</Text>
               </Pressable>
             </View>
@@ -2772,13 +2920,17 @@ export default function Transactions() {
 
               <Pressable
                 style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-                onPress={addTransaction}
+                onPress={saveTransaction}
                 disabled={saving}
               >
                 {saving ? (
                   <ActivityIndicator color={colors.primaryText} />
                 ) : (
-                  <Text style={styles.saveButtonText}>Save transaction</Text>
+                  <Text style={styles.saveButtonText}>
+                    {editingTransaction
+                      ? "Update transaction"
+                      : "Save transaction"}
+                  </Text>
                 )}
               </Pressable>
             </ScrollView>
@@ -3121,7 +3273,7 @@ const createStyles = (colors) =>
       borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.cardBorder,
-      overflow: "hidden",
+      overflow: "visible",
       marginBottom: 20,
     },
 
@@ -3216,21 +3368,70 @@ const createStyles = (colors) =>
       color: colors.expense,
     },
 
-    deleteButton: {
+    kebabButton: {
       marginLeft: 10,
-      width: 22,
-      height: 22,
-      borderRadius: 11,
+      width: 28,
+      height: 28,
+      borderRadius: 14,
       backgroundColor: colors.chipBg,
       alignItems: "center",
       justifyContent: "center",
     },
 
-    deleteButtonText: {
-      fontSize: 13,
-      lineHeight: 16,
-      fontFamily: fonts.bodySemiBold,
+    kebabIcon: {
       color: colors.textFaint,
+    },
+
+    transactionMenu: {
+      position: "absolute",
+      right: 0,
+      top: 32,
+      width: 124,
+      paddingVertical: 5,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      backgroundColor: colors.card,
+      shadowColor: "#000000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.14,
+      shadowRadius: 10,
+      elevation: 8,
+      zIndex: 30,
+    },
+
+    transactionMenuItem: {
+      minHeight: 38,
+      paddingHorizontal: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 9,
+    },
+
+    transactionMenuDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.divider,
+      marginHorizontal: 9,
+    },
+
+    transactionMenuText: {
+      fontSize: 12,
+      fontFamily: fonts.bodySemiBold,
+      color: colors.text,
+    },
+
+    transactionMenuDeleteText: {
+      fontSize: 12,
+      fontFamily: fonts.bodySemiBold,
+      color: colors.expense,
+    },
+
+    menuEditIcon: {
+      color: colors.primary,
+    },
+
+    menuDeleteIcon: {
+      color: colors.expense,
     },
 
     emptyState: {

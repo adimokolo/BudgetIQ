@@ -36,19 +36,29 @@ app.use(helmet());
 app.use(
   cors({
     origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
-
     credentials: true,
   }),
 );
 
-app.use(express.json());
+app.use(
+  express.json({
+    limit: "20mb",
+  }),
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "20mb",
+  }),
+);
 
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/api/health", (req, res) => {
-  res.json({
+  return res.json({
     success: true,
     message: "BudgetIQ API is running.",
     environment: process.env.NODE_ENV || "development",
@@ -76,7 +86,7 @@ app.use("/api/bank-sync", bankSyncRoutes);
 app.use((req, res) => {
   console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
 
-  res.status(404).json({
+  return res.status(404).json({
     success: false,
     error: "Route not found.",
     method: req.method,
@@ -86,14 +96,26 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   console.error("========================================");
-
   console.error("SERVER ERROR:");
-
   console.error(err);
-
   console.error("========================================");
 
-  res.status(err.status || 500).json({
+  if (err.type === "entity.too.large" || err.status === 413) {
+    return res.status(413).json({
+      success: false,
+      error:
+        "The selected image is too large. Please select or upload a smaller image.",
+    });
+  }
+
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({
+      success: false,
+      error: "The request contains invalid JSON.",
+    });
+  }
+
+  return res.status(err.status || 500).json({
     success: false,
     error: err.message || "Something went wrong on our end. Please try again.",
   });
@@ -103,19 +125,12 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("========================================");
-
   console.log("       BudgetIQ API Server");
-
   console.log("========================================");
-
   console.log(`Server running on port ${PORT}`);
-
   console.log(`Local: http://localhost:${PORT}`);
-
   console.log(`Health: http://localhost:${PORT}/api/health`);
-
   console.log(`Bank Sync: http://localhost:${PORT}/api/bank-sync/health`);
-
   console.log("========================================");
 });
 
