@@ -23,7 +23,7 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -1690,6 +1690,8 @@ function mapTransaction(raw) {
 }
 
 export default function Transactions() {
+  const router = useRouter();
+
   const { colors } = useTheme();
 
   const { baseCurrency: currency, currencyReady } = useCurrency();
@@ -2108,6 +2110,11 @@ export default function Transactions() {
     setShowExportModal(true);
   };
 
+  const openChartPage = () => {
+    setShowExportMenu(false);
+    router.push("/transaction-chart");
+  };
+
   const getTransactionsForExportRange = async () => {
     if (!exportFromDate || !exportToDate) {
       Alert.alert(
@@ -2266,6 +2273,22 @@ export default function Transactions() {
                     <Text style={styles.exportMenuIcon}>PDF</Text>
 
                     <Text style={styles.exportMenuText}>Export PDF</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.exportMenuItem}
+                    onPress={openChartPage}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.exportMenuIconWrap}>
+                      <Ionicons
+                        name="pie-chart-outline"
+                        size={14}
+                        color={colors.primary}
+                      />
+                    </View>
+
+                    <Text style={styles.exportMenuText}>View chart</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -3184,6 +3207,10 @@ const createStyles = (colors) =>
       fontSize: 11,
       fontFamily: fonts.bodySemiBold,
       color: colors.primary,
+    },
+
+    exportMenuIconWrap: {
+      width: 28,
     },
 
     exportMenuText: {

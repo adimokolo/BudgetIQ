@@ -11,14 +11,14 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { useFonts } from "expo-font";
 
-import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
+import * as DocumentPicker from "expo-document-picker";
 
 import {
   Inter_400Regular,
@@ -55,11 +55,70 @@ import {
 
 import { getCurrentUser } from "../../services/auth";
 
+import { getBankAccounts, refreshBankAccount } from "../../services/bankSync";
 import {
-  startBankSynchronization,
-  getBankAccounts,
-  refreshBankAccount,
-} from "../../services/bankSync";
+  previewStatement,
+  previewEmailAlerts,
+  confirmImport,
+} from "../../services/bankImport";
+
+// Brand-inspired swatches are UI identifiers, not official bank brand assets.
+const NIGERIAN_BANKS = [
+  ["Access Bank", "#F58220"],
+  ["Alternative Bank", "#147D52"],
+  ["Citibank Nigeria", "#056DAE"],
+  ["Ecobank Nigeria", "#146A45"],
+  ["Fidelity Bank", "#207E39"],
+  ["First Bank of Nigeria", "#12458B"],
+  ["First City Monument Bank (FCMB)", "#6C3C90"],
+  ["Globus Bank", "#006D76"],
+  ["Guaranty Trust Bank (GTBank)", "#E85A13"],
+  ["Jaiz Bank", "#14633D"],
+  ["Keystone Bank", "#0B6A8D"],
+  ["Lotus Bank", "#168B71"],
+  ["Nova Bank", "#263B85"],
+  ["Optimus Bank", "#103B78"],
+  ["Parallex Bank", "#1E5595"],
+  ["Polaris Bank", "#234AA2"],
+  ["PremiumTrust Bank", "#0B6779"],
+  ["Providus Bank", "#5E428A"],
+  ["Signature Bank", "#295C8C"],
+  ["Stanbic IBTC Bank", "#125DAA"],
+  ["Standard Chartered Bank Nigeria", "#138E7A"],
+  ["Sterling Bank", "#C9212C"],
+  ["SunTrust Bank", "#DF8D21"],
+  ["TAJBank", "#2B7A55"],
+  ["Titan Trust Bank", "#174C77"],
+  ["Union Bank", "#1484BA"],
+  ["United Bank for Africa (UBA)", "#C91E2F"],
+  ["Unity Bank", "#245F9C"],
+  ["Wema Bank", "#8C367D"],
+  ["Zenith Bank", "#C51E2D"],
+  ["Abbey Mortgage Bank", "#236B7C"],
+  ["AG Mortgage Bank", "#4B6288"],
+  ["Brent Mortgage Bank", "#547184"],
+  ["Delta Trust Mortgage Bank", "#607F95"],
+  ["Federal Mortgage Bank of Nigeria", "#336A92"],
+  ["First Generation Mortgage Bank", "#507690"],
+  ["Gateway Mortgage Bank", "#51738B"],
+  ["Haggai Mortgage Bank", "#586B87"],
+  ["Infinity Trust Mortgage Bank", "#3D7185"],
+  ["Jubilee-Life Mortgage Bank", "#597D8A"],
+  ["Lagos Building Investment Company", "#587C91"],
+  ["LivingTrust Mortgage Bank", "#447F78"],
+  ["Mutual Alliance Mortgage Bank", "#60718C"],
+  ["Nigeria Police Mortgage Bank", "#446B84"],
+  ["Platinum Mortgage Bank", "#4D7193"],
+  ["Refuge Mortgage Bank", "#4D7886"],
+  ["Safetrust Mortgage Bank", "#447887"],
+  ["Trustbond Mortgage Bank", "#496F8C"],
+  ["FBNQuest Merchant Bank", "#31568D"],
+  ["Coronation Merchant Bank", "#8B5D3B"],
+  ["Greenwich Merchant Bank", "#286C59"],
+  ["Rand Merchant Bank Nigeria", "#42658B"],
+  ["Nova Merchant Bank", "#3E4D91"],
+  ["Other Nigerian bank / microfinance bank / fintech", "#64748B"],
+].map(([name, color]) => ({ name, color }));
 
 const SWATCHES = [
   "#174E78",
@@ -229,106 +288,107 @@ export default function Account() {
     setShowAddModal(false);
   };
 
-  const openBankSynchronization = async () => {
+  const openBankSynchronization = () => {
+    setShowAddModal(false);
+    Alert.alert(
+      "Coming Soon",
+      "Direct bank synchronization will be available in a future BudgetIQ update. Your existing backend integration is unchanged.",
+    );
+  };
+
+  const [importMode, setImportMode] = useState(null);
+  const [importAccountId, setImportAccountId] = useState("");
+  const [importBank, setImportBank] = useState("");
+  const [manualBank, setManualBank] = useState("");
+  const [manualBankSearch, setManualBankSearch] = useState("");
+  const [showManualBankPicker, setShowManualBankPicker] = useState(false);
+  const [bankSearch, setBankSearch] = useState("");
+  const [showBankPicker, setShowBankPicker] = useState(false);
+  const [emailText, setEmailText] = useState("");
+  const [importPreview, setImportPreview] = useState(null);
+  const [importBusy, setImportBusy] = useState(false);
+
+  const openImport = (mode) => {
+    setShowAddModal(false);
+    setImportAccountId("");
+    setImportBank("");
+    setBankSearch("");
+    setShowBankPicker(false);
+    setEmailText("");
+    setImportPreview(null);
+    setImportMode(mode);
+  };
+
+  const handlePreviewImport = async () => {
+    if (!importBank) {
+      Alert.alert(
+        "Select bank",
+        "Choose the Nigerian bank that issued the statement or email alert.",
+      );
+      return;
+    }
+    if (importMode === "statement" && !importAccountId) {
+      Alert.alert(
+        "Select account",
+        "Choose a bank name from your Account page.",
+      );
+      return;
+    }
     try {
-      setShowAddModal(false);
-
-      setBankSyncLoading(true);
-
-      setBankSyncMessage("Preparing secure bank connection...");
-
-      let user = currentUser;
-
-      if (!user) {
-        user = await loadCurrentUser();
-      }
-
-      console.log("BANK SYNC USER:", JSON.stringify(user, null, 2));
-
-      const customerName =
-        user?.full_name || user?.name || user?.fullName || user?.username;
-
-      const customerEmail =
-        user?.email || user?.email_address || user?.emailAddress;
-
-      console.log("BANK SYNC CUSTOMER NAME:", customerName);
-
-      console.log("BANK SYNC CUSTOMER EMAIL:", customerEmail);
-
-      if (!customerName) {
-        throw new Error(
-          "Your account name could not be found. Please update your profile and try again.",
-        );
-      }
-
-      if (!customerEmail) {
-        throw new Error(
-          "Your email address could not be found. Please update your profile and try again.",
-        );
-      }
-
-      setBankSyncMessage("Creating secure bank connection...");
-
-      const response = await startBankSynchronization({
-        name: String(customerName).trim(),
-        email: String(customerEmail).trim(),
-      });
-
-      console.log(
-        "Bank synchronization initiated:",
-        JSON.stringify(response, null, 2),
-      );
-
-      if (!response?.link) {
-        throw new Error("Mono did not return a connection link.");
-      }
-
-      setBankSyncMessage("Opening secure bank connection...");
-
-      const redirectUrl = Linking.createURL("bank-sync");
-
-      console.log("Bank synchronization redirect URL:", redirectUrl);
-
-      const result = await WebBrowser.openAuthSessionAsync(
-        response.link,
-        redirectUrl,
-      );
-
-      console.log("Mono connection result:", JSON.stringify(result, null, 2));
-
-      if (result.type === "cancel" || result.type === "dismiss") {
-        setBankSyncMessage("");
-
-        return;
-      }
-
-      setBankSyncMessage("Checking your bank connection...");
-
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      await loadBankAccounts();
-
-      await loadAccounts();
-
-      setBankSyncMessage("Bank account connected successfully.");
-
-      Alert.alert(
-        "Bank connected",
-        "Your bank account has been connected successfully. Your transactions will now be synchronized.",
-      );
+      setImportBusy(true);
+      const result =
+        importMode === "statement"
+          ? await (async () => {
+              const picked = await DocumentPicker.getDocumentAsync({
+                type: [
+                  "application/pdf",
+                  "text/csv",
+                  "application/vnd.ms-excel",
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                  "application/octet-stream",
+                ],
+                copyToCacheDirectory: true,
+              });
+              if (picked.canceled || !picked.assets?.length) return null;
+              return previewStatement(
+                importAccountId,
+                picked.assets[0],
+                importBank,
+              );
+            })()
+          : await previewEmailAlerts(null, emailText, importBank);
+      if (result) setImportPreview(result);
     } catch (error) {
-      console.log("Bank synchronization error:", error);
-
       Alert.alert(
-        "Bank synchronization failed",
+        "Import preview failed",
         error?.error ||
           error?.message ||
-          "Unable to connect your bank account. Please try again.",
+          "Please check the file or email alert text.",
       );
-
-      setBankSyncMessage("");
     } finally {
-      setBankSyncLoading(false);
+      setImportBusy(false);
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!importPreview?.importId) return;
+    try {
+      setImportBusy(true);
+      const result = await confirmImport(importPreview.importId);
+      Alert.alert(
+        "Import complete",
+        `${result.imported || 0} transaction(s) imported. ${result.skipped || 0} skipped.`,
+      );
+      setImportMode(null);
+      setImportPreview(null);
+      await loadAccounts();
+    } catch (error) {
+      Alert.alert(
+        "Import failed",
+        error?.error || error?.message || "Unable to import transactions.",
+      );
+    } finally {
+      setImportBusy(false);
     }
   };
 
@@ -365,6 +425,9 @@ export default function Account() {
   const resetForm = () => {
     setEditingAccount(null);
     setAccountName("");
+    setManualBank("");
+    setShowManualBankPicker(false);
+    setManualBankSearch("");
     setCurrency("NGN");
     setInitialAmount("");
     setNotes("");
@@ -387,6 +450,11 @@ export default function Account() {
     setEditingAccount(account);
 
     setAccountName(account.name || "");
+    setManualBank(
+      account.bank_name ||
+        NIGERIAN_BANKS.find((bank) => bank.name === account.name)?.name ||
+        "",
+    );
 
     setCurrency(account.currency || "NGN");
 
@@ -435,6 +503,7 @@ export default function Account() {
 
       const accountData = {
         name: accountName.trim(),
+        bankName: manualBank || null,
         currency,
         initialAmount: amount,
         notes: notes.trim() || null,
@@ -1289,6 +1358,64 @@ export default function Account() {
               </Text>
             </Pressable>
 
+            {[
+              {
+                mode: "statement",
+                title: "Import Bank Statement",
+                detail:
+                  "Import PDF, CSV or Excel transactions into an existing account.",
+                icon: "⇩",
+              },
+              {
+                mode: "email",
+                title: "Email Sync",
+                detail:
+                  "Import bank transaction alerts you explicitly provide. Automatic inbox connection is not enabled.",
+                icon: "✉",
+              },
+            ].map((option) => (
+              <Pressable
+                key={option.mode}
+                style={[
+                  styles.optionCard,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                  },
+                ]}
+                onPress={() => openImport(option.mode)}
+              >
+                <View
+                  style={[
+                    styles.optionIcon,
+                    { backgroundColor: colors.chipBg },
+                  ]}
+                >
+                  <Text
+                    style={[styles.optionIconText, { color: colors.primary }]}
+                  >
+                    {option.icon}
+                  </Text>
+                </View>
+                <View style={styles.optionContent}>
+                  <Text style={[styles.optionTitle, { color: colors.text }]}>
+                    {option.title}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.optionDescription,
+                      { color: colors.textFaint },
+                    ]}
+                  >
+                    {option.detail}
+                  </Text>
+                </View>
+                <Text style={[styles.chevron, { color: colors.textFaint }]}>
+                  ›
+                </Text>
+              </Pressable>
+            ))}
+
             <Pressable
               style={[
                 styles.optionCard,
@@ -1360,6 +1487,343 @@ export default function Account() {
       </Modal>
 
       <Modal
+        visible={!!importMode}
+        transparent
+        animationType="slide"
+        onRequestClose={() => !importBusy && setImportMode(null)}
+      >
+        <KeyboardAvoidingView
+          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={[styles.formCard, { backgroundColor: colors.card }]}>
+            <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  {importMode === "statement"
+                    ? "Import Bank Statement"
+                    : "Email Alert Import"}
+                </Text>
+                <Pressable
+                  disabled={importBusy}
+                  onPress={() => setImportMode(null)}
+                >
+                  <Text style={[styles.closeButton, { color: colors.text }]}>
+                    ×
+                  </Text>
+                </Pressable>
+              </View>
+              <Text
+                style={[
+                  styles.optionDescription,
+                  { color: colors.textMuted, marginBottom: 12 },
+                ]}
+              >
+                Choose the issuing bank. For statements, pick a bank account
+                already on your Account page. For email alerts, a matching
+                account is created automatically if none exists. Review entries
+                before confirming. Never enter your email or bank password.
+              </Text>
+              <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
+                1. Select Nigerian bank
+              </Text>
+              <Pressable
+                disabled={importBusy}
+                onPress={() => setShowBankPicker((value) => !value)}
+                style={[
+                  styles.selectInput,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.inputBorder,
+                    marginBottom: 8,
+                  },
+                ]}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    flex: 1,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: 6,
+                      backgroundColor:
+                        NIGERIAN_BANKS.find((bank) => bank.name === importBank)
+                          ?.color || colors.chipBg,
+                    }}
+                  />
+                  <Text style={[styles.selectText, { color: colors.text }]}>
+                    {importBank || "Choose your bank"}
+                  </Text>
+                </View>
+                <Text style={{ color: colors.textFaint }}>
+                  {showBankPicker ? "⌃" : "⌄"}
+                </Text>
+              </Pressable>
+              {showBankPicker && (
+                <View
+                  style={[
+                    styles.currencyDropdown,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.cardBorder,
+                      marginBottom: 10,
+                    },
+                  ]}
+                >
+                  <TextInput
+                    value={bankSearch}
+                    onChangeText={setBankSearch}
+                    placeholder="Search Nigerian banks..."
+                    placeholderTextColor={colors.textFaint}
+                    style={[
+                      styles.textInput,
+                      {
+                        color: colors.text,
+                        borderColor: colors.inputBorder,
+                        backgroundColor: colors.background,
+                        margin: 8,
+                      },
+                    ]}
+                  />
+                  <ScrollView
+                    nestedScrollEnabled
+                    keyboardShouldPersistTaps="handled"
+                    style={{ maxHeight: 205 }}
+                  >
+                    {NIGERIAN_BANKS.filter((bank) =>
+                      bank.name
+                        .toLowerCase()
+                        .includes(bankSearch.trim().toLowerCase()),
+                    ).map((bank) => (
+                      <Pressable
+                        key={bank.name}
+                        onPress={() => {
+                          setImportBank(bank.name);
+                          setBankSearch("");
+                          setShowBankPicker(false);
+                          setImportPreview(null);
+                        }}
+                        style={[
+                          styles.currencyOption,
+                          { borderBottomColor: colors.divider },
+                        ]}
+                      >
+                        <View
+                          style={{
+                            width: 14,
+                            height: 14,
+                            borderRadius: 7,
+                            backgroundColor: bank.color,
+                            marginRight: 10,
+                          }}
+                        />
+                        <Text
+                          style={[
+                            styles.optionTitle,
+                            { color: colors.text, flex: 1 },
+                          ]}
+                        >
+                          {importBank === bank.name ? "● " : ""}
+                          {bank.name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+              <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
+                2. Choose from banks on your Account page
+              </Text>
+              {importMode === "statement" && accounts.length === 0 && (
+                <Text
+                  style={[
+                    styles.optionDescription,
+                    { color: colors.textMuted, marginBottom: 8 },
+                  ]}
+                >
+                  No accounts added yet. Choose New Account from the + Add
+                  account menu, then return here.
+                </Text>
+              )}
+              {importMode === "statement" &&
+                accounts.map((account) => (
+                  <Pressable
+                    key={account.id}
+                    onPress={() => {
+                      setImportAccountId(String(account.id));
+                      setImportPreview(null);
+                    }}
+                    style={[
+                      styles.optionCard,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor:
+                          String(account.id) === importAccountId
+                            ? colors.primary
+                            : colors.cardBorder,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.optionTitle, { color: colors.text }]}>
+                      {String(account.id) === importAccountId ? "● " : "○ "}
+                      {account.name} · {account.currency}
+                    </Text>
+                  </Pressable>
+                ))}
+              {importMode === "email" && (
+                <Text
+                  style={[
+                    styles.optionDescription,
+                    { color: colors.textMuted, marginBottom: 8 },
+                  ]}
+                >
+                  A matching {importBank || "bank"} account will be used or
+                  created automatically when you confirm. This imports pasted
+                  alerts; automatic inbox access requires separate email
+                  authorization.
+                </Text>
+              )}
+              {importMode === "email" && (
+                <TextInput
+                  multiline
+                  value={emailText}
+                  onChangeText={(value) => {
+                    setEmailText(value);
+                    setImportPreview(null);
+                  }}
+                  placeholder="Paste one or more bank transaction alert messages here..."
+                  placeholderTextColor={colors.textFaint}
+                  style={[
+                    styles.notesInput,
+                    {
+                      minHeight: 130,
+                      color: colors.text,
+                      backgroundColor: colors.background,
+                      borderColor: colors.inputBorder,
+                    },
+                  ]}
+                />
+              )}
+              {importPreview ? (
+                <View>
+                  <Text
+                    style={[
+                      styles.optionTitle,
+                      { color: colors.text, marginVertical: 12 },
+                    ]}
+                  >
+                    Review import:{" "}
+                    {importPreview.count ||
+                      importPreview.transactions?.length ||
+                      0}{" "}
+                    transaction(s)
+                  </Text>
+                  {(importPreview.transactions || [])
+                    .slice(0, 30)
+                    .map((item, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.optionCard,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.cardBorder,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.optionTitle, { color: colors.text }]}
+                        >
+                          {item.type} · {item.amount} ·{" "}
+                          {item.occurred_on || item.date}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.optionDescription,
+                            { color: colors.textMuted },
+                          ]}
+                        >
+                          {item.description}
+                        </Text>
+                      </View>
+                    ))}
+                  {!!importPreview.warnings?.length && (
+                    <Text style={{ color: colors.textMuted }}>
+                      {importPreview.warnings.join("\n")}
+                    </Text>
+                  )}
+                  <Pressable
+                    disabled={importBusy || !importPreview.transactions?.length}
+                    onPress={handleConfirmImport}
+                    style={[
+                      styles.saveButton,
+                      { backgroundColor: colors.primary },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.saveButtonText,
+                        { color: colors.primaryText },
+                      ]}
+                    >
+                      {importBusy ? "Importing..." : "Confirm import"}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    disabled={importBusy}
+                    onPress={() => setImportPreview(null)}
+                    style={styles.cancelButton}
+                  >
+                    <Text
+                      style={[styles.cancelButtonText, { color: colors.text }]}
+                    >
+                      Back
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  disabled={
+                    importBusy ||
+                    !importBank ||
+                    (importMode === "statement" && !importAccountId) ||
+                    (importMode === "email" && !emailText.trim())
+                  }
+                  onPress={handlePreviewImport}
+                  style={[
+                    styles.saveButton,
+                    {
+                      backgroundColor: colors.primary,
+                      opacity: importBusy ? 0.5 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.saveButtonText,
+                      { color: colors.primaryText },
+                    ]}
+                  >
+                    {importBusy
+                      ? "Preparing preview..."
+                      : importMode === "statement"
+                        ? "Choose statement file"
+                        : "Preview email alerts"}
+                  </Text>
+                </Pressable>
+              )}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
         visible={showNewAccount}
         transparent
         animationType="slide"
@@ -1423,6 +1887,135 @@ export default function Account() {
               </Pressable>
             </View>
 
+            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
+              Choose Nigerian bank (optional)
+            </Text>
+            <Pressable
+              disabled={savingAccount}
+              onPress={() => setShowManualBankPicker((value) => !value)}
+              style={[
+                styles.selectInput,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.inputBorder,
+                  marginBottom: 8,
+                },
+              ]}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  flex: 1,
+                  gap: 8,
+                }}
+              >
+                <View
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: 6,
+                    backgroundColor:
+                      NIGERIAN_BANKS.find((bank) => bank.name === manualBank)
+                        ?.color || colors.chipBg,
+                  }}
+                />
+                <Text
+                  style={[
+                    styles.selectText,
+                    { color: colors.text, flexShrink: 1 },
+                  ]}
+                >
+                  {manualBank || "Select bank or leave blank for wallet/cash"}
+                </Text>
+              </View>
+              <Text style={{ color: colors.textFaint }}>⌄</Text>
+            </Pressable>
+            {showManualBankPicker && (
+              <View
+                style={[
+                  styles.currencyDropdown,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.cardBorder,
+                  },
+                ]}
+              >
+                <TextInput
+                  value={manualBankSearch}
+                  onChangeText={setManualBankSearch}
+                  placeholder="Search Nigerian banks..."
+                  placeholderTextColor={colors.textFaint}
+                  style={[
+                    styles.textInput,
+                    {
+                      color: colors.text,
+                      borderColor: colors.inputBorder,
+                      backgroundColor: colors.background,
+                      margin: 8,
+                    },
+                  ]}
+                />
+                <ScrollView
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                  style={{ maxHeight: 190 }}
+                >
+                  <Pressable
+                    onPress={() => {
+                      setManualBank("");
+                      setShowManualBankPicker(false);
+                    }}
+                    style={[
+                      styles.currencyOption,
+                      { borderBottomColor: colors.divider },
+                    ]}
+                  >
+                    <Text style={{ color: colors.text }}>
+                      No bank / wallet / cash
+                    </Text>
+                  </Pressable>
+                  {NIGERIAN_BANKS.filter((bank) =>
+                    bank.name
+                      .toLowerCase()
+                      .includes(manualBankSearch.trim().toLowerCase()),
+                  ).map((bank) => (
+                    <Pressable
+                      key={bank.name}
+                      onPress={() => {
+                        setManualBank(bank.name);
+                        if (!accountName.trim()) setAccountName(bank.name);
+                        setAccountColor(bank.color);
+                        setManualBankSearch("");
+                        setShowManualBankPicker(false);
+                      }}
+                      style={[
+                        styles.currencyOption,
+                        { borderBottomColor: colors.divider },
+                      ]}
+                    >
+                      <View
+                        style={{
+                          width: 14,
+                          height: 14,
+                          borderRadius: 7,
+                          backgroundColor: bank.color,
+                          marginRight: 10,
+                        }}
+                      />
+                      <Text
+                        style={[
+                          styles.optionTitle,
+                          { color: colors.text, flex: 1 },
+                        ]}
+                      >
+                        {bank.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
             <Text
               style={[
                 styles.inputLabel,
