@@ -471,15 +471,29 @@ export default function AddTransactionModal({
   onClose,
   prefillAmount = "",
   prefillAccountId = "",
+  editingTransaction = null,
 }) {
   const { user } = useAuth();
   const [categories, setCategories] = useState([]);
   const [accounts, setAccounts] = useState([]);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(() => ({
     ...EMPTY_FORM,
-    amount: prefillAmount,
-    accountId: prefillAccountId,
-  });
+    amount: editingTransaction?.amount ?? prefillAmount,
+    type: editingTransaction?.type ?? EMPTY_FORM.type,
+    description: editingTransaction?.description ?? "",
+    categoryId:
+      editingTransaction?.category_id ??
+      editingTransaction?.categoryId ??
+      "",
+    accountId:
+      editingTransaction?.account_id ??
+      editingTransaction?.accountId ??
+      prefillAccountId,
+    occurredOn:
+      editingTransaction?.occurred_on ??
+      editingTransaction?.occurredOn ??
+      EMPTY_FORM.occurredOn,
+  }));
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
@@ -536,12 +550,18 @@ export default function AddTransactionModal({
 
     setSaving(true);
     try {
-      await apiClient.post("/transactions", {
+      const payload = {
         ...form,
         amount: Number(form.amount),
         categoryId: form.categoryId || null,
         accountId: form.accountId || null,
-      });
+      };
+
+      if (editingTransaction?.id) {
+        await apiClient.patch(`/transactions/${editingTransaction.id}`, payload);
+      } else {
+        await apiClient.post("/transactions", payload);
+      }
       window.dispatchEvent(new CustomEvent(TRANSACTION_CREATED_EVENT));
       onClose();
     } catch (err) {
@@ -595,7 +615,10 @@ export default function AddTransactionModal({
 
   return (
     <>
-      <Modal title="Add transaction" onClose={onClose}>
+      <Modal
+        title={editingTransaction ? "Edit transaction" : "Add transaction"}
+        onClose={onClose}
+      >
         <form onSubmit={handleSubmit}>
           {/* Type */}
           <div className="field">
@@ -773,7 +796,13 @@ export default function AddTransactionModal({
             type="submit"
             disabled={saving}
           >
-            {saving ? "Saving..." : "Save transaction"}
+            {saving
+              ? editingTransaction
+                ? "Updating..."
+                : "Saving..."
+              : editingTransaction
+                ? "Update transaction"
+                : "Save transaction"}
           </button>
         </form>
       </Modal>
@@ -814,9 +843,8 @@ export default function AddTransactionModal({
                   <button
                     key={category.id}
                     type="button"
-                    className={`category-picker-chip${
-                      isSelected ? " category-picker-chip--selected" : ""
-                    }`}
+                    className={`category-picker-chip${isSelected ? " category-picker-chip--selected" : ""
+                      }`}
                     onClick={() => {
                       setForm((current) => ({
                         ...current,

@@ -483,10 +483,13 @@
 
 .stat-value {
   font-family: var(--font-mono);
-  font-size: 27px;
+  font-size: clamp(20px, 1.65vw, 27px);
   font-weight: 500;
   margin-top: 6px;
   color: var(--ink);
+  white-space: nowrap;
+  max-width: 100%;
+  letter-spacing: -0.02em;
 }
 
 .list-row {

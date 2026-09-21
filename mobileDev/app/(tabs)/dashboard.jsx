@@ -31,7 +31,7 @@ const BUDGET_BLUE = "#3B82F6";
 const EXPENSE_RED = "#EF4444";
 
 // Shared by the y-axis and the spacer under it, so labels line up
-const Y_AXIS_WIDTH = 34;
+const Y_AXIS_WIDTH = 48;
 
 function StatCard({
   label,

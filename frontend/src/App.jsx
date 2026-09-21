@@ -6,6 +6,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
+import TransactionChart from './pages/TransactionChart';
 import Categories from './pages/Categories';
 import Budgets from './pages/Budgets';
 import Sidebar from './components/Sidebar';
@@ -58,6 +59,16 @@ export default function App() {
           <ProtectedRoute>
             <AppLayout>
               <Transactions />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transactions/chart"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <TransactionChart />
             </AppLayout>
           </ProtectedRoute>
         }

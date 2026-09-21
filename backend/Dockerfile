@@ -11,7 +11,11 @@ RUN npm ci --only=production && npm cache clean --force
 
 COPY . .
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache \
+    curl \
+    poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-data-eng
 
 EXPOSE 5000
 

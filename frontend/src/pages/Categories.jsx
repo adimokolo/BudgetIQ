@@ -238,19 +238,33 @@ export default function Categories() {
 
   const handlePreset = async (preset) => {
     setError(null);
+
+    const existingCategory = categories.find(
+      (category) =>
+        category.name.toLowerCase() === preset.name.toLowerCase() &&
+        category.type === preset.type
+    );
+
     try {
-      await apiClient.post("/categories", {
-        name: preset.name,
-        type: preset.type,
-        color: preset.color,
-        icon: preset.icon,
-      });
+      if (existingCategory) {
+        await apiClient.delete(`/categories/${existingCategory.id}`);
+      } else {
+        await apiClient.post("/categories", {
+          name: preset.name,
+          type: preset.type,
+          color: preset.color,
+          icon: preset.icon,
+        });
+      }
+
       loadCategories();
     } catch (err) {
-      setError(err.response?.data?.error || "Could not add preset.");
+      setError(
+        err.response?.data?.error ||
+        `Could not ${existingCategory ? "remove" : "add"} preset.`
+      );
     }
   };
-
   const handleDelete = async (id) => {
     if (
       !window.confirm(
@@ -375,10 +389,7 @@ export default function Categories() {
                           <button
                             key={preset.name}
                             type="button"
-                            onClick={() =>
-                              !alreadyAdded && handlePreset(preset)
-                            }
-                            disabled={alreadyAdded}
+                            onClick={() => handlePreset(preset)}
                             style={{
                               display: "flex",
                               alignItems: "center",
@@ -389,8 +400,8 @@ export default function Categories() {
                               background: alreadyAdded
                                 ? "var(--surface-strong)"
                                 : "var(--surface)",
-                              cursor: alreadyAdded ? "default" : "pointer",
-                              opacity: alreadyAdded ? 0.5 : 1,
+                              cursor: "pointer",
+                              opacity: alreadyAdded ? 0.82 : 1,
                               textAlign: "left",
                             }}
                           >
@@ -415,7 +426,7 @@ export default function Categories() {
                                     display: "block",
                                   }}
                                 >
-                                  Added
+                                  Added · Tap to remove
                                 </span>
                               )}
                             </span>

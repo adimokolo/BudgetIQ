@@ -14,14 +14,14 @@ export default function CategoryBreakdownChart({ data, currency }) {
         <div className="empty-state">No spending recorded this month yet.</div>
       ) : (
         <>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie
                 data={data}
                 dataKey="total"
                 nameKey="name"
-                innerRadius={58}
-                outerRadius={82}
+                innerRadius={65}
+                outerRadius={92}
                 paddingAngle={3}
                 stroke="none"
               >

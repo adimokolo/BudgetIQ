@@ -3,6 +3,13 @@ const multer = require("multer");
 const XLSX = require("xlsx");
 const pdfParse = require("pdf-parse");
 const crypto = require("crypto");
+const fs = require("fs/promises");
+const os = require("os");
+const path = require("path");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
+
+const execFileAsync = promisify(execFile);
 const pool = require("../config/db");
 const { requireAuth } = require("../middleware/auth");
 const router = express.Router();
@@ -154,8 +161,12 @@ async function verifyAccount(req, res, source) {
     }
     return { id: null, currency: "NGN" };
   }
-  const accountId = Number(req.body.accountId);
-  if (!Number.isSafeInteger(accountId) || accountId <= 0) {
+  const accountId = String(req.body.accountId || "").trim();
+
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  if (!uuidPattern.test(accountId)) {
     fail(res, 400, "Select a valid BudgetIQ account.");
     return null;
   }
@@ -225,42 +236,137 @@ router.post(
         );
       if (filename.endsWith(".pdf")) {
         const pdf = await pdfParse(req.file.buffer);
-        const lines = String(pdf.text || "")
-          .split(/\r?\n/)
-          .map((x) => x.trim())
-          .filter(Boolean);
-        // Conservative PDF parser: only accept clearly delimited rows with date, description, debit and credit.
-        // Scanned/image-only PDFs and irregular bank layouts need OCR or bank-specific templates.
-        const candidates = lines.filter(
-          (line) =>
-            /^\d{4}[-/]\d{1,2}[-/]\d{1,2}\s*\|/.test(line) ||
-            /^\d{1,2}[-/]\d{1,2}[-/]\d{4}\s*\|/.test(line),
-        );
-        if (!candidates.length)
+        if (pdf.numpages > 20) {
           return fail(
             res,
-            422,
-            "This PDF could not be parsed safely. Scanned PDFs and bank-specific layouts need a dedicated parser. Export CSV or Excel from your bank, or provide a sample PDF with personal details removed.",
+            413,
+            "PDF statements are limited to 20 pages per import.",
           );
-        if (candidates.length > 2000)
-          return fail(res, 413, "Import at most 2,000 rows at a time.");
-        const rows = candidates.map((line) => {
-          const parts = line.split(/\s*\|\s*/);
-          if (parts.length !== 4) return null;
-          return normalize({
-            date: parts[0],
-            description: parts[1],
-            debit: parts[2],
-            credit: parts[3],
-          });
-        });
-        if (rows.some((row) => !row))
-          return fail(
-            res,
-            422,
-            "Some PDF rows could not be parsed safely. No data was imported.",
-          );
-        return stage(req, res, "statement", rows);
+        }
+
+        let text = String(pdf.text || "").trim();
+        let tempDir = null;
+
+        try {
+          // If the PDF contains little/no extractable text, use OCR.
+          if (text.length < 100) {
+            tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "budgetiq-ocr-"));
+
+            const pdfPath = path.join(tempDir, "statement.pdf");
+            const imagePrefix = path.join(tempDir, "page");
+
+            await fs.writeFile(pdfPath, req.file.buffer);
+
+            await execFileAsync("pdftoppm", [
+              "-r",
+              "300",
+              "-png",
+              pdfPath,
+              imagePrefix,
+            ]);
+
+            const files = await fs.readdir(tempDir);
+
+            const pageImages = files
+              .filter((file) => /^page-\d+\.png$/.test(file))
+              .sort((a, b) => {
+                const pageA = Number(a.match(/\d+/)[0]);
+                const pageB = Number(b.match(/\d+/)[0]);
+                return pageA - pageB;
+              });
+
+            if (!pageImages.length) {
+              return fail(
+                res,
+                422,
+                "The PDF could not be converted into readable pages. No data was imported.",
+              );
+            }
+
+            const ocrPages = [];
+
+            for (const pageImage of pageImages) {
+              const imagePath = path.join(tempDir, pageImage);
+
+              const { stdout } = await execFileAsync(
+                "tesseract",
+                [imagePath, "stdout", "--psm", "6", "-l", "eng"],
+                { maxBuffer: 10 * 1024 * 1024 },
+              );
+
+              ocrPages.push(stdout);
+            }
+
+            text = ocrPages.join("\n");
+          }
+
+          const lines = text
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
+
+          const rows = [];
+
+          // OCR/table format:
+          // Trans Date | Value Date | Debit | Credit | Balance | Narration
+          //
+          // We intentionally use Trans Date, Debit and Credit.
+          // Value Date may occasionally be damaged/truncated by OCR.
+          const transactionPattern =
+            /^(\d{1,2}[/-]\d{1,2}[/-]\d{4})\s+\S+\s+([\d,.]+\.\d{2})\s+([\d,.]+\.\d{2})(?:\s+.*)?$/;
+
+          for (const line of lines) {
+            const match = line.match(transactionPattern);
+
+            if (!match) continue;
+
+            const date = dateValue(match[1]);
+
+            const normalizeOcrAmount = (value) => {
+              const parts = String(value).split(".");
+
+              // OCR sometimes reads a thousands comma as a dot:
+              // 7,350.00 -> 7.350.00
+              if (parts.length > 2) {
+                const decimals = parts.pop();
+                return `${parts.join(",")}.${decimals}`;
+              }
+
+              return value;
+            };
+
+            const debit = money(normalizeOcrAmount(match[2]));
+            const credit = money(normalizeOcrAmount(match[3]));
+            if (!date) continue;
+
+            const row = normalize({
+              date,
+              debit,
+              credit,
+              description: line,
+            });
+
+            if (row) rows.push(row);
+          }
+
+          if (!rows.length) {
+            return fail(
+              res,
+              422,
+              "No transaction rows could be read safely from this PDF. No data was imported.",
+            );
+          }
+
+          if (rows.length > 2000) {
+            return fail(res, 413, "Import at most 2,000 rows at a time.");
+          }
+
+          return stage(req, res, "statement", rows);
+        } finally {
+          if (tempDir) {
+            await fs.rm(tempDir, { recursive: true, force: true });
+          }
+        }
       }
       const workbook = XLSX.read(req.file.buffer, {
         type: "buffer",
@@ -302,7 +408,7 @@ router.post("/email/preview", async (req, res, next) => {
     const rows = [];
     for (const block of blocks) {
       const typeMatch = block.match(
-        /\b(debited|debit|withdrawal|credited|credit|deposit)\b/i,
+        /\b(debited|debit|withdrawal|credited|credit|deposit)\b|(?:Txn|Transaction)\s*:\s*(DR|CR)\b/i,
       );
       const amountMatch = block.match(/(?:NGN|₦)\s*([\d,]+(?:\.\d{1,2})?)/i);
       const dateMatch = block.match(
@@ -316,11 +422,24 @@ router.post("/email/preview", async (req, res, next) => {
           422,
           "Could not safely parse every alert. Each alert must contain an explicit debit/credit direction, NGN amount and full date (DD/MM/YYYY or YYYY-MM-DD). Separate alerts with a blank line. No data was imported.",
         );
+      const direction = (typeMatch[1] || typeMatch[2] || "").toLowerCase();
+
+      let type;
+
+      if (["debited", "debit", "withdrawal", "dr"].includes(direction)) {
+        type = "expense";
+      } else if (["credited", "credit", "deposit", "cr"].includes(direction)) {
+        type = "income";
+      } else {
+        return fail(
+          res,
+          422,
+          "Could not determine whether this alert is a debit or credit. No data was imported.",
+        );
+      }
       rows.push({
         date,
-        type: /^(debited|debit|withdrawal)$/i.test(typeMatch[1])
-          ? "expense"
-          : "income",
+        type,
         amount,
         description: block.replace(/\s+/g, " ").slice(0, 255),
         reference: "",
@@ -356,13 +475,13 @@ router.post("/:id/confirm", async (req, res, next) => {
         [String(req.user.id), String(b.bank_name).toLowerCase()],
       );
       const existing = await client.query(
-        `SELECT id FROM accounts WHERE user_id=$1 AND currency='NGN' AND (LOWER(bank_name)=LOWER($2) OR (bank_name IS NULL AND LOWER(name)=LOWER($2))) ORDER BY id LIMIT 1 FOR UPDATE`,
+        `SELECT id FROM accounts WHERE user_id=$1 AND currency='NGN' AND (LOWER(bank_name)=LOWER($2::text) OR (bank_name IS NULL AND LOWER(name)=LOWER($2::text))) ORDER BY id LIMIT 1 FOR UPDATE`,
         [req.user.id, b.bank_name],
       );
       if (existing.rowCount) accountId = existing.rows[0].id;
       else {
         const created = await client.query(
-          `INSERT INTO accounts(user_id,name,currency,balance,notes,color,bank_name) VALUES($1,$2,'NGN',0,$3,$4,$2) RETURNING id`,
+          `INSERT INTO accounts(user_id,name,currency,balance,notes,color,bank_name) VALUES($1,$2::text,'NGN',0,$3,$4,$2::text) RETURNING id`,
           [
             req.user.id,
             b.bank_name,

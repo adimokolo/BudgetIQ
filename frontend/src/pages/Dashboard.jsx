@@ -9,19 +9,31 @@ import RecentTransactions from '../components/RecentTransactions';
 import Skeleton from '../components/Skeleton';
 import { formatCurrency } from '../utils/format';
 import { TRANSACTION_CREATED_EVENT } from '../components/AddTransactionModal';
+import BudgetExpenseChart from '../components/BudgetExpenseChart';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
+  const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadDashboard = () => {
-    apiClient
-      .get('/dashboard/summary')
-      .then((res) => setData(res.data))
-      .catch(() => setError('Could not load your dashboard right now.'))
-      .finally(() => setLoading(false));
+  const loadDashboard = async () => {
+    try {
+      setError(null);
+
+      const [dashboardRes, budgetsRes] = await Promise.all([
+        apiClient.get('/dashboard/summary'),
+        apiClient.get('/budgets'),
+      ]);
+
+      setData(dashboardRes.data);
+      setBudgets(budgetsRes.data.budgets || []);
+    } catch {
+      setError('Could not load your dashboard right now.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -102,7 +114,19 @@ export default function Dashboard() {
 
           <div className="grid grid--two" style={{ marginBottom: 18 }}>
             <MonthlyTrendChart data={data.monthlyTrend} currency={currency} />
-            <CategoryBreakdownChart data={data.categoryBreakdown} currency={currency} />
+
+            <BudgetExpenseChart
+              monthlyTrend={data.monthlyTrend}
+              budgets={budgets}
+              currency={currency}
+            />
+          </div>
+
+          <div style={{ marginBottom: 18 }}>
+            <CategoryBreakdownChart
+              data={data.categoryBreakdown}
+              currency={currency}
+            />
           </div>
 
           <RecentTransactions transactions={data.recentTransactions} currency={currency} />
