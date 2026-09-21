@@ -49,7 +49,6 @@ const fonts = {
 
 const TYPE_TABS = ["Expenses", "Income"];
 
-// Used only when a category has no colour of its own.
 const FALLBACK_COLORS = [
   "#174E78",
   "#2DD4BF",
@@ -63,7 +62,6 @@ const FALLBACK_COLORS = [
 
 const OTHER_COLOR = "#94A3B8";
 
-// Legend + donut show the top 4 categories, everything else is grouped as "Other".
 const MAX_LEGEND_ITEMS = 4;
 
 function getMonthKey(date) {
@@ -97,7 +95,6 @@ function formatPickerDate(date) {
   });
 }
 
-// "Aug 1 – Sep 20, 2026" (year shown once when both dates share it)
 function formatRangeLabel(from, to) {
   const short = { month: "short", day: "numeric" };
   const full = { month: "short", day: "numeric", year: "numeric" };
@@ -113,7 +110,6 @@ function trimNumber(value) {
   return String(parseFloat(value.toFixed(2)));
 }
 
-// 1,140,000 -> ₦1.14M — keeps big totals readable inside the donut hole.
 function formatCompactCurrency(amount, currency) {
   const symbol = currencySymbolFor(currency);
   const abs = Math.abs(Number(amount || 0));
@@ -445,7 +441,22 @@ export default function TransactionChart() {
 
         <Text style={styles.headerTitle}>Charts</Text>
 
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity
+          style={[
+            styles.calendarButton,
+            customRange && styles.calendarButtonActive,
+          ]}
+          onPress={openRangeModal}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Pick a date range"
+        >
+          <Ionicons
+            name="calendar-outline"
+            size={20}
+            color={customRange ? colors.primaryText : colors.text}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -488,23 +499,6 @@ export default function TransactionChart() {
               );
             })}
           </View>
-
-          <TouchableOpacity
-            style={[
-              styles.calendarButton,
-              customRange && styles.calendarButtonActive,
-            ]}
-            onPress={openRangeModal}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Pick a date range"
-          >
-            <Ionicons
-              name="calendar-outline"
-              size={20}
-              color={customRange ? colors.primaryText : colors.text}
-            />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.periodWrap}>
@@ -792,7 +786,8 @@ export default function TransactionChart() {
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 maximumDate={draftTo || undefined}
-                onChange={(event, selected) => {
+                onDismiss={() => setShowFromPicker(false)}
+                onValueChange={(event, selected) => {
                   setShowFromPicker(Platform.OS === "ios");
 
                   if (selected) {
@@ -808,7 +803,8 @@ export default function TransactionChart() {
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 minimumDate={draftFrom || undefined}
-                onChange={(event, selected) => {
+                onDismiss={() => setShowToPicker(false)}
+                onValueChange={(event, selected) => {
                   setShowToPicker(Platform.OS === "ios");
 
                   if (selected) {
@@ -867,10 +863,6 @@ const createStyles = (colors) =>
       color: colors.text,
     },
 
-    headerSpacer: {
-      width: 40,
-    },
-
     container: {
       paddingHorizontal: 20,
       paddingBottom: 40,
@@ -883,12 +875,9 @@ const createStyles = (colors) =>
     },
 
     calendarButton: {
-      width: 44,
-      height: 44,
+      width: 34,
+      height: 34,
       borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.inputBorder,
-      backgroundColor: colors.card,
       alignItems: "center",
       justifyContent: "center",
     },

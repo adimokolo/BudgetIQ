@@ -1714,9 +1714,6 @@ export default function Transactions() {
 
   const currentSystemDate = useMemo(() => getLocalDateString(new Date()), []);
 
-  // FIX: only the very first load blocks the screen with a spinner. Without
-  // this, returning to the tab flashes "Loading transactions..." over data
-  // that is already on screen.
   const hasLoadedOnce = useRef(false);
 
   const [selectedDate, setSelectedDate] = useState(currentSystemDate);
@@ -1828,9 +1825,6 @@ export default function Transactions() {
     }
   }, []);
 
-  // FIX: this screen stays mounted in the tab navigator, so a mount-only
-  // useEffect meant categories added on the Categories tab and accounts added
-  // on the Account tab never appeared in the "Add transaction" modal.
   useFocusEffect(
     useCallback(() => {
       loadTransactions(!hasLoadedOnce.current);
@@ -2043,8 +2037,6 @@ export default function Transactions() {
 
       console.log("Create transaction response:", response);
 
-      // FIX: accounts are reloaded too, otherwise the balance shown in the
-      // account picker stays at its pre-transaction value.
       await Promise.all([loadTransactions(false), loadAccounts()]);
 
       resetForm();
@@ -2086,7 +2078,6 @@ export default function Transactions() {
     try {
       await deleteTransactionApi(id);
 
-      // Deleting a transaction moves the account balance back.
       await loadAccounts();
     } catch (error) {
       console.log("Delete transaction error:", error);
@@ -2250,9 +2241,24 @@ export default function Transactions() {
               >
                 <Text style={styles.moreButtonText}>⋮</Text>
               </TouchableOpacity>
-
               {showExportMenu && (
                 <View style={styles.exportMenu}>
+                  <TouchableOpacity
+                    style={styles.exportMenuItem}
+                    onPress={openChartPage}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.exportMenuIconWrap}>
+                      <Ionicons
+                        name="pie-chart-outline"
+                        size={14}
+                        color={colors.primary}
+                      />
+                    </View>
+
+                    <Text style={styles.exportMenuText}>View chart</Text>
+                  </TouchableOpacity>
+
                   <TouchableOpacity
                     style={styles.exportMenuItem}
                     onPress={openExportModal}
@@ -2273,22 +2279,6 @@ export default function Transactions() {
                     <Text style={styles.exportMenuIcon}>PDF</Text>
 
                     <Text style={styles.exportMenuText}>Export PDF</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.exportMenuItem}
-                    onPress={openChartPage}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.exportMenuIconWrap}>
-                      <Ionicons
-                        name="pie-chart-outline"
-                        size={14}
-                        color={colors.primary}
-                      />
-                    </View>
-
-                    <Text style={styles.exportMenuText}>View chart</Text>
                   </TouchableOpacity>
                 </View>
               )}
