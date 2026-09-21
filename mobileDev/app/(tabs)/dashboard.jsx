@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -12,18 +12,26 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
 
 import { getDashboard } from "../../services/dashboard";
 import { getTransactions } from "../../services/transactions";
 import { getCategories } from "../../services/categories";
+import { getBudgets } from "../../services/budgets";
 import { getCurrentUser } from "../../services/auth";
 import { getNotifications } from "../../services/notifications";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { useCurrency } from "../../contexts/CurrencyContext";
+import { getCurrencySymbol } from "../../utils/currency";
+
+const BUDGET_BLUE = "#3B82F6";
+const EXPENSE_RED = "#EF4444";
+
+// Shared by the y-axis and the spacer under it, so labels line up
+const Y_AXIS_WIDTH = 34;
 
 function StatCard({
   label,
@@ -180,17 +188,41 @@ function Donut({ segments, colors, size = 160, strokeWidth = 24 }) {
   );
 }
 
+// Short axis numbers so they fit in a half-width card: 1.2K, 45K, 3.4M
+function compactNumber(value) {
+  const n = Number(value || 0);
+  const abs = Math.abs(n);
+
+  const trim = (x) => String(Math.round(x * 10) / 10);
+
+  if (abs >= 1e9) return `${trim(n / 1e9)}B`;
+  if (abs >= 1e6) return `${trim(n / 1e6)}M`;
+  if (abs >= 1e3) return `${trim(n / 1e3)}K`;
+  if (abs >= 100) return String(Math.round(n));
+
+  return trim(n);
+}
+
+// Generic two-series grouped bar chart, sized to fit inside a half-width card.
+// Used for both "Income vs. spending" and "Budget vs. expense".
 function GroupedBarChart({
   labels,
-  incomeData,
-  expenseData,
+  titles,
+  seriesA,
+  seriesB,
+  nameA,
+  nameB,
+  colorA,
+  colorB,
   colors,
   formatAmount,
-  chartHeight = 150,
+  formatAxis,
+  chartHeight = 130,
+  labelFontSize = 8,
 }) {
   const [selectedIndex, setSelectedIndex] = useState(null);
 
-  const maxValue = Math.max(1, ...incomeData, ...expenseData);
+  const maxValue = Math.max(1, ...seriesA, ...seriesB);
 
   const barHeightFor = (value) => {
     const height = (Number(value || 0) / maxValue) * chartHeight;
@@ -198,41 +230,31 @@ function GroupedBarChart({
     return Math.max(value > 0 ? 3 : 0, height);
   };
 
+  const gridColor = colors.divider || colors.cardBorder;
+
   return (
     <View>
       <View style={styles.groupedChartBody}>
         <View style={styles.groupedYAxis}>
           <Text
-            style={[
-              styles.groupedYAxisLabel,
-              {
-                color: colors.textFaint,
-              },
-            ]}
+            numberOfLines={1}
+            style={[styles.groupedYAxisLabel, { color: colors.textFaint }]}
           >
-            {formatAmount(maxValue)}
+            {formatAxis(maxValue)}
           </Text>
 
           <Text
-            style={[
-              styles.groupedYAxisLabel,
-              {
-                color: colors.textFaint,
-              },
-            ]}
+            numberOfLines={1}
+            style={[styles.groupedYAxisLabel, { color: colors.textFaint }]}
           >
-            {formatAmount(maxValue / 2)}
+            {formatAxis(maxValue / 2)}
           </Text>
 
           <Text
-            style={[
-              styles.groupedYAxisLabel,
-              {
-                color: colors.textFaint,
-              },
-            ]}
+            numberOfLines={1}
+            style={[styles.groupedYAxisLabel, { color: colors.textFaint }]}
           >
-            {formatAmount(0)}
+            {formatAxis(0)}
           </Text>
         </View>
 
@@ -240,36 +262,28 @@ function GroupedBarChart({
           <View
             style={[
               styles.groupedGridLine,
-              {
-                top: 0,
-                backgroundColor: colors.divider || colors.cardBorder,
-              },
+              { top: 0, backgroundColor: gridColor },
             ]}
           />
 
           <View
             style={[
               styles.groupedGridLine,
-              {
-                top: chartHeight / 2,
-                backgroundColor: colors.divider || colors.cardBorder,
-              },
+              { top: chartHeight / 2, backgroundColor: gridColor },
             ]}
           />
 
           <View
             style={[
               styles.groupedGridLine,
-              {
-                bottom: 0,
-                backgroundColor: colors.divider || colors.cardBorder,
-              },
+              { bottom: 0, backgroundColor: gridColor },
             ]}
           />
 
           <View style={styles.groupedColumnsRow}>
             {labels.map((label, index) => {
               const isActive = selectedIndex === index;
+              const opacity = isActive || selectedIndex === null ? 1 : 0.35;
 
               return (
                 <TouchableOpacity
@@ -287,10 +301,9 @@ function GroupedBarChart({
                       style={[
                         styles.groupedBar,
                         {
-                          height: barHeightFor(incomeData[index]),
-                          backgroundColor: colors.income,
-                          opacity:
-                            isActive || selectedIndex === null ? 1 : 0.35,
+                          height: barHeightFor(seriesA[index]),
+                          backgroundColor: colorA,
+                          opacity,
                         },
                       ]}
                     />
@@ -299,10 +312,9 @@ function GroupedBarChart({
                       style={[
                         styles.groupedBar,
                         {
-                          height: barHeightFor(expenseData[index]),
-                          backgroundColor: colors.expense,
-                          opacity:
-                            isActive || selectedIndex === null ? 1 : 0.35,
+                          height: barHeightFor(seriesB[index]),
+                          backgroundColor: colorB,
+                          opacity,
                         },
                       ]}
                     />
@@ -320,9 +332,11 @@ function GroupedBarChart({
         {labels.map((label, index) => (
           <Text
             key={`${label}-label-${index}`}
+            numberOfLines={1}
             style={[
               styles.groupedMonthLabel,
               {
+                fontSize: labelFontSize,
                 color: selectedIndex === index ? colors.text : colors.textFaint,
               },
             ]}
@@ -342,37 +356,16 @@ function GroupedBarChart({
             },
           ]}
         >
-          <Text
-            style={[
-              styles.tooltipMonth,
-              {
-                color: colors.text,
-              },
-            ]}
-          >
-            {labels[selectedIndex]}
+          <Text style={[styles.tooltipMonth, { color: colors.text }]}>
+            {(titles || labels)[selectedIndex]}
           </Text>
 
-          <Text
-            style={[
-              styles.tooltipRow,
-              {
-                color: colors.income,
-              },
-            ]}
-          >
-            Income: {formatAmount(incomeData[selectedIndex])}
+          <Text style={[styles.tooltipRow, { color: colorA }]}>
+            {nameA}: {formatAmount(seriesA[selectedIndex])}
           </Text>
 
-          <Text
-            style={[
-              styles.tooltipRow,
-              {
-                color: colors.expense,
-              },
-            ]}
-          >
-            Expense: {formatAmount(expenseData[selectedIndex])}
+          <Text style={[styles.tooltipRow, { color: colorB }]}>
+            {nameB}: {formatAmount(seriesB[selectedIndex])}
           </Text>
         </View>
       )}
@@ -480,6 +473,8 @@ export default function Dashboard() {
 
   const [categories, setCategories] = useState([]);
 
+  const [budgets, setBudgets] = useState([]);
+
   const [userName, setUserName] = useState("User");
 
   const [avatarUrl, setAvatarUrl] = useState(null);
@@ -489,6 +484,20 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  // FIX: only the very first load shows the full-screen spinner. Without this,
+  // every tab switch flashes "Loading dashboard..." over good data.
+  const hasLoadedOnce = useRef(false);
+
+  // FIX: loadUser used to depend on `baseCurrency`, which changed its identity
+  // every time the currency changed. Since loadUser is a dependency of the
+  // effect that calls it, and it calls setBaseCurrency, that is a refetch loop.
+  // Reading the current currency from a ref keeps loadUser stable forever.
+  const baseCurrencyRef = useRef(baseCurrency);
+
+  useEffect(() => {
+    baseCurrencyRef.current = baseCurrency;
+  }, [baseCurrency]);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -501,9 +510,6 @@ export default function Dashboard() {
       console.log("Dashboard error:", error);
 
       Alert.alert("Error", error?.message || "Unable to load dashboard.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
@@ -526,6 +532,20 @@ export default function Dashboard() {
       setCategories(data.categories || []);
     } catch (error) {
       console.log("Dashboard categories error:", error);
+    }
+  }, []);
+
+  const loadBudgets = useCallback(async () => {
+    try {
+      const data = await getBudgets();
+
+      const list = Array.isArray(data)
+        ? data
+        : data?.budgets || data?.data || [];
+
+      setBudgets(list);
+    } catch (error) {
+      console.log("Dashboard budgets error:", error);
     }
   }, []);
 
@@ -573,7 +593,7 @@ export default function Dashboard() {
 
         console.log("USER PROFILE CURRENCY:", normalizedCurrency);
 
-        if (normalizedCurrency !== baseCurrency) {
+        if (normalizedCurrency !== baseCurrencyRef.current) {
           await setBaseCurrency(normalizedCurrency);
         }
       }
@@ -598,55 +618,71 @@ export default function Dashboard() {
 
       setAvatarUrl(null);
     }
-  }, [baseCurrency, setBaseCurrency]);
+    // setBaseCurrency is intentionally left out: if it is not memoised in
+    // CurrencyContext, including it here re-creates loadUser on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
+  const loadAll = useCallback(
+    () =>
+      Promise.all([
+        loadDashboard(),
+        loadTransactions(),
+        loadCategories(),
+        loadBudgets(),
+        loadUser(),
+        loadNotificationCount(),
+      ]),
+    [
+      loadDashboard,
+      loadTransactions,
+      loadCategories,
+      loadBudgets,
+      loadUser,
+      loadNotificationCount,
+    ],
+  );
 
-        await Promise.all([
-          loadDashboard(),
-          loadTransactions(),
-          loadCategories(),
-          loadUser(),
-          loadNotificationCount(),
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // FIX: this screen stays mounted in the tab navigator, so a mount-only
+  // useEffect meant the dashboard never saw transactions, budgets or
+  // categories created on the other tabs. useFocusEffect refetches every
+  // time the tab comes back into view.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
 
-    loadData();
-  }, [
-    loadDashboard,
-    loadTransactions,
-    loadCategories,
-    loadUser,
-    loadNotificationCount,
-  ]);
+      const run = async () => {
+        if (!hasLoadedOnce.current) {
+          setLoading(true);
+        }
+
+        try {
+          await loadAll();
+        } finally {
+          if (active) {
+            hasLoadedOnce.current = true;
+            setLoading(false);
+          }
+        }
+      };
+
+      run();
+
+      return () => {
+        active = false;
+      };
+    }, [loadAll]),
+  );
 
   const onRefresh = useCallback(async () => {
     try {
       setRefreshing(true);
 
-      await Promise.all([
-        loadDashboard(),
-        loadTransactions(),
-        loadCategories(),
-        loadUser(),
-        loadNotificationCount(),
-      ]);
+      await loadAll();
     } finally {
       setRefreshing(false);
     }
-  }, [
-    loadDashboard,
-    loadTransactions,
-    loadCategories,
-    loadUser,
-    loadNotificationCount,
-  ]);
+  }, [loadAll]);
 
   if (loading || !currencyReady) {
     return (
@@ -823,6 +859,19 @@ export default function Dashboard() {
     monthlyTrend.length > 0
       ? monthlyTrend.map((item) => Number(item.expense || 0))
       : [0];
+
+  // Budget vs. expense: total of all monthly budget limits, compared with
+  // total spending for each of the same months shown in the trend chart.
+  const totalBudget = budgets.reduce(
+    (sum, budget) => sum + Number(budget.monthly_limit || 0),
+    0,
+  );
+
+  const budgetData = chartLabels.map(() => totalBudget);
+
+  const currencySymbol = getCurrencySymbol(baseCurrency);
+
+  const formatAxis = (value) => `${currencySymbol}${compactNumber(value)}`;
 
   return (
     <SafeAreaView
@@ -1059,89 +1108,204 @@ export default function Dashboard() {
           </View>
         </View>
 
-        <View
-          style={[
-            styles.sectionCard,
-            {
-              backgroundColor: colors.card,
-
-              borderColor: colors.cardBorder,
-            },
-          ]}
-        >
-          <Text
+        <View style={styles.chartsRow}>
+          <View
             style={[
-              styles.sectionTitle,
+              styles.sectionCard,
+              styles.halfCard,
               {
-                color: colors.text,
+                backgroundColor: colors.card,
+
+                borderColor: colors.cardBorder,
               },
             ]}
           >
-            Income vs. spending
-          </Text>
-
-          <Text
-            style={[
-              styles.sectionSubtitle,
-              {
-                color: colors.textFaint,
-              },
-            ]}
-          >
-            Last six months
-          </Text>
-
-          <View style={styles.barChartHeader}>
-            <View
-              style={[
-                styles.barLegendDot,
-                {
-                  backgroundColor: colors.income,
-                },
-              ]}
-            />
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={[styles.sectionTitle, { color: colors.text }]}
+            >
+              Income vs. Expense
+            </Text>
 
             <Text
               style={[
-                styles.barChartLabel,
+                styles.sectionSubtitle,
                 {
-                  color: colors.textMuted,
+                  color: colors.textFaint,
                 },
               ]}
             >
-              Income
+              Last six months
             </Text>
 
-            <View
-              style={[
-                styles.barLegendDot,
-                {
-                  backgroundColor: colors.expense,
+            <View style={styles.barChartHeader}>
+              <View
+                style={[
+                  styles.barLegendDot,
+                  {
+                    backgroundColor: colors.income,
+                  },
+                ]}
+              />
 
-                  marginLeft: 14,
-                },
-              ]}
+              <Text
+                style={[
+                  styles.barChartLabel,
+                  {
+                    color: colors.textMuted,
+                  },
+                ]}
+              >
+                Income
+              </Text>
+
+              <View
+                style={[
+                  styles.barLegendDot,
+                  styles.barLegendDotSecond,
+                  {
+                    backgroundColor: colors.expense,
+                  },
+                ]}
+              />
+
+              <Text
+                style={[
+                  styles.barChartLabel,
+                  {
+                    color: colors.textMuted,
+                  },
+                ]}
+              >
+                Expense
+              </Text>
+            </View>
+
+            <GroupedBarChart
+              labels={chartLabels}
+              seriesA={incomeData}
+              seriesB={expenseData}
+              nameA="Income"
+              nameB="Expense"
+              colorA={colors.income}
+              colorB={colors.expense}
+              colors={colors}
+              formatAmount={formatAmount}
+              formatAxis={formatAxis}
             />
-
-            <Text
-              style={[
-                styles.barChartLabel,
-                {
-                  color: colors.textMuted,
-                },
-              ]}
-            >
-              Spending
-            </Text>
           </View>
 
-          <GroupedBarChart
-            labels={chartLabels}
-            incomeData={incomeData}
-            expenseData={expenseData}
-            colors={colors}
-            formatAmount={formatAmount}
-          />
+          <View
+            style={[
+              styles.sectionCard,
+              styles.halfCard,
+              {
+                backgroundColor: colors.card,
+
+                borderColor: colors.cardBorder,
+              },
+            ]}
+          >
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={[styles.sectionTitle, { color: colors.text }]}
+            >
+              Budget vs. Expense
+            </Text>
+
+            <Text
+              style={[
+                styles.sectionSubtitle,
+                {
+                  color: colors.textFaint,
+                },
+              ]}
+            >
+              Last six months
+            </Text>
+
+            <View style={styles.barChartHeader}>
+              <View
+                style={[styles.barLegendDot, { backgroundColor: BUDGET_BLUE }]}
+              />
+
+              <Text
+                style={[
+                  styles.barChartLabel,
+                  {
+                    color: colors.textMuted,
+                  },
+                ]}
+              >
+                Budget
+              </Text>
+
+              <View
+                style={[
+                  styles.barLegendDot,
+                  styles.barLegendDotSecond,
+                  { backgroundColor: EXPENSE_RED },
+                ]}
+              />
+
+              <Text
+                style={[
+                  styles.barChartLabel,
+                  {
+                    color: colors.textMuted,
+                  },
+                ]}
+              >
+                Expense
+              </Text>
+            </View>
+
+            {totalBudget > 0 ? (
+              <GroupedBarChart
+                labels={chartLabels}
+                seriesA={budgetData}
+                seriesB={expenseData}
+                nameA="Budget"
+                nameB="Expense"
+                colorA={BUDGET_BLUE}
+                colorB={EXPENSE_RED}
+                colors={colors}
+                formatAmount={formatAmount}
+                formatAxis={formatAxis}
+              />
+            ) : (
+              <View style={styles.emptyChartBox}>
+                <Text
+                  style={[
+                    styles.noDataText,
+                    {
+                      color: colors.textFaint,
+                    },
+                  ]}
+                >
+                  No budgets set yet.
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => router.push("/budgets")}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.emptyChartLink,
+                      {
+                        color: colors.primary,
+                      },
+                    ]}
+                  >
+                    Set a budget
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </View>
 
         <View
@@ -1511,21 +1675,41 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
 
+  // Row that holds the two half-width chart cards
+  chartsRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 10,
+    marginBottom: 10,
+  },
+
+  halfCard: {
+    flex: 1,
+    minWidth: 0,
+    padding: 12,
+    marginBottom: 0,
+  },
+
   barChartHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
+    flexWrap: "wrap",
+    gap: 4,
     marginBottom: 6,
   },
 
   barLegendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 3,
+  },
+
+  barLegendDotSecond: {
+    marginLeft: 6,
   },
 
   barChartLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Inter_600SemiBold",
   },
 
@@ -1535,14 +1719,13 @@ const styles = StyleSheet.create({
   },
 
   groupedYAxis: {
-    width: 46,
+    width: Y_AXIS_WIDTH,
     justifyContent: "space-between",
-    paddingRight: 6,
-    paddingBottom: 0,
+    paddingRight: 4,
   },
 
   groupedYAxisSpacer: {
-    width: 46,
+    width: Y_AXIS_WIDTH,
   },
 
   groupedYAxisLabel: {
@@ -1568,7 +1751,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "flex-end",
-    justifyContent: "space-around",
   },
 
   groupedColumn: {
@@ -1578,16 +1760,21 @@ const styles = StyleSheet.create({
     height: "100%",
   },
 
+  // Bars share the column width, so any number of columns fits
   groupedBarPair: {
+    width: "100%",
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 3,
+    justifyContent: "center",
+    gap: 1,
+    paddingHorizontal: 1,
   },
 
   groupedBar: {
-    width: 36,
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
+    flex: 1,
+    maxWidth: 14,
+    borderTopLeftRadius: 2,
+    borderTopRightRadius: 2,
   },
 
   groupedLabelsRow: {
@@ -1598,16 +1785,14 @@ const styles = StyleSheet.create({
   groupedMonthLabel: {
     flex: 1,
     textAlign: "center",
-    fontSize: 8,
     fontFamily: "Inter_400Regular",
   },
 
   groupedTooltip: {
-    marginTop: 12,
-    alignSelf: "center",
-    minWidth: 160,
-    padding: 12,
-    borderRadius: 12,
+    marginTop: 10,
+    alignSelf: "stretch",
+    padding: 8,
+    borderRadius: 10,
     borderWidth: 1,
   },
 
@@ -1620,6 +1805,19 @@ const styles = StyleSheet.create({
   tooltipRow: {
     fontSize: 9,
     fontFamily: "Inter_500Medium",
+    marginTop: 2,
+  },
+
+  emptyChartBox: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 24,
+  },
+
+  emptyChartLink: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
     marginTop: 2,
   },
 

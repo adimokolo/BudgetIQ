@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "expo-router";
 import {
   getCategories,
   createCategory,
@@ -364,6 +365,9 @@ export default function Categories() {
   const [icon, setIcon] = useState(ICON_OPTIONS[0]);
   const [color, setColor] = useState(SWATCHES[0]);
 
+  // Only the first load blocks the screen with a spinner.
+  const hasLoadedOnce = useRef(false);
+
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -380,17 +384,13 @@ export default function Categories() {
     JetBrainsMono_500Medium,
   });
 
-  useEffect(() => {
-    if (fontsLoaded) {
-      loadCategories();
-    }
-  }, [fontsLoaded]);
-
-  const allCategories = [...incomeCategories, ...expenseCategories];
-
-  const loadCategories = async () => {
+  // FIX: a single memoised fetcher, so it can safely be a hook dependency.
+  // `showLoader` lets callers refresh silently in the background.
+  const loadCategories = useCallback(async (showLoader = true) => {
     try {
-      setLoading(true);
+      if (showLoader) {
+        setLoading(true);
+      }
 
       const data = await getCategories();
 
@@ -398,16 +398,17 @@ export default function Categories() {
 
       const categories = Array.isArray(data) ? data : data?.categories || [];
 
-      const income = categories.filter(
-        (category) => category.type?.toLowerCase() === "income",
+      setIncomeCategories(
+        categories.filter(
+          (category) => category.type?.toLowerCase() === "income",
+        ),
       );
 
-      const expense = categories.filter(
-        (category) => category.type?.toLowerCase() === "expense",
+      setExpenseCategories(
+        categories.filter(
+          (category) => category.type?.toLowerCase() === "expense",
+        ),
       );
-
-      setIncomeCategories(income);
-      setExpenseCategories(expense);
     } catch (error) {
       console.log("Category loading error:", error);
 
@@ -417,36 +418,30 @@ export default function Categories() {
           "Unable to load categories. Please check your connection.",
       );
     } finally {
+      hasLoadedOnce.current = true;
       setLoading(false);
     }
-  };
+  }, []);
 
-  const refreshCategories = async () => {
+  // FIX: was a mount-only useEffect, so categories created elsewhere (or
+  // deleted on another device) never showed up until the app restarted.
+  useFocusEffect(
+    useCallback(() => {
+      if (!fontsLoaded) return;
+
+      loadCategories(!hasLoadedOnce.current);
+    }, [fontsLoaded, loadCategories]),
+  );
+
+  const refreshCategories = useCallback(async () => {
     try {
       setRefreshing(true);
 
-      const data = await getCategories();
-
-      const categories = Array.isArray(data) ? data : data?.categories || [];
-
-      const income = categories.filter(
-        (category) => category.type?.toLowerCase() === "income",
-      );
-
-      const expense = categories.filter(
-        (category) => category.type?.toLowerCase() === "expense",
-      );
-
-      setIncomeCategories(income);
-      setExpenseCategories(expense);
-    } catch (error) {
-      console.log("Refresh error:", error);
-
-      Alert.alert("Error", error.message || "Unable to refresh categories.");
+      await loadCategories(false);
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [loadCategories]);
 
   const resetForm = () => {
     setName("");
@@ -457,37 +452,47 @@ export default function Categories() {
     setTypeMenuOpen(false);
   };
 
-  const existingNames = new Set(
-    [...incomeCategories, ...expenseCategories].map((category) =>
-      category.name.toLowerCase(),
-    ),
+  const categoryKey = (nameValue, typeValue) =>
+    `${String(typeValue || "").toLowerCase()}:${String(nameValue || "")
+      .trim()
+      .toLowerCase()}`;
+
+  const existingCategoryByKey = new Map(
+    [...incomeCategories, ...expenseCategories].map((category) => [
+      categoryKey(category.name, category.type),
+      category,
+    ]),
   );
 
-  const addPreset = async (preset) => {
-    if (existingNames.has(preset.name.toLowerCase()) || saving) return;
+  const togglePreset = async (preset) => {
+    if (saving) return;
+
+    const key = categoryKey(preset.name, preset.type);
+    const existingCategory = existingCategoryByKey.get(key);
 
     try {
       setSaving(true);
-      await createCategory({
-        name: preset.name,
-        type: preset.type.toLowerCase(),
-        icon: preset.icon,
-        color: preset.color,
-      });
-      const data = await getCategories();
-      const categories = Array.isArray(data) ? data : data?.categories || [];
-      setIncomeCategories(
-        categories.filter(
-          (category) => category.type?.toLowerCase() === "income",
-        ),
-      );
-      setExpenseCategories(
-        categories.filter(
-          (category) => category.type?.toLowerCase() === "expense",
-        ),
-      );
+
+      if (existingCategory) {
+        await deleteCategory(existingCategory.id);
+      } else {
+        await createCategory({
+          name: preset.name,
+          type: preset.type.toLowerCase(),
+          icon: preset.icon,
+          color: preset.color,
+        });
+      }
+
+      // Refreshes both the Quick Add status and the category lists behind
+      // the modal immediately after an add or remove operation.
+      await loadCategories(false);
     } catch (error) {
-      Alert.alert("Error", error.message || "Unable to add category.");
+      Alert.alert(
+        "Error",
+        error.message ||
+          `Unable to ${existingCategory ? "remove" : "add"} category.`,
+      );
     } finally {
       setSaving(false);
     }
@@ -517,7 +522,7 @@ export default function Categories() {
       resetForm();
       setShowAddModal(false);
 
-      await loadCategories();
+      await loadCategories(false);
     } catch (error) {
       console.log("Add category error:", error);
 
@@ -540,7 +545,7 @@ export default function Categories() {
             try {
               await deleteCategory(id);
               Alert.alert("Success", "Category deleted successfully.");
-              await loadCategories();
+              await loadCategories(false);
             } catch (error) {
               console.log("Delete category error:", error);
               Alert.alert(
@@ -737,20 +742,28 @@ export default function Categories() {
                         {CATEGORY_PRESETS.filter(
                           (preset) => preset.type === presetType.toLowerCase(),
                         ).map((preset) => {
-                          const isAdded = existingNames.has(
-                            preset.name.toLowerCase(),
+                          const isAdded = existingCategoryByKey.has(
+                            categoryKey(preset.name, preset.type),
                           );
 
                           return (
                             <Pressable
                               key={preset.name}
-                              disabled={isAdded || saving}
-                              onPress={() => addPreset(preset)}
+                              disabled={saving}
+                              onPress={() => togglePreset(preset)}
+                              accessibilityRole="button"
+                              accessibilityLabel={`${
+                                isAdded ? "Remove" : "Add"
+                              } ${preset.name} category`}
                               style={[
                                 styles.presetCard,
                                 {
                                   borderColor: colors.inputBorder,
                                   backgroundColor: colors.inputBg,
+                                },
+                                isAdded && {
+                                  borderColor: colors.primary,
+                                  backgroundColor: colors.chipBg,
                                 },
                                 isAdded && styles.presetCardAdded,
                               ]}
@@ -785,7 +798,7 @@ export default function Categories() {
                                       { color: colors.textFaint },
                                     ]}
                                   >
-                                    Added
+                                    Added · Tap to remove
                                   </Text>
                                 )}
                               </View>
@@ -1224,7 +1237,7 @@ const styles = StyleSheet.create({
   },
 
   presetCardAdded: {
-    opacity: 0.52,
+    opacity: 0.82,
   },
 
   presetCardIcon: {
