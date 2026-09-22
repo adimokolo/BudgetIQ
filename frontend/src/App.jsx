@@ -16,6 +16,8 @@ import FloatingAddButton from './components/FloatingAddButton';
 import ProtectedRoute from './components/ProtectedRoute';
 import Accounts from './pages/Accounts';
 import Settings from './pages/Settings';
+import AdminUsers from './pages/AdminUsers';
+import AdminRoute from './components/AdminRoute';
 
 function AppLayout({ children }) {
   return (
@@ -100,6 +102,18 @@ export default function App() {
             <AppLayout>
               <Settings />
             </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute>
+            <AdminRoute>
+              <AppLayout>
+                <AdminUsers />
+              </AppLayout>
+            </AdminRoute>
           </ProtectedRoute>
         }
       />
