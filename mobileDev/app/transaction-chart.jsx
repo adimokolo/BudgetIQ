@@ -31,7 +31,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useCurrency } from "../contexts/CurrencyContext";
 
 import { formatCurrency, currencySymbolFor } from "../utils/currency";
-import { getCategoryIcon, fallbackIconFor } from "../utils/categoryIcons";
+import { fallbackIconFor } from "../utils/categoryIcons";
 
 const fonts = {
   displayRegular: "SpaceGrotesk_400Regular",
@@ -180,6 +180,83 @@ function DonutChart({
         style={[StyleSheet.absoluteFill, chartCenterStyle]}
       >
         {children}
+      </View>
+    </View>
+  );
+}
+
+function BreakdownCard({
+  title,
+  subtitle,
+  icon,
+  iconColor,
+  data,
+  total,
+  currency,
+  styles,
+}) {
+  return (
+    <View style={styles.breakdownCard}>
+      <View style={styles.breakdownHeader}>
+        <View
+          style={[
+            styles.breakdownHeaderIcon,
+            { backgroundColor: `${iconColor}22` },
+          ]}
+        >
+          <Text style={[styles.breakdownHeaderGlyph, { color: iconColor }]}>
+            {icon}
+          </Text>
+        </View>
+
+        <View style={styles.breakdownHeaderText}>
+          <Text style={styles.breakdownTitle}>{title}</Text>
+          <Text style={styles.breakdownSubtitle}>{subtitle}</Text>
+        </View>
+      </View>
+
+      <View style={styles.breakdownList}>
+        {data.map((item) => {
+          const percentage = total > 0 ? (item.amount / total) * 100 : 0;
+
+          return (
+            <View key={item.key} style={styles.breakdownItem}>
+              <View style={styles.breakdownRow}>
+                <View style={styles.breakdownNameWrap}>
+                  <View
+                    style={[
+                      styles.breakdownDot,
+                      { backgroundColor: item.color },
+                    ]}
+                  />
+                  <Text style={styles.breakdownName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                </View>
+
+                <Text style={styles.breakdownAmount} numberOfLines={1}>
+                  {formatCurrency(item.amount, currency)}
+                </Text>
+
+                <Text style={styles.breakdownPercent}>
+                  {percentage.toFixed(1)}%
+                </Text>
+              </View>
+
+              <View style={styles.breakdownTrack}>
+                <View
+                  style={[
+                    styles.breakdownFill,
+                    {
+                      width: `${Math.min(Math.max(percentage, 1.5), 100)}%`,
+                      backgroundColor: item.color,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          );
+        })}
       </View>
     </View>
   );
@@ -419,7 +496,52 @@ export default function TransactionChart() {
     return { items: withMeta, legend: legendItems, total: sum };
   }, [transactions, categoryById, isIncome, selectedMonth, customRange]);
 
-  const maxAmount = items.length > 0 ? items[0].amount : 0;
+  const accountItems = useMemo(() => {
+    const wantedType = isIncome ? "income" : "expense";
+    const grouped = new Map();
+
+    for (const transaction of transactions) {
+      if (transaction.type !== wantedType || !transaction.occurred_on) {
+        continue;
+      }
+
+      const dateKey = String(transaction.occurred_on).slice(0, 10);
+
+      if (customRange) {
+        if (dateKey < customRange.fromKey || dateKey > customRange.toKey) {
+          continue;
+        }
+      } else if (dateKey.slice(0, 7) !== selectedMonth) {
+        continue;
+      }
+
+      const accountName =
+        transaction.account_name || transaction.account?.name || "No account";
+      const accountKey = String(
+        transaction.account_id ?? transaction.account?.id ?? accountName,
+      );
+      const amount = Number(transaction.amount || 0);
+      const existing = grouped.get(accountKey);
+
+      if (existing) {
+        existing.amount += amount;
+      } else {
+        grouped.set(accountKey, {
+          key: accountKey,
+          name: accountName,
+          amount,
+        });
+      }
+    }
+
+    return Array.from(grouped.values())
+      .filter((item) => item.amount > 0)
+      .sort((a, b) => b.amount - a.amount)
+      .map((item, index) => ({
+        ...item,
+        color: FALLBACK_COLORS[index % FALLBACK_COLORS.length],
+      }));
+  }, [transactions, isIncome, selectedMonth, customRange]);
 
   const typeLabel = isIncome ? "income" : "expenses";
 
@@ -637,62 +759,32 @@ export default function TransactionChart() {
               </View>
             </View>
 
-            <View style={styles.listCard}>
-              {items.map((item, index) => (
-                <View
-                  key={item.key}
-                  style={[
-                    styles.categoryRow,
-                    index === items.length - 1 && styles.categoryRowLast,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.categoryIcon,
-                      { backgroundColor: item.color },
-                    ]}
-                  >
-                    <Text style={styles.categoryEmoji}>
-                      {getCategoryIcon(item.icon)}
-                    </Text>
-                  </View>
+            <View style={styles.breakdownStack}>
+              <BreakdownCard
+                title="By Category"
+                subtitle={
+                  isIncome
+                    ? "Where your money came from"
+                    : "Where your money went"
+                }
+                icon="▰"
+                iconColor={colors.income}
+                data={items}
+                total={total}
+                currency={currency}
+                styles={styles}
+              />
 
-                  <View style={styles.categoryBody}>
-                    <View style={styles.categoryTopRow}>
-                      <Text style={styles.categoryName} numberOfLines={1}>
-                        {item.name}
-                      </Text>
-
-                      <Text style={styles.categoryAmount}>
-                        {formatCurrency(item.amount, currency)}
-                      </Text>
-                    </View>
-
-                    <View style={styles.barRow}>
-                      <View style={styles.barTrack}>
-                        <View
-                          style={[
-                            styles.barFill,
-                            {
-                              width: `${Math.max(
-                                maxAmount > 0
-                                  ? (item.amount / maxAmount) * 100
-                                  : 0,
-                                2,
-                              )}%`,
-                              backgroundColor: item.color,
-                            },
-                          ]}
-                        />
-                      </View>
-
-                      <Text style={styles.barPercent}>
-                        {item.percent.toFixed(2)}%
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              ))}
+              <BreakdownCard
+                title="By Account"
+                subtitle="Activity across your accounts"
+                icon="▣"
+                iconColor="#8B5CF6"
+                data={accountItems}
+                total={total}
+                currency={currency}
+                styles={styles}
+              />
             </View>
           </>
         )}
@@ -1063,6 +1155,124 @@ const createStyles = (colors) =>
       fontSize: 10,
       fontFamily: fonts.monoMedium,
       color: colors.textMuted,
+    },
+
+    breakdownStack: {
+      marginTop: 16,
+      gap: 14,
+    },
+
+    breakdownCard: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      padding: 16,
+    },
+
+    breakdownHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+
+    breakdownHeaderIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 12,
+    },
+
+    breakdownHeaderGlyph: {
+      fontSize: 17,
+      lineHeight: 21,
+      fontFamily: fonts.bodySemiBold,
+    },
+
+    breakdownHeaderText: {
+      flex: 1,
+    },
+
+    breakdownTitle: {
+      fontSize: 14,
+      fontFamily: fonts.displayBold,
+      color: colors.text,
+    },
+
+    breakdownSubtitle: {
+      marginTop: 2,
+      fontSize: 10,
+      lineHeight: 14,
+      fontFamily: fonts.bodyRegular,
+      color: colors.textMuted,
+    },
+
+    breakdownList: {
+      gap: 15,
+    },
+
+    breakdownItem: {
+      width: "100%",
+    },
+
+    breakdownRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 7,
+    },
+
+    breakdownNameWrap: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: "row",
+      alignItems: "center",
+      marginRight: 8,
+    },
+
+    breakdownDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      marginRight: 8,
+    },
+
+    breakdownName: {
+      flex: 1,
+      fontSize: 11,
+      fontFamily: fonts.bodySemiBold,
+      color: colors.text,
+    },
+
+    breakdownAmount: {
+      maxWidth: 120,
+      fontSize: 10,
+      fontFamily: fonts.monoMedium,
+      color: colors.text,
+      textAlign: "right",
+    },
+
+    breakdownPercent: {
+      width: 48,
+      marginLeft: 8,
+      fontSize: 9,
+      fontFamily: fonts.monoMedium,
+      color: colors.textMuted,
+      textAlign: "right",
+    },
+
+    breakdownTrack: {
+      width: "100%",
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.chipBg,
+      overflow: "hidden",
+    },
+
+    breakdownFill: {
+      height: 6,
+      borderRadius: 3,
     },
 
     listCard: {

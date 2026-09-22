@@ -11,8 +11,10 @@ const throwApiError = (error, fallback) => {
 export const previewStatement = async (accountId, file, bankName) => {
   try {
     const formData = new FormData();
+
     formData.append("accountId", String(accountId));
     formData.append("bankName", bankName);
+
     formData.append("statement", {
       uri: file.uri,
       name: file.name || "statement.csv",
@@ -24,7 +26,9 @@ export const previewStatement = async (accountId, file, bankName) => {
       formData,
       {
         timeout: 60000,
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       },
     );
 
@@ -34,8 +38,6 @@ export const previewStatement = async (accountId, file, bankName) => {
   }
 };
 
-// Email imports create or reuse the matching bank account, so they do not
-// require an account id. Keep this signature identical to the web client.
 export const previewEmailAlerts = async (emailText, bankName) => {
   try {
     const response = await api.post(
@@ -45,7 +47,9 @@ export const previewEmailAlerts = async (emailText, bankName) => {
         bankName,
         emailText,
       },
-      { timeout: 60000 },
+      {
+        timeout: 60000,
+      },
     );
 
     return response.data;
@@ -56,9 +60,14 @@ export const previewEmailAlerts = async (emailText, bankName) => {
 
 export const confirmImport = async (importId) => {
   try {
-    const response = await api.post(`/bank-import/${importId}/confirm`, null, {
-      timeout: 60000,
-    });
+    const response = await api.post(
+      `/bank-import/${importId}/confirm`,
+      {},
+      {
+        timeout: 60000,
+      },
+    );
+
     return response.data;
   } catch (error) {
     throwApiError(error, "Unable to confirm this import.");
