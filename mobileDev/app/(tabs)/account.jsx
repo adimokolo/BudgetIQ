@@ -354,7 +354,7 @@ export default function Account() {
                 importBank,
               );
             })()
-          : await previewEmailAlerts(null, emailText, importBank);
+          : await previewEmailAlerts(emailText, importBank);
       if (result) setImportPreview(result);
     } catch (error) {
       Alert.alert(

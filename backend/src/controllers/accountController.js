@@ -13,6 +13,7 @@ async function getAccounts(req, res) {
         balance,
         notes,
         color,
+        bank_name,
         created_at,
         updated_at
       FROM accounts
@@ -42,7 +43,7 @@ async function createAccount(req, res) {
   try {
     const userId = req.user.id;
 
-    const { name, currency, initialAmount, notes, color } = req.body;
+    const { name, bankName, currency, initialAmount, notes, color } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({
@@ -80,6 +81,10 @@ async function createAccount(req, res) {
       typeof color === "string" && /^#[0-9A-Fa-f]{6}$/.test(color.trim());
 
     const trimmedName = name.trim();
+    const trimmedBankName =
+      typeof bankName === "string" && bankName.trim()
+        ? bankName.trim().slice(0, 120)
+        : null;
 
     await client.query("BEGIN");
 
@@ -91,9 +96,10 @@ async function createAccount(req, res) {
         currency,
         balance,
         notes,
-        color
+        color,
+        bank_name
       )
-      VALUES ($1, $2, $3, $4, $5, $6)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING
         id,
         name,
@@ -101,6 +107,7 @@ async function createAccount(req, res) {
         balance,
         notes,
         color,
+        bank_name,
         created_at,
         updated_at
       `,
@@ -111,6 +118,7 @@ async function createAccount(req, res) {
         amount,
         notes ? notes.trim() : null,
         isValidHexColor ? color.trim() : "#6366F1",
+        trimmedBankName,
       ],
     );
 
@@ -161,7 +169,7 @@ async function updateAccount(req, res) {
     const userId = req.user.id;
     const { id } = req.params;
 
-    const { name, currency, initialAmount, notes, color } = req.body;
+    const { name, bankName, currency, initialAmount, notes, color } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({
@@ -198,6 +206,11 @@ async function updateAccount(req, res) {
     const isValidHexColor =
       typeof color === "string" && /^#[0-9A-Fa-f]{6}$/.test(color.trim());
 
+    const trimmedBankName =
+      typeof bankName === "string" && bankName.trim()
+        ? bankName.trim().slice(0, 120)
+        : null;
+
     const result = await pool.query(
       `
       UPDATE accounts
@@ -207,9 +220,10 @@ async function updateAccount(req, res) {
         balance = $3,
         notes = $4,
         color = COALESCE($5, color),
+        bank_name = $6,
         updated_at = NOW()
-      WHERE id = $6
-        AND user_id = $7
+      WHERE id = $7
+        AND user_id = $8
       RETURNING
         id,
         name,
@@ -217,6 +231,7 @@ async function updateAccount(req, res) {
         balance,
         notes,
         color,
+        bank_name,
         created_at,
         updated_at
       `,
@@ -226,6 +241,7 @@ async function updateAccount(req, res) {
         amount,
         notes ? notes.trim() : null,
         isValidHexColor ? color.trim() : null,
+        trimmedBankName,
         id,
         userId,
       ],
