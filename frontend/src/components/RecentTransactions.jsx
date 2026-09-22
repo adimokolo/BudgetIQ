@@ -22,10 +22,14 @@ export default function RecentTransactions({ transactions, currency }) {
                 }}>
                   {getIcon(t.category_icon)}
                 </span>
-                <span>
-                  <div style={{ fontSize: 13.5, fontWeight: 500 }}>
+                <span style={{ minWidth: 0, flex: 1 }}>
+                  <div
+                    className="recent-transaction-description"
+                    title={t.description || t.category_name || 'Uncategorized'}
+                  >
                     {t.description || t.category_name || 'Uncategorized'}
                   </div>
+
                   <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
                     {formatDate(t.occurred_on)}
                   </div>
