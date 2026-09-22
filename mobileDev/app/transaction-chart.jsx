@@ -219,8 +219,6 @@ export default function TransactionChart() {
   const [activeType, setActiveType] = useState("Expenses");
   const [selectedMonth, setSelectedMonth] = useState(currentKey);
 
-  // Custom date range picked from the calendar icon. When set, it overrides
-  // the month tabs.  Shape: { from: Date, to: Date, fromKey, toKey }
   const [customRange, setCustomRange] = useState(null);
   const [showRangeModal, setShowRangeModal] = useState(false);
   const [draftFrom, setDraftFrom] = useState(null);
@@ -309,7 +307,6 @@ export default function TransactionChart() {
     setCustomRange({ from: draftFrom, to: draftTo, fromKey, toKey });
     closeRangeModal();
 
-    // bring the new custom tab into view
     setTimeout(() => {
       periodScrollRef.current?.scrollToEnd({ animated: true });
     }, 80);
@@ -325,7 +322,6 @@ export default function TransactionChart() {
     [categories],
   );
 
-  // Month tabs: every month that has data, plus this month and last month.
   const periodTabs = useMemo(() => {
     const keys = new Set([currentKey, previousKey]);
 
@@ -345,7 +341,6 @@ export default function TransactionChart() {
 
   const isIncome = activeType === "Income";
 
-  // Everything the donut, legend and list need for the selected type + month.
   const { items, legend, total } = useMemo(() => {
     const wantedType = isIncome ? "income" : "expense";
     const grouped = new Map();
