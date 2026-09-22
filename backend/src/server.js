@@ -29,7 +29,7 @@ const accountRoutes = require("./routes/accounts");
 const notificationRoutes = require("./routes/notifications");
 const bankSyncRoutes = require("./routes/bankSync");
 const bankImportRoutes = require("./routes/bankImport");
-const gmailRoutes = require("./routes/gmailRoutes");
+const adminRoutes = require("./routes/admin");
 
 const app = express();
 
@@ -87,7 +87,7 @@ app.use("/api/bank-sync", bankSyncRoutes);
 
 app.use("/api/bank-import", bankImportRoutes);
 
-app.use("/api/gmail", gmailRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use((req, res) => {
   console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
