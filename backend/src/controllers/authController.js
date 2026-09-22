@@ -447,17 +447,19 @@ const login = asyncHandler(async (req, res) => {
 
   const result = await pool.query(
     `
-    SELECT
-      id,
-      full_name,
-      email,
-      password_hash,
-      currency,
-      is_verified,
-      avatar_url
-    FROM users
-    WHERE email = $1
-    `,
+  SELECT
+    id,
+    full_name,
+    email,
+    password_hash,
+    currency,
+    is_verified,
+    avatar_url,
+    role,
+    status
+  FROM users
+  WHERE email = $1
+  `,
     [cleanEmail],
   );
 
@@ -471,9 +473,17 @@ const login = asyncHandler(async (req, res) => {
 
   const valid = await bcrypt.compare(password, user.password_hash);
 
-  if (!valid) {
-    return res.status(401).json({
-      error: "Incorrect email or password.",
+  if (user.status === "suspended") {
+    return res.status(403).json({
+      error: "This account has been suspended.",
+      code: "ACCOUNT_SUSPENDED",
+    });
+  }
+
+  if (user.status === "deactivated") {
+    return res.status(403).json({
+      error: "This account is deactivated.",
+      code: "ACCOUNT_DEACTIVATED",
     });
   }
 

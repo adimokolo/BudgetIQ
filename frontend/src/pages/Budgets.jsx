@@ -19,6 +19,10 @@ export default function Budgets() {
   const [editingBudget, setEditingBudget] = useState(null); // null = creating, object = editing
   const [form, setForm] = useState({ categoryId: "", monthlyLimit: "" });
   const [error, setError] = useState(null);
+  const totalBudget = budgets.reduce(
+    (sum, budget) => sum + Number(budget.monthly_limit || 0),
+    0
+  );
 
   const loadBudgets = () => {
     setLoading(true);
@@ -63,15 +67,42 @@ export default function Budgets() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    const monthlyLimit = Number(form.monthlyLimit);
+
+    if (
+      !form.monthlyLimit ||
+      !Number.isFinite(monthlyLimit) ||
+      monthlyLimit <= 0
+    ) {
+      setError("Please enter a monthly limit greater than zero.");
+      return;
+    }
+    if (!editingBudget) {
+      const duplicate = budgets.some(
+        (budget) =>
+          String(budget.category_id) === String(form.categoryId)
+      );
+
+      if (duplicate) {
+        const category = categories.find(
+          (c) => String(c.id) === String(form.categoryId)
+        );
+
+        setError(
+          `${category?.name || "This category"} already has a monthly budget. Edit the existing budget instead.`
+        );
+        return;
+      }
+    }
     try {
       if (editingBudget) {
         await apiClient.patch(`/budgets/${editingBudget.id}`, {
-          monthlyLimit: Number(form.monthlyLimit),
+          monthlyLimit: Number(monthlyLimit),
         });
       } else {
         await apiClient.post("/budgets", {
-          categoryId: form.categoryId || null,
-          monthlyLimit: Number(form.monthlyLimit),
+          categoryId: form.categoryId,
+          monthlyLimit: Number(monthlyLimit),
         });
       }
       setModalOpen(false);
@@ -96,9 +127,48 @@ export default function Budgets() {
           <h1>Budgets</h1>
           <p>Set monthly limits and see how close you are to them.</p>
         </div>
-        <button className="btn btn--primary" onClick={openCreateModal}>
-          + Set budget
-        </button>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
+          <button className="btn btn--primary" onClick={openCreateModal}>
+            + Set budget
+          </button>
+
+          <div
+            className="facet-card"
+            style={{
+              padding: "8px 14px",
+              minWidth: 140,
+              textAlign: "right",
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                color: "var(--ink-faint)",
+              }}
+            >
+              Total
+            </div>
+
+            <div
+              className="stat-value"
+              style={{
+                fontSize: 14,
+                marginTop: 2,
+              }}
+            >
+              {loading ? "—" : formatCurrency(totalBudget, currency)}
+            </div>
+          </div>
+        </div>
       </div>
 
       {loading ? (
@@ -118,7 +188,9 @@ export default function Budgets() {
       ) : (
         <div className="grid grid--stats">
           {budgets.map((b) => {
-            const over = b.percent_used >= 100;
+            const percent = Number(b.percent_used) || 0;
+            const over = percent >= 100;
+            const approaching = percent >= 80 && percent < 100;
             return (
               <div className="facet-card" key={b.id}>
                 <div
@@ -189,14 +261,33 @@ export default function Budgets() {
 
                 <div className="progress-track">
                   <div
-                    className={`progress-fill${over ? " progress-fill--over" : ""}`}
-                    style={{ width: `${Math.min(100, b.percent_used)}%` }}
+                    className="progress-fill"
+                    style={{
+                      width: `${Math.min(100, Math.max(0, percent))}%`,
+                      background: over
+                        ? "var(--expense)"
+                        : approaching
+                          ? "var(--warning)"
+                          : "var(--income)",
+                    }}
                   />
                 </div>
-                <p className="helper-text" style={{ marginTop: 8 }}>
+                <p
+                  className="helper-text"
+                  style={{
+                    marginTop: 8,
+                    color: over
+                      ? "var(--expense)"
+                      : approaching
+                        ? "var(--warning)"
+                        : "var(--income)",
+                  }}
+                >
                   {over
-                    ? `${b.percent_used}% used — over limit`
-                    : `${b.percent_used}% of monthly limit used`}
+                    ? "You have exceeded this budget."
+                    : approaching
+                      ? "You are approaching your budget limit."
+                      : "You are within your budget."}
                 </p>
               </div>
             );
@@ -220,7 +311,7 @@ export default function Budgets() {
                 }
                 disabled={Boolean(editingBudget)}
               >
-                <option value="">Overall spending</option>
+                <option value="">Select an expense category</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}

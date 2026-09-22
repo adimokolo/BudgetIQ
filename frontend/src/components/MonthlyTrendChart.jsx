@@ -15,14 +15,14 @@ export default function MonthlyTrendChart({ data, currency }) {
 
   return (
     <div className="facet-card">
-      <h3 className="section-title">Income vs. spending</h3>
+      <h3 className="section-title">Income vs. Expense</h3>
       <p className="section-subtitle">Last six months</p>
 
       {chartData.length === 0 ? (
         <div className="empty-state">No transactions yet — add one to see your trend.</div>
       ) : (
         <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={chartData} margin={{ top: 6, right: 8, left: -18, bottom: 0 }} barGap={4} barCategoryGap="30%">
+          <BarChart data={chartData} margin={{ top: 6, right: 8, left: 8, bottom: 0 }} barGap={4} barCategoryGap="30%">
             <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-border)" vertical={false} />
             <XAxis
               dataKey="label"
@@ -53,7 +53,7 @@ export default function MonthlyTrendChart({ data, currency }) {
               formatter={(value) => value === 'income' ? 'Income' : 'Expense'}
               wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
             />
-            <Bar dataKey="income"  fill="var(--income)"  radius={[4, 4, 0, 0]} maxBarSize={32} />
+            <Bar dataKey="income" fill="var(--income)" radius={[4, 4, 0, 0]} maxBarSize={32} />
             <Bar dataKey="expense" fill="var(--expense)" radius={[4, 4, 0, 0]} maxBarSize={32} />
           </BarChart>
         </ResponsiveContainer>
