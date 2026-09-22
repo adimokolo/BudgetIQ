@@ -15,7 +15,7 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 
 import * as DocumentPicker from "expo-document-picker";
@@ -140,6 +140,7 @@ const SWATCHES = [
 
 export default function Account() {
   const { colors } = useTheme();
+  const router = useRouter();
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -290,10 +291,7 @@ export default function Account() {
 
   const openBankSynchronization = () => {
     setShowAddModal(false);
-    Alert.alert(
-      "Coming Soon",
-      "Direct bank synchronization will be available in a future BudgetIQ update. Your existing backend integration is unchanged.",
-    );
+    Alert.alert("Coming Soon", "Direct bank synchronization is coming soon");
   };
 
   const [importMode, setImportMode] = useState(null);
@@ -1383,7 +1381,14 @@ export default function Account() {
                     borderColor: colors.cardBorder,
                   },
                 ]}
-                onPress={() => openImport(option.mode)}
+                onPress={() => {
+                  if (option.mode === "email") {
+                    setShowAddModal(false);
+                    router.push("/email-sync");
+                  } else {
+                    openImport(option.mode);
+                  }
+                }}
               >
                 <View
                   style={[
