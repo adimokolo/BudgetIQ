@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "budgetiqmobileapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -16,7 +15,6 @@
         "backgroundColor": "#0756C9",
         "foregroundImage": "./assets/images/foreground-icon.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.olatundepedro.BudgetIQMobileApp"
     },
@@ -41,7 +39,15 @@
       "@react-native-community/datetimepicker",
       "expo-secure-store",
       "expo-font",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-1490675395669448~2603482105",
+          "iosAppId": "ca-app-pub-1490675395669448~7364854190"
+        }
+      ],
+      "expo-build-properties"
     ],
     "experiments": {
       "typedRoutes": true,
