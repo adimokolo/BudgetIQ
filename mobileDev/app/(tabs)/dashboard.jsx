@@ -1,3 +1,4 @@
+import AdBanner from "../../components/AdBanner";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
@@ -1107,7 +1108,7 @@ export default function Dashboard() {
             </Text>
           </View>
         </View>
-
+        <AdBanner />
         <View style={styles.chartsRow}>
           <View
             style={[
@@ -1462,7 +1463,6 @@ export default function Dashboard() {
                       </Text>
                     </View>
                   </View>
-
                   <Text
                     numberOfLines={1}
                     style={[
