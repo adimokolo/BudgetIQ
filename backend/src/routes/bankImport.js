@@ -57,6 +57,53 @@ const dateValue = (value) => {
     return validDate(
       `${local[3]}-${local[2].padStart(2, "0")}-${local[1].padStart(2, "0")}`,
     );
+
+  const shortLocal = text.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2})(?:\D|$)/);
+  if (shortLocal) {
+    const year = Number(shortLocal[3]);
+    const fullYear = year >= 70 ? 1900 + year : 2000 + year;
+    return validDate(
+      `${fullYear}-${shortLocal[2].padStart(2, "0")}-${shortLocal[1].padStart(2, "0")}`,
+    );
+  }
+
+  const namedMonth = text.match(
+    /^(\d{1,2})[-\s]([A-Za-z]{3,9})[-\s](\d{4})(?:\D|$)/,
+  );
+  if (namedMonth) {
+    const months = {
+      jan: 1,
+      january: 1,
+      feb: 2,
+      february: 2,
+      mar: 3,
+      march: 3,
+      apr: 4,
+      april: 4,
+      may: 5,
+      jun: 6,
+      june: 6,
+      jul: 7,
+      july: 7,
+      aug: 8,
+      august: 8,
+      sep: 9,
+      sept: 9,
+      september: 9,
+      oct: 10,
+      october: 10,
+      nov: 11,
+      november: 11,
+      dec: 12,
+      december: 12,
+    };
+    const month = months[namedMonth[2].toLowerCase()];
+    if (month) {
+      return validDate(
+        `${namedMonth[3]}-${String(month).padStart(2, "0")}-${namedMonth[1].padStart(2, "0")}`,
+      );
+    }
+  }
   return null;
 };
 function validDate(s) {
@@ -153,6 +200,84 @@ function normalize(row) {
     reference,
   };
 }
+
+const PDF_DATE_SOURCE =
+  "(?:\\d{1,2}[/-]\\d{1,2}[/-](?:\\d{2}|\\d{4})|\\d{1,2}[-\\s][A-Za-z]{3,9}[-\\s]\\d{4})";
+const PDF_AMOUNT_PATTERN =
+  /(?:NGN|₦)?\s*\(?-?\d{1,3}(?:[,.]\d{3})*[,.]\d{2}\)?|(?:NGN|₦)?\s*\(?-?\d+[,.]\d{2}\)?/gi;
+
+function pdfMoney(value) {
+  if (!value) return null;
+  let text = String(value).replace(/NGN|₦/gi, "").replace(/\s/g, "").trim();
+  const lastComma = text.lastIndexOf(",");
+  const lastDot = text.lastIndexOf(".");
+  const decimalAt = Math.max(lastComma, lastDot);
+  if (decimalAt >= 0) {
+    const whole = text.slice(0, decimalAt).replace(/[,.]/g, "");
+    const decimals = text.slice(decimalAt + 1).replace(/\D/g, "");
+    text = `${whole}.${decimals}`;
+  }
+  return money(text);
+}
+
+function parsePdfTransactionBlock(block) {
+  const compact = String(block || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!compact) return null;
+  const dates = [...compact.matchAll(new RegExp(PDF_DATE_SOURCE, "gi"))];
+  if (!dates.length) return null;
+  const date = dateValue(dates[0][0]);
+  if (!date) return null;
+
+  const lastDate = dates[Math.min(1, dates.length - 1)];
+  const afterDates = compact.slice(lastDate.index + lastDate[0].length);
+  const amountMatches = [...afterDates.matchAll(PDF_AMOUNT_PATTERN)];
+  if (amountMatches.length < 2) return null;
+  const amounts = amountMatches.map((match) => pdfMoney(match[0]));
+  if (amounts.some((amount) => amount == null)) return null;
+
+  let debit = 0;
+  let credit = 0;
+  if (amounts.length >= 3) {
+    [debit, credit] = amounts.slice(-3, -1);
+  } else {
+    const direction = compact
+      .match(/\b(DR|CR|DEBIT|CREDIT)\b/i)?.[1]
+      ?.toLowerCase();
+    if (direction === "dr" || direction === "debit") debit = amounts[0];
+    else if (direction === "cr" || direction === "credit") credit = amounts[0];
+    else return null;
+  }
+  if (debit > 0 && credit > 0) return null;
+  if (!(debit > 0) && !(credit > 0)) return null;
+
+  const description =
+    afterDates
+      .slice(0, amountMatches[0].index)
+      .replace(/^[-|:\s]+|[-|:\s]+$/g, "") || "Imported bank transaction";
+  return normalize({ date, debit, credit, description });
+}
+
+function parsePdfTransactions(text) {
+  const lines = String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const startsWithDate = new RegExp(`^${PDF_DATE_SOURCE}(?:\\s|$)`, "i");
+  const blocks = [];
+  let current = "";
+  for (const line of lines) {
+    if (startsWithDate.test(line)) {
+      if (current) blocks.push(current);
+      current = line;
+    } else if (current) {
+      current += ` ${line}`;
+    }
+  }
+  if (current) blocks.push(current);
+  return blocks.map(parsePdfTransactionBlock).filter(Boolean);
+}
 async function verifyAccount(req, res, source) {
   if (source === "email") {
     if (!String(req.body.bankName || "").trim()) {
@@ -165,13 +290,17 @@ async function verifyAccount(req, res, source) {
 
   const uuidPattern =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const numericIdPattern = /^[1-9]\d*$/;
 
-  if (!uuidPattern.test(accountId)) {
+  // Older BudgetIQ databases used SERIAL account IDs while newer migrations
+  // use UUIDs. Accept either representation and compare as text so this route
+  // works safely with the database schema that is actually installed.
+  if (!uuidPattern.test(accountId) && !numericIdPattern.test(accountId)) {
     fail(res, 400, "Select a valid BudgetIQ account.");
     return null;
   }
   const found = await pool.query(
-    "SELECT id,currency FROM accounts WHERE id=$1 AND user_id=$2",
+    "SELECT id,currency FROM accounts WHERE id::text=$1 AND user_id=$2",
     [accountId, req.user.id],
   );
   if (!found.rowCount) {
@@ -248,8 +377,12 @@ router.post(
         let tempDir = null;
 
         try {
-          // If the PDF contains little/no extractable text, use OCR.
-          if (text.length < 100) {
+          let rows = parsePdfTransactions(text);
+
+          // A PDF may contain readable headings while its transaction table is
+          // scanned. In that case pdf-parse returns plenty of text, but no
+          // usable rows. Run OCR whenever normal parsing finds zero rows.
+          if (!rows.length) {
             tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "budgetiq-ocr-"));
 
             const pdfPath = path.join(tempDir, "statement.pdf");
@@ -257,13 +390,24 @@ router.post(
 
             await fs.writeFile(pdfPath, req.file.buffer);
 
-            await execFileAsync("pdftoppm", [
-              "-r",
-              "300",
-              "-png",
-              pdfPath,
-              imagePrefix,
-            ]);
+            try {
+              await execFileAsync("pdftoppm", [
+                "-r",
+                "300",
+                "-png",
+                pdfPath,
+                imagePrefix,
+              ]);
+            } catch (error) {
+              if (error.code === "ENOENT") {
+                return fail(
+                  res,
+                  503,
+                  "PDF OCR is not installed on the backend. Install Poppler so the pdftoppm command is available, then restart the backend.",
+                );
+              }
+              throw error;
+            }
 
             const files = await fs.readdir(tempDir);
 
@@ -288,65 +432,29 @@ router.post(
             for (const pageImage of pageImages) {
               const imagePath = path.join(tempDir, pageImage);
 
-              const { stdout } = await execFileAsync(
-                "tesseract",
-                [imagePath, "stdout", "--psm", "6", "-l", "eng"],
-                { maxBuffer: 10 * 1024 * 1024 },
-              );
+              let stdout;
+              try {
+                ({ stdout } = await execFileAsync(
+                  "tesseract",
+                  [imagePath, "stdout", "--psm", "6", "-l", "eng"],
+                  { maxBuffer: 10 * 1024 * 1024 },
+                ));
+              } catch (error) {
+                if (error.code === "ENOENT") {
+                  return fail(
+                    res,
+                    503,
+                    "PDF OCR is not installed on the backend. Install Tesseract OCR so the tesseract command is available, then restart the backend.",
+                  );
+                }
+                throw error;
+              }
 
               ocrPages.push(stdout);
             }
 
             text = ocrPages.join("\n");
-          }
-
-          const lines = text
-            .split(/\r?\n/)
-            .map((line) => line.trim())
-            .filter(Boolean);
-
-          const rows = [];
-
-          // OCR/table format:
-          // Trans Date | Value Date | Debit | Credit | Balance | Narration
-          //
-          // We intentionally use Trans Date, Debit and Credit.
-          // Value Date may occasionally be damaged/truncated by OCR.
-          const transactionPattern =
-            /^(\d{1,2}[/-]\d{1,2}[/-]\d{4})\s+\S+\s+([\d,.]+\.\d{2})\s+([\d,.]+\.\d{2})(?:\s+.*)?$/;
-
-          for (const line of lines) {
-            const match = line.match(transactionPattern);
-
-            if (!match) continue;
-
-            const date = dateValue(match[1]);
-
-            const normalizeOcrAmount = (value) => {
-              const parts = String(value).split(".");
-
-              // OCR sometimes reads a thousands comma as a dot:
-              // 7,350.00 -> 7.350.00
-              if (parts.length > 2) {
-                const decimals = parts.pop();
-                return `${parts.join(",")}.${decimals}`;
-              }
-
-              return value;
-            };
-
-            const debit = money(normalizeOcrAmount(match[2]));
-            const credit = money(normalizeOcrAmount(match[3]));
-            if (!date) continue;
-
-            const row = normalize({
-              date,
-              debit,
-              credit,
-              description: line,
-            });
-
-            if (row) rows.push(row);
+            rows = parsePdfTransactions(text);
           }
 
           if (!rows.length) {
