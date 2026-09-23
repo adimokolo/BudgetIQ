@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
-export default function KebabMenu({ items, ariaLabel = "Open menu" }) {
+export default function KebabMenu({
+  items,
+  ariaLabel = "Open menu",
+  placement = "down",
+}) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -33,7 +37,11 @@ export default function KebabMenu({ items, ariaLabel = "Open menu" }) {
       </button>
 
       {open && (
-        <div className="kebab-panel facet-card" role="menu">
+        <div
+          className={`kebab-panel facet-card ${placement === "up" ? "kebab-panel--up" : ""
+            }`}
+          role="menu"
+        >
           {items.map((item) => (
             <button
               key={item.label}

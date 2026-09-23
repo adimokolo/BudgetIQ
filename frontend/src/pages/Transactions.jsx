@@ -962,103 +962,107 @@ export default function Transactions() {
             </thead>
 
             <tbody>
-              {displayedTransactions.map(
-                (transaction) => (
-                  <tr key={transaction.id}>
-                    <td>
-                      {formatDate(
-                        transaction.occurred_on,
-                      )}
-                    </td>
+              {displayedTransactions.map((transaction, index) => (
+                <tr key={transaction.id}>
+                  <td>
+                    {formatDate(
+                      transaction.occurred_on,
+                    )}
+                  </td>
 
-                    <td>
-                      {transaction.description || '—'}
-                    </td>
+                  <td>
+                    {transaction.description || '—'}
+                  </td>
 
-                    <td>
-                      <span
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: '50%',
-                            background:
-                              transaction.category_color ||
-                              '#B9C3D4',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 13,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {getIcon(
-                            transaction.category_icon,
-                          )}
-                        </span>
-
-                        {transaction.category_name ||
-                          'Uncategorized'}
-                      </span>
-                    </td>
-
-                    <td>
-                      <span style={{ fontWeight: 500 }}>
-                        {transaction.account_name ||
-                          '—'}
-                      </span>
-                    </td>
-
-                    <td
-                      className="mono"
+                  <td>
+                    <span
                       style={{
-                        color:
-                          transaction.type === 'income'
-                            ? 'var(--income)'
-                            : 'var(--expense)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
                       }}
                     >
-                      {transaction.type === 'income'
-                        ? '+'
-                        : '-'}
-                      {formatCurrency(
-                        transaction.amount,
-                        currency,
-                      )}
-                    </td>
+                      <span
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '50%',
+                          background:
+                            transaction.category_color ||
+                            '#B9C3D4',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 13,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {getIcon(
+                          transaction.category_icon,
+                        )}
+                      </span>
 
-                    <td>
-                      <KebabMenu
-                        ariaLabel="Transaction actions"
-                        items={[
-                          {
-                            label: 'Edit',
-                            onClick: () => {
-                              setEditingTransaction(
-                                transaction,
-                              );
-                              setModalOpen(true);
-                            },
+                      {transaction.category_name ||
+                        'Uncategorized'}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span style={{ fontWeight: 500 }}>
+                      {transaction.account_name ||
+                        '—'}
+                    </span>
+                  </td>
+
+                  <td
+                    className="mono"
+                    style={{
+                      color:
+                        transaction.type === 'income'
+                          ? 'var(--income)'
+                          : 'var(--expense)',
+                    }}
+                  >
+                    {transaction.type === 'income'
+                      ? '+'
+                      : '-'}
+                    {formatCurrency(
+                      transaction.amount,
+                      currency,
+                    )}
+                  </td>
+
+                  <td>
+                    <KebabMenu
+                      ariaLabel="Transaction actions"
+                      placement={
+                        index === displayedTransactions.length - 1
+                          ? "up"
+                          : "down"
+                      }
+                      items={[
+                        {
+                          label: 'Edit',
+                          onClick: () => {
+                            setEditingTransaction(
+                              transaction,
+                            );
+                            setModalOpen(true);
                           },
-                          {
-                            label: 'Delete',
-                            danger: true,
-                            onClick: () =>
-                              handleDelete(
-                                transaction.id,
-                              ),
-                          },
-                        ]}
-                      />
-                    </td>
-                  </tr>
-                ),
+                        },
+                        {
+                          label: 'Delete',
+                          danger: true,
+                          onClick: () =>
+                            handleDelete(
+                              transaction.id,
+                            ),
+                        },
+                      ]}
+                    />
+                  </td>
+                </tr>
+              ),
               )}
             </tbody>
           </table>

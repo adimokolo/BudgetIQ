@@ -751,6 +751,13 @@
   padding: 6px;
   z-index: 55;
   animation: profile-panel-in 0.16s ease;
+  background: #171a24;
+  isolation: isolate;
+}
+
+.kebab-panel--up {
+  top: auto;
+  bottom: calc(100% + 6px);
 }
 
 .kebab-item {
@@ -1133,6 +1140,233 @@
   transform: scale(1.06);
 }
 
+/* Add Account — bank / financial institution picker */
+
+.account-bank-control {
+  position: relative;
+}
+
+.account-bank-select {
+  width: 100%;
+  min-height: 46px;
+  padding: 9px 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+}
+
+.account-bank-select:hover {
+  border-color: var(--ink-faint);
+}
+
+.account-bank-select__value {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.account-bank-select__value>span:last-child,
+.account-bank-option>span:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account-bank-select strong,
+.account-bank-option strong {
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.account-bank-select small,
+.account-bank-option small {
+  color: var(--ink-faint);
+  font-size: 11.5px;
+}
+
+.account-bank-dot,
+.account-bank-none {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 8px;
+}
+
+.account-bank-dot {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.account-bank-none {
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  color: var(--ink-faint);
+  font-weight: 700;
+}
+
+.account-bank-chevron {
+  flex-shrink: 0;
+  color: var(--ink-faint);
+  transition: transform 160ms ease;
+}
+
+.account-bank-chevron--open {
+  transform: rotate(180deg);
+}
+
+.account-bank-picker {
+  position: relative;
+  margin-top: 10px;
+  width: 100%;
+  padding: 12px;
+  background: var(--surface-strong);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+}
+
+/* Add Account — searchable currency picker */
+
+.account-currency-control {
+  position: relative;
+}
+
+.account-currency-select {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+}
+
+.account-currency-select:hover {
+  border-color: var(--ink-faint);
+}
+
+.account-currency-picker {
+  position: relative;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  box-sizing: border-box;
+  background: var(--surface-strong);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+}
+
+.account-currency-search {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.account-currency-list {
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+.account-currency-option {
+  width: 100%;
+  padding: 11px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--surface-border);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.account-currency-option:last-child {
+  border-bottom: 0;
+}
+
+.account-currency-option:hover,
+.account-currency-option--selected {
+  background: var(--surface);
+}
+
+.account-currency-option strong {
+  min-width: 48px;
+  color: var(--ink);
+}
+
+.account-currency-option span {
+  color: var(--ink-faint);
+}
+
+.account-bank-search {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.account-bank-list {
+  max-height: 280px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+.account-bank-option {
+  width: 100%;
+  padding: 11px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--surface-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.account-bank-option:last-child {
+  border-bottom: 0;
+}
+
+.account-bank-option:hover {
+  background: var(--surface-strong);
+}
+
+.account-bank-option--selected {
+  background: var(--surface-strong);
+}
+
+.account-bank-empty {
+  padding: 18px 10px;
+  color: var(--ink-faint);
+  font-size: 13px;
+  text-align: center;
+}
+
 /* =========================================================
    Transaction Charts — BudgetIQ analytics
    ========================================================= */
@@ -1204,6 +1438,39 @@
 .tx-segment-icon {
   font-size: 1.05rem;
   line-height: 1;
+}
+
+/* Transaction chart date controls */
+.tx-date-filter-wrap {
+  position: relative;
+}
+
+.tx-date-filter-wrap .tx-segmented {
+  display: grid;
+  grid-template-columns: 160px 160px 54px;
+  background: #171a24;
+  width: 382px;
+}
+
+.tx-date-filter-wrap .tx-segmented button {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.tx-date-filter-wrap .tx-calendar-button {
+  min-width: 54px;
+  width: 54px;
+  padding: 10px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tx-date-filter-wrap .tx-calendar-button.active,
+.tx-date-filter-wrap .tx-calendar-button.active:hover {
+  background: #1677ff;
+  border-color: #1677ff;
+  color: #fff;
 }
 
 /* Shared cards */
@@ -1306,6 +1573,87 @@
   margin-top: 3px;
   color: var(--muted);
   font-size: 0.8rem;
+}
+
+/* Transaction chart custom date range */
+
+.tx-custom-date-picker {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 100;
+  width: 430px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+
+  background: #171a24;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.32);
+  isolation: isolate;
+}
+
+.tx-custom-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.tx-custom-date-field label {
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.tx-custom-date-field input {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 11px;
+  box-sizing: border-box;
+
+  background: #252a36;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  font: inherit;
+
+  color-scheme: dark;
+}
+
+.tx-custom-date-field input:focus {
+  outline: none;
+  border-color: #1677ff;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.14);
+}
+
+.tx-custom-date-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.tx-custom-date-actions .btn {
+  min-width: 92px;
+}
+
+.tx-custom-date-actions .btn--primary {
+  background: #1677ff;
+  border-color: #1677ff;
+  color: #fff;
+}
+
+.tx-custom-date-actions .btn--primary:hover:not(:disabled) {
+  background: #1677ff;
+  border-color: #1677ff;
+}
+
+.tx-custom-date-actions .btn--primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Donut legend */
@@ -1604,6 +1952,25 @@
   letter-spacing: -0.035em;
 }
 
+.tx-calendar-button {
+  min-width: 48px;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tx-calendar-button svg {
+  display: block;
+}
+
+.tx-calendar-button.active {
+  background: #1677ff !important;
+  border-color: #1677ff !important;
+  color: #fff !important;
+}
+
 /* Recent activity — keep long imported descriptions compact */
 .recent-transaction-description {
   min-width: 0;
@@ -1888,5 +2255,119 @@
 
   .admin-users-card {
     padding: 18px 14px;
+  }
+}
+
+/* Budget category picker */
+.budget-category-field {
+  position: relative;
+}
+
+.budget-category-trigger {
+  width: 100%;
+  min-height: 48px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  background: var(--surface-strong);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.budget-category-trigger:hover:not(:disabled),
+.budget-category-trigger--open {
+  border-color: #1677ff;
+}
+
+.budget-category-trigger:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.budget-category-trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.budget-category-placeholder {
+  color: var(--ink-faint);
+}
+
+.budget-category-icon,
+.budget-category-option-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 15px;
+}
+
+.budget-category-chevron {
+  flex-shrink: 0;
+  color: var(--ink-faint);
+  font-size: 18px;
+}
+
+.budget-category-popout {
+  margin-top: 10px;
+  width: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+
+  background: #171a24;
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+}
+
+.budget-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.budget-category-option {
+  min-width: 0;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.budget-category-option:hover {
+  background: var(--surface-strong);
+  border-color: var(--surface-border);
+}
+
+.budget-category-option--selected {
+  background: rgba(22, 119, 255, 0.12);
+  border-color: #1677ff;
+}
+
+@media (max-width: 600px) {
+  .budget-category-grid {
+    grid-template-columns: 1fr;
   }
 }

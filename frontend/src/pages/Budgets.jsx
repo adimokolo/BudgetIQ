@@ -18,6 +18,8 @@ export default function Budgets() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null); // null = creating, object = editing
   const [form, setForm] = useState({ categoryId: "", monthlyLimit: "" });
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+
   const [error, setError] = useState(null);
   const totalBudget = budgets.reduce(
     (sum, budget) => sum + Number(budget.monthly_limit || 0),
@@ -52,6 +54,7 @@ export default function Budgets() {
     setForm({ categoryId: "", monthlyLimit: "" });
     setError(null);
     setModalOpen(true);
+    setShowCategoryPicker(false);
   };
 
   const openEditModal = (budget) => {
@@ -62,6 +65,7 @@ export default function Budgets() {
     });
     setError(null);
     setModalOpen(true);
+    setShowCategoryPicker(false);
   };
 
   const handleSubmit = async (e) => {
@@ -301,29 +305,107 @@ export default function Budgets() {
           onClose={() => setModalOpen(false)}
         >
           <form onSubmit={handleSubmit}>
-            <div className="field">
-              <label htmlFor="budgetCategory">Category</label>
-              <select
-                id="budgetCategory"
-                value={form.categoryId}
-                onChange={(e) =>
-                  setForm({ ...form, categoryId: e.target.value })
-                }
-                disabled={Boolean(editingBudget)}
-              >
-                <option value="">Select an expense category</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              {editingBudget && (
-                <p className="helper-text">
-                  Category can't be changed on an existing budget — delete and
-                  create a new one instead.
-                </p>
-              )}
+            <div className="field budget-category-field">
+              <label>Category</label>
+
+              {(() => {
+                const selectedCategory = categories.find(
+                  (c) => String(c.id) === String(form.categoryId)
+                );
+
+                return (
+                  <>
+                    <button
+                      type="button"
+                      className={`budget-category-trigger ${showCategoryPicker ? "budget-category-trigger--open" : ""
+                        }`}
+                      disabled={Boolean(editingBudget)}
+                      onClick={() =>
+                        setShowCategoryPicker((open) => !open)
+                      }
+                    >
+                      <span className="budget-category-trigger-content">
+                        {selectedCategory ? (
+                          <>
+                            <span
+                              className="budget-category-icon"
+                              style={{
+                                background:
+                                  selectedCategory.color || "#647089",
+                              }}
+                            >
+                              {getIcon(
+                                selectedCategory.icon ||
+                                fallbackIconFor("expense")
+                              )}
+                            </span>
+
+                            <span>{selectedCategory.name}</span>
+                          </>
+                        ) : (
+                          <span className="budget-category-placeholder">
+                            Select an expense category
+                          </span>
+                        )}
+                      </span>
+
+                      <span className="budget-category-chevron">⌄</span>
+                    </button>
+
+                    {!editingBudget && showCategoryPicker && (
+                      <div className="budget-category-popout">
+                        <div className="budget-category-grid">
+                          {categories.map((category) => {
+                            const selected =
+                              String(category.id) ===
+                              String(form.categoryId);
+
+                            return (
+                              <button
+                                key={category.id}
+                                type="button"
+                                className={`budget-category-option ${selected
+                                    ? "budget-category-option--selected"
+                                    : ""
+                                  }`}
+                                onClick={() => {
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    categoryId: category.id,
+                                  }));
+                                  setShowCategoryPicker(false);
+                                }}
+                              >
+                                <span
+                                  className="budget-category-option-icon"
+                                  style={{
+                                    background:
+                                      category.color || "#647089",
+                                  }}
+                                >
+                                  {getIcon(
+                                    category.icon ||
+                                    fallbackIconFor("expense")
+                                  )}
+                                </span>
+
+                                <span>{category.name}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {editingBudget && (
+                      <p className="helper-text">
+                        Category can't be changed on an existing budget —
+                        delete and create a new one instead.
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
             </div>
             <div className="field">
               <label htmlFor="budgetLimit">Monthly limit</label>

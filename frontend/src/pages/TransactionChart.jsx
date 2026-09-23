@@ -174,6 +174,13 @@ export default function TransactionChart() {
 
   const [type, setType] = useState('expense');
   const [period, setPeriod] = useState('current');
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [appliedFrom, setAppliedFrom] = useState('');
+  const [appliedTo, setAppliedTo] = useState('');
+
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -188,7 +195,13 @@ export default function TransactionChart() {
       setError('');
 
       try {
-        const { from, to } = getDateRange(period);
+        const { from, to } =
+          period === 'custom'
+            ? {
+              from: appliedFrom,
+              to: appliedTo,
+            }
+            : getDateRange(period);
 
         const limit = 100;
         let page = 1;
@@ -240,7 +253,7 @@ export default function TransactionChart() {
     return () => {
       cancelled = true;
     };
-  }, [type, period]);
+  }, [type, period, appliedFrom, appliedTo]);
 
   const total = useMemo(
     () =>
@@ -278,7 +291,13 @@ export default function TransactionChart() {
   }));
 
   const periodLabel =
-    period === 'current' ? 'This Month' : 'Last Month';
+    period === 'current'
+      ? 'This Month'
+      : period === 'last'
+        ? 'Last Month'
+        : appliedFrom && appliedTo
+          ? `${appliedFrom} – ${appliedTo}`
+          : 'Custom Range';
 
   const typeLabel =
     type === 'expense' ? 'Expenses' : 'Income';
@@ -323,24 +342,113 @@ export default function TransactionChart() {
           </button>
         </div>
 
-        <div className="tx-segmented">
-          <button
-            type="button"
-            className={period === 'last' ? 'active' : ''}
-            onClick={() => setPeriod('last')}
-          >
-            <span className="tx-segment-icon">▣</span>
-            Last Month
-          </button>
 
-          <button
-            type="button"
-            className={period === 'current' ? 'active' : ''}
-            onClick={() => setPeriod('current')}
-          >
-            <span className="tx-segment-icon">▣</span>
-            This Month
-          </button>
+        <div className="tx-date-filter-wrap">
+          <div className="tx-segmented">
+            <button
+              type="button"
+              className={period === 'last' ? 'active' : ''}
+              onClick={() => {
+                setPeriod('last');
+                setShowDatePicker(false);
+              }}
+            >
+              <span className="tx-segment-icon">▣</span>
+              Last Month
+            </button>
+
+            <button
+              type="button"
+              className={period === 'current' ? 'active' : ''}
+              onClick={() => {
+                setPeriod('current');
+                setShowDatePicker(false);
+              }}
+            >
+              <span className="tx-segment-icon">▣</span>
+              This Month
+            </button>
+
+            <button
+              type="button"
+              className={`tx-calendar-button ${showDatePicker || period === 'custom' ? 'active' : ''
+                }`}
+              onClick={() => setShowDatePicker((open) => !open)}
+              aria-label="Select custom date range"
+              title="Select custom date range"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="4" width="18" height="17" rx="2" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+              </svg>
+            </button>
+          </div>
+
+          {showDatePicker && (
+            <div className="tx-custom-date-picker">
+              <div className="tx-custom-date-field">
+                <label htmlFor="tx-custom-from">From</label>
+                <input
+                  id="tx-custom-from"
+                  type="date"
+                  value={customFrom}
+                  max={customTo || undefined}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                />
+              </div>
+
+              <div className="tx-custom-date-field">
+                <label htmlFor="tx-custom-to">To</label>
+                <input
+                  id="tx-custom-to"
+                  type="date"
+                  value={customTo}
+                  min={customFrom || undefined}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                />
+              </div>
+
+              <div className="tx-custom-date-actions">
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() => {
+                    setCustomFrom(appliedFrom);
+                    setCustomTo(appliedTo);
+                    setShowDatePicker(false);
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  disabled={!customFrom || !customTo}
+                  onClick={() => {
+                    setAppliedFrom(customFrom);
+                    setAppliedTo(customTo);
+                    setPeriod('custom');
+                    setShowDatePicker(false);
+                  }}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
