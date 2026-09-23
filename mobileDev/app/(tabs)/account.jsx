@@ -15,7 +15,7 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useFonts } from "expo-font";
 
 import * as DocumentPicker from "expo-document-picker";
@@ -62,63 +62,148 @@ import {
   confirmImport,
 } from "../../services/bankImport";
 
-// Brand-inspired swatches are UI identifiers, not official bank brand assets.
+// Customer-facing Nigerian financial institutions. Colors are UI identifiers,
+// not official brand assets. Keep names stable because email imports use the
+// selected value to find or create the matching BudgetIQ account.
 const NIGERIAN_BANKS = [
-  ["Access Bank", "#F58220"],
-  ["Alternative Bank", "#147D52"],
-  ["Citibank Nigeria", "#056DAE"],
-  ["Ecobank Nigeria", "#146A45"],
-  ["Fidelity Bank", "#207E39"],
-  ["First Bank of Nigeria", "#12458B"],
-  ["First City Monument Bank (FCMB)", "#6C3C90"],
-  ["Globus Bank", "#006D76"],
-  ["Guaranty Trust Bank (GTBank)", "#E85A13"],
-  ["Jaiz Bank", "#14633D"],
-  ["Keystone Bank", "#0B6A8D"],
-  ["Lotus Bank", "#168B71"],
-  ["Nova Bank", "#263B85"],
-  ["Optimus Bank", "#103B78"],
-  ["Parallex Bank", "#1E5595"],
-  ["Polaris Bank", "#234AA2"],
-  ["PremiumTrust Bank", "#0B6779"],
-  ["Providus Bank", "#5E428A"],
-  ["Signature Bank", "#295C8C"],
-  ["Stanbic IBTC Bank", "#125DAA"],
-  ["Standard Chartered Bank Nigeria", "#138E7A"],
-  ["Sterling Bank", "#C9212C"],
-  ["SunTrust Bank", "#DF8D21"],
-  ["TAJBank", "#2B7A55"],
-  ["Titan Trust Bank", "#174C77"],
-  ["Union Bank", "#1484BA"],
-  ["United Bank for Africa (UBA)", "#C91E2F"],
-  ["Unity Bank", "#245F9C"],
-  ["Wema Bank", "#8C367D"],
-  ["Zenith Bank", "#C51E2D"],
-  ["Abbey Mortgage Bank", "#236B7C"],
-  ["AG Mortgage Bank", "#4B6288"],
-  ["Brent Mortgage Bank", "#547184"],
-  ["Delta Trust Mortgage Bank", "#607F95"],
-  ["Federal Mortgage Bank of Nigeria", "#336A92"],
-  ["First Generation Mortgage Bank", "#507690"],
-  ["Gateway Mortgage Bank", "#51738B"],
-  ["Haggai Mortgage Bank", "#586B87"],
-  ["Infinity Trust Mortgage Bank", "#3D7185"],
-  ["Jubilee-Life Mortgage Bank", "#597D8A"],
-  ["Lagos Building Investment Company", "#587C91"],
-  ["LivingTrust Mortgage Bank", "#447F78"],
-  ["Mutual Alliance Mortgage Bank", "#60718C"],
-  ["Nigeria Police Mortgage Bank", "#446B84"],
-  ["Platinum Mortgage Bank", "#4D7193"],
-  ["Refuge Mortgage Bank", "#4D7886"],
-  ["Safetrust Mortgage Bank", "#447887"],
-  ["Trustbond Mortgage Bank", "#496F8C"],
-  ["FBNQuest Merchant Bank", "#31568D"],
-  ["Coronation Merchant Bank", "#8B5D3B"],
-  ["Greenwich Merchant Bank", "#286C59"],
-  ["Rand Merchant Bank Nigeria", "#42658B"],
-  ["Nova Merchant Bank", "#3E4D91"],
-  ["Other Nigerian bank / microfinance bank / fintech", "#64748B"],
-].map(([name, color]) => ({ name, color }));
+  // Commercial banks
+  ["Access Bank", "Commercial bank", "#F58220"],
+  ["Citibank Nigeria", "Commercial bank", "#056DAE"],
+  ["Ecobank Nigeria", "Commercial bank", "#146A45"],
+  ["Fidelity Bank", "Commercial bank", "#207E39"],
+  ["First Bank of Nigeria", "Commercial bank", "#12458B"],
+  ["First City Monument Bank (FCMB)", "Commercial bank", "#6C3C90"],
+  ["Globus Bank", "Commercial bank", "#006D76"],
+  ["Guaranty Trust Bank (GTBank)", "Commercial bank", "#E85A13"],
+  ["Keystone Bank", "Commercial bank", "#0B6A8D"],
+  ["Nova Bank", "Commercial bank", "#263B85"],
+  ["Optimus Bank", "Commercial bank", "#103B78"],
+  ["Parallex Bank", "Commercial bank", "#1E5595"],
+  ["Polaris Bank", "Commercial bank", "#234AA2"],
+  ["PremiumTrust Bank", "Commercial bank", "#0B6779"],
+  ["Providus Bank", "Commercial bank", "#5E428A"],
+  ["Signature Bank", "Commercial bank", "#295C8C"],
+  ["Stanbic IBTC Bank", "Commercial bank", "#125DAA"],
+  ["Standard Chartered Bank Nigeria", "Commercial bank", "#138E7A"],
+  ["Sterling Bank", "Commercial bank", "#C9212C"],
+  ["SunTrust Bank", "Commercial bank", "#DF8D21"],
+  ["Titan Trust Bank", "Commercial bank", "#174C77"],
+  ["Union Bank of Nigeria", "Commercial bank", "#1484BA"],
+  ["United Bank for Africa (UBA)", "Commercial bank", "#C91E2F"],
+  ["Unity Bank", "Commercial bank", "#245F9C"],
+  ["Wema Bank", "Commercial bank", "#8C367D"],
+  ["Zenith Bank", "Commercial bank", "#C51E2D"],
+
+  // Non-interest banks
+  ["Alternative Bank", "Non-interest bank", "#147D52"],
+  ["Jaiz Bank", "Non-interest bank", "#14633D"],
+  ["Lotus Bank", "Non-interest bank", "#168B71"],
+  ["TAJBank", "Non-interest bank", "#2B7A55"],
+
+  // Merchant banks
+  ["Coronation Merchant Bank", "Merchant bank", "#8B5D3B"],
+  ["FBNQuest Merchant Bank", "Merchant bank", "#31568D"],
+  ["Greenwich Merchant Bank", "Merchant bank", "#286C59"],
+  ["Rand Merchant Bank Nigeria", "Merchant bank", "#42658B"],
+
+  // Payment service banks and mobile money wallets
+  ["9 Payment Service Bank (9PSB)", "Payment service bank", "#40A629"],
+  ["Hope Payment Service Bank", "Payment service bank", "#1C6B48"],
+  ["MoneyMaster Payment Service Bank", "Payment service bank", "#F2B705"],
+  ["MoMo Payment Service Bank", "Payment service bank", "#FFCC00"],
+  ["SmartCash Payment Service Bank", "Payment service bank", "#E41E2B"],
+  ["Chams Mobile", "Mobile money / fintech", "#3055A4"],
+  ["eTranzact PocketMoni", "Mobile money / fintech", "#0E7B45"],
+  ["KongaPay", "Mobile money / fintech", "#E51A8A"],
+  ["NowNow", "Mobile money / fintech", "#6BBE45"],
+  ["OPay", "Mobile money / fintech", "#00B875"],
+  ["Paga", "Mobile money / fintech", "#EF7D00"],
+  ["PalmPay", "Mobile money / fintech", "#6D43D9"],
+  ["Pocket by PiggyVest", "Mobile money / fintech", "#1B9C85"],
+  ["Teasy Mobile Money", "Mobile money / fintech", "#167B55"],
+  ["Xpress Wallet", "Mobile money / fintech", "#2257A6"],
+
+  // Digital banks, finance apps and fintech wallets
+  ["Carbon", "Digital finance / fintech", "#22A65A"],
+  ["FairMoney", "Digital finance / fintech", "#1859C9"],
+  ["Kuda Bank", "Digital bank / MFB", "#40196D"],
+  ["Moniepoint", "Digital bank / MFB", "#246BFD"],
+  ["Nomba", "Digital finance / fintech", "#5A35D6"],
+  ["Renmoney", "Digital finance / MFB", "#F05A28"],
+  ["Rubies Bank", "Digital bank / MFB", "#8C2B8F"],
+  ["Sparkle", "Digital bank / MFB", "#7B2CBF"],
+  ["VBank by VFD Microfinance Bank", "Digital bank / MFB", "#252B42"],
+  ["Mintyn by Finex Microfinance Bank", "Digital bank / MFB", "#10A37F"],
+  ["Eyowo", "Digital finance / fintech", "#7A52CC"],
+  ["Branch", "Digital finance / fintech", "#00A884"],
+  ["Aella Credit", "Digital finance / fintech", "#2764C8"],
+  ["Cowrywise", "Digital finance / fintech", "#0066F5"],
+  ["PiggyVest", "Digital finance / fintech", "#0D60D8"],
+  ["Risevest", "Digital finance / fintech", "#1565C0"],
+  ["Bamboo", "Digital finance / fintech", "#0E9F6E"],
+  ["Chipper Cash", "Digital finance / fintech", "#6C4CF1"],
+  ["Leatherback", "Digital finance / fintech", "#2E4DA7"],
+  ["LemFi", "Digital finance / fintech", "#00A86B"],
+
+  // Microfinance banks commonly used for personal and business accounts
+  ["AB Microfinance Bank", "Microfinance bank", "#315C83"],
+  ["Accion Microfinance Bank", "Microfinance bank", "#E16B2D"],
+  ["Addosser Microfinance Bank", "Microfinance bank", "#216D60"],
+  ["Advans La Fayette Microfinance Bank", "Microfinance bank", "#2B67A0"],
+  ["Alert Microfinance Bank", "Microfinance bank", "#B23A48"],
+  ["Amju Unique Microfinance Bank", "Microfinance bank", "#456B8C"],
+  ["Baobab Microfinance Bank", "Microfinance bank", "#68A83F"],
+  ["BoI Microfinance Bank", "Microfinance bank", "#327A54"],
+  ["Bosak Microfinance Bank", "Microfinance bank", "#9B673E"],
+  ["Bowen Microfinance Bank", "Microfinance bank", "#386E91"],
+  ["CEMCS Microfinance Bank", "Microfinance bank", "#4A6F8D"],
+  ["CIT Microfinance Bank", "Microfinance bank", "#365D8C"],
+  ["Consumer Microfinance Bank", "Microfinance bank", "#536B89"],
+  ["Credit Afrique Microfinance Bank", "Microfinance bank", "#4E718D"],
+  ["Davodani Microfinance Bank", "Microfinance bank", "#486983"],
+  ["EdFin Microfinance Bank", "Microfinance bank", "#2F6C78"],
+  ["Empire Trust Microfinance Bank", "Microfinance bank", "#79588F"],
+  ["Fina Trust Microfinance Bank", "Microfinance bank", "#486A91"],
+  ["Fortis Microfinance Bank", "Microfinance bank", "#436C8A"],
+  ["Grooming Microfinance Bank", "Microfinance bank", "#375F82"],
+  ["Hasal Microfinance Bank", "Microfinance bank", "#436D72"],
+  ["Infinity Microfinance Bank", "Microfinance bank", "#467A85"],
+  ["LAPO Microfinance Bank", "Microfinance bank", "#13874B"],
+  ["Letshego Microfinance Bank", "Microfinance bank", "#E67E22"],
+  ["Mainstreet Microfinance Bank", "Microfinance bank", "#2C6388"],
+  ["Mutual Trust Microfinance Bank", "Microfinance bank", "#526D8B"],
+  ["NPF Microfinance Bank", "Microfinance bank", "#1B6D4B"],
+  ["Page Financials", "Microfinance bank", "#E05B32"],
+  ["Petra Microfinance Bank", "Microfinance bank", "#5D698D"],
+  ["Rehoboth Microfinance Bank", "Microfinance bank", "#4B7086"],
+  ["Seedvest Microfinance Bank", "Microfinance bank", "#2D8062"],
+  ["Shepherd Trust Microfinance Bank", "Microfinance bank", "#596E88"],
+  ["Stanford Microfinance Bank", "Microfinance bank", "#4F6687"],
+  ["TrustBanc Microfinance Bank", "Microfinance bank", "#315D7B"],
+  ["VFD Microfinance Bank", "Microfinance bank", "#252B42"],
+  ["Verite Microfinance Bank", "Microfinance bank", "#4B6F84"],
+  ["Wetland Microfinance Bank", "Microfinance bank", "#347566"],
+
+  // Primary mortgage banks
+  ["Abbey Mortgage Bank", "Mortgage bank", "#236B7C"],
+  ["AG Mortgage Bank", "Mortgage bank", "#4B6288"],
+  ["Brent Mortgage Bank", "Mortgage bank", "#547184"],
+  ["Delta Trust Mortgage Bank", "Mortgage bank", "#607F95"],
+  ["Federal Mortgage Bank of Nigeria", "Mortgage bank", "#336A92"],
+  ["First Generation Mortgage Bank", "Mortgage bank", "#507690"],
+  ["Gateway Mortgage Bank", "Mortgage bank", "#51738B"],
+  ["Haggai Mortgage Bank", "Mortgage bank", "#586B87"],
+  ["Infinity Trust Mortgage Bank", "Mortgage bank", "#3D7185"],
+  ["Jubilee-Life Mortgage Bank", "Mortgage bank", "#597D8A"],
+  ["Lagos Building Investment Company", "Mortgage bank", "#587C91"],
+  ["LivingTrust Mortgage Bank", "Mortgage bank", "#447F78"],
+  ["Mutual Alliance Mortgage Bank", "Mortgage bank", "#60718C"],
+  ["Nigeria Police Mortgage Bank", "Mortgage bank", "#446B84"],
+  ["Platinum Mortgage Bank", "Mortgage bank", "#4D7193"],
+  ["Refuge Mortgage Bank", "Mortgage bank", "#4D7886"],
+  ["Safetrust Mortgage Bank", "Mortgage bank", "#447887"],
+  ["Trustbond Mortgage Bank", "Mortgage bank", "#496F8C"],
+].map(([name, category, color]) => ({ name, category, color }));
 
 const SWATCHES = [
   "#174E78",
@@ -140,7 +225,6 @@ const SWATCHES = [
 
 export default function Account() {
   const { colors } = useTheme();
-  const router = useRouter();
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -302,6 +386,8 @@ export default function Account() {
   const [showManualBankPicker, setShowManualBankPicker] = useState(false);
   const [bankSearch, setBankSearch] = useState("");
   const [showBankPicker, setShowBankPicker] = useState(false);
+  const [showAccountPicker, setShowAccountPicker] = useState(false);
+  const [selectedStatementFile, setSelectedStatementFile] = useState(null);
   const [emailText, setEmailText] = useState("");
   const [importPreview, setImportPreview] = useState(null);
   const [importBusy, setImportBusy] = useState(false);
@@ -312,9 +398,34 @@ export default function Account() {
     setImportBank("");
     setBankSearch("");
     setShowBankPicker(false);
+    setShowAccountPicker(false);
+    setSelectedStatementFile(null);
     setEmailText("");
     setImportPreview(null);
     setImportMode(mode);
+  };
+
+  const handleChooseStatementFile = async () => {
+    try {
+      const picked = await DocumentPicker.getDocumentAsync({
+        type: [
+          "application/pdf",
+          "text/csv",
+          "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "application/octet-stream",
+        ],
+        copyToCacheDirectory: true,
+      });
+      if (picked.canceled || !picked.assets?.length) return;
+      setSelectedStatementFile(picked.assets[0]);
+      setImportPreview(null);
+    } catch (error) {
+      Alert.alert(
+        "File selection failed",
+        error?.message || "Please choose the statement file again.",
+      );
+    }
   };
 
   const handlePreviewImport = async () => {
@@ -328,7 +439,14 @@ export default function Account() {
     if (importMode === "statement" && !importAccountId) {
       Alert.alert(
         "Select account",
-        "Choose a bank name from your Account page.",
+        "Choose an existing BudgetIQ account to import into.",
+      );
+      return;
+    }
+    if (importMode === "statement" && !selectedStatementFile) {
+      Alert.alert(
+        "Select statement",
+        "Choose a bank statement file (PDF, CSV or Excel) to import.",
       );
       return;
     }
@@ -336,25 +454,12 @@ export default function Account() {
       setImportBusy(true);
       const result =
         importMode === "statement"
-          ? await (async () => {
-              const picked = await DocumentPicker.getDocumentAsync({
-                type: [
-                  "application/pdf",
-                  "text/csv",
-                  "application/vnd.ms-excel",
-                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                  "application/octet-stream",
-                ],
-                copyToCacheDirectory: true,
-              });
-              if (picked.canceled || !picked.assets?.length) return null;
-              return previewStatement(
-                importAccountId,
-                picked.assets[0],
-                importBank,
-              );
-            })()
-          : await previewEmailAlerts(null, emailText, importBank);
+          ? await previewStatement(
+              importAccountId,
+              selectedStatementFile,
+              importBank,
+            )
+          : await previewEmailAlerts(emailText, importBank);
       if (result) setImportPreview(result);
     } catch (error) {
       Alert.alert(
@@ -1382,12 +1487,7 @@ export default function Account() {
                   },
                 ]}
                 onPress={() => {
-                  if (option.mode === "email") {
-                    setShowAddModal(false);
-                    router.push("/email-sync");
-                  } else {
-                    openImport(option.mode);
-                  }
+                  openImport(option.mode);
                 }}
               >
                 <View
@@ -1504,31 +1604,43 @@ export default function Account() {
           <View style={[styles.formCard, { backgroundColor: colors.card }]}>
             <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled>
               <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>
-                  {importMode === "statement"
-                    ? "Import Bank Statement"
-                    : "Email Alert Import"}
-                </Text>
+                <View style={styles.modalTitleContainer}>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>
+                    {importMode === "statement"
+                      ? "Import Bank Statement"
+                      : "Email Alert Import"}
+                  </Text>
+                  <Text
+                    style={[styles.modalSubtitle, { color: colors.textFaint }]}
+                  >
+                    {importMode === "statement"
+                      ? "Choose the issuing bank and an existing BudgetIQ account, then upload your statement."
+                      : "Choose the issuing bank and paste transaction alerts you explicitly provide."}
+                  </Text>
+                </View>
                 <Pressable
                   disabled={importBusy}
                   onPress={() => setImportMode(null)}
+                  hitSlop={10}
                 >
-                  <Text style={[styles.closeButton, { color: colors.text }]}>
+                  <Text
+                    style={[styles.closeButton, { color: colors.textFaint }]}
+                  >
                     ×
                   </Text>
                 </Pressable>
               </View>
+
               <Text
                 style={[
                   styles.optionDescription,
                   { color: colors.textMuted, marginBottom: 12 },
                 ]}
               >
-                Choose the issuing bank. For statements, pick a bank account
-                already on your Account page. For email alerts, a matching
-                account is created automatically if none exists. Review entries
-                before confirming. Never enter your email or bank password.
+                Review all detected entries before confirming. Never enter your
+                email password or bank password.
               </Text>
+
               <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
                 1. Select Nigerian bank
               </Text>
@@ -1601,11 +1713,13 @@ export default function Account() {
                     keyboardShouldPersistTaps="handled"
                     style={{ maxHeight: 205 }}
                   >
-                    {NIGERIAN_BANKS.filter((bank) =>
-                      bank.name
-                        .toLowerCase()
-                        .includes(bankSearch.trim().toLowerCase()),
-                    ).map((bank) => (
+                    {NIGERIAN_BANKS.filter((bank) => {
+                      const search = bankSearch.trim().toLowerCase();
+                      return (
+                        bank.name.toLowerCase().includes(search) ||
+                        bank.category.toLowerCase().includes(search)
+                      );
+                    }).map((bank) => (
                       <Pressable
                         key={bank.name}
                         onPress={() => {
@@ -1628,92 +1742,205 @@ export default function Account() {
                             marginRight: 10,
                           }}
                         />
-                        <Text
-                          style={[
-                            styles.optionTitle,
-                            { color: colors.text, flex: 1 },
-                          ]}
-                        >
-                          {importBank === bank.name ? "● " : ""}
-                          {bank.name}
-                        </Text>
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[styles.optionTitle, { color: colors.text }]}
+                          >
+                            {importBank === bank.name ? "● " : ""}
+                            {bank.name}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.optionDescription,
+                              { color: colors.textFaint },
+                            ]}
+                          >
+                            {bank.category}
+                          </Text>
+                        </View>
                       </Pressable>
                     ))}
                   </ScrollView>
                 </View>
               )}
-              <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
-                2. Choose from banks on your Account page
-              </Text>
-              {importMode === "statement" && accounts.length === 0 && (
-                <Text
-                  style={[
-                    styles.optionDescription,
-                    { color: colors.textMuted, marginBottom: 8 },
-                  ]}
-                >
-                  No accounts added yet. Choose New Account from the + Add
-                  account menu, then return here.
-                </Text>
-              )}
-              {importMode === "statement" &&
-                accounts.map((account) => (
+
+              {importMode === "statement" && (
+                <>
+                  <Text
+                    style={[styles.inputLabel, { color: colors.textMuted }]}
+                  >
+                    2. Choose from accounts on your Account page
+                  </Text>
+                  {accounts.length === 0 ? (
+                    <Text
+                      style={[
+                        styles.optionDescription,
+                        { color: colors.textMuted, marginBottom: 8 },
+                      ]}
+                    >
+                      No accounts added yet. Choose New Account from the + Add
+                      account menu, then return here.
+                    </Text>
+                  ) : (
+                    <>
+                      <Pressable
+                        disabled={importBusy}
+                        onPress={() => setShowAccountPicker((value) => !value)}
+                        style={[
+                          styles.selectInput,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.inputBorder,
+                            marginBottom: 8,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.selectText, { color: colors.text }]}
+                        >
+                          {importAccountId
+                            ? (() => {
+                                const selected = accounts.find(
+                                  (account) =>
+                                    String(account.id) === importAccountId,
+                                );
+                                return selected
+                                  ? `${selected.name} · ${selected.currency}`
+                                  : "Choose account";
+                              })()
+                            : "Choose account"}
+                        </Text>
+                        <Text style={{ color: colors.textFaint }}>
+                          {showAccountPicker ? "⌃" : "⌄"}
+                        </Text>
+                      </Pressable>
+                      {showAccountPicker && (
+                        <View
+                          style={[
+                            styles.currencyDropdown,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: colors.cardBorder,
+                              marginBottom: 10,
+                            },
+                          ]}
+                        >
+                          <ScrollView
+                            nestedScrollEnabled
+                            keyboardShouldPersistTaps="handled"
+                            style={{ maxHeight: 190 }}
+                          >
+                            {accounts.map((account) => (
+                              <Pressable
+                                key={account.id}
+                                onPress={() => {
+                                  setImportAccountId(String(account.id));
+                                  setShowAccountPicker(false);
+                                  setImportPreview(null);
+                                }}
+                                style={[
+                                  styles.currencyOption,
+                                  { borderBottomColor: colors.divider },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.optionTitle,
+                                    { color: colors.text, flex: 1 },
+                                  ]}
+                                >
+                                  {String(account.id) === importAccountId
+                                    ? "● "
+                                    : ""}
+                                  {account.name} · {account.currency}
+                                </Text>
+                              </Pressable>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+                    </>
+                  )}
+
+                  <Text
+                    style={[styles.inputLabel, { color: colors.textMuted }]}
+                  >
+                    3. Select bank statement
+                  </Text>
                   <Pressable
-                    key={account.id}
-                    onPress={() => {
-                      setImportAccountId(String(account.id));
-                      setImportPreview(null);
-                    }}
+                    disabled={importBusy}
+                    onPress={handleChooseStatementFile}
                     style={[
-                      styles.optionCard,
+                      styles.selectInput,
                       {
                         backgroundColor: colors.background,
-                        borderColor:
-                          String(account.id) === importAccountId
-                            ? colors.primary
-                            : colors.cardBorder,
+                        borderColor: colors.inputBorder,
+                        marginBottom: 8,
                       },
                     ]}
                   >
-                    <Text style={[styles.optionTitle, { color: colors.text }]}>
-                      {String(account.id) === importAccountId ? "● " : "○ "}
-                      {account.name} · {account.currency}
+                    <Text
+                      style={[
+                        styles.optionTitle,
+                        { color: colors.primary, marginBottom: 0 },
+                      ]}
+                    >
+                      Choose File
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.selectText,
+                        {
+                          color: colors.textFaint,
+                          flexShrink: 1,
+                          marginLeft: 10,
+                        },
+                      ]}
+                    >
+                      {selectedStatementFile?.name || "No file chosen"}
                     </Text>
                   </Pressable>
-                ))}
-              {importMode === "email" && (
-                <Text
-                  style={[
-                    styles.optionDescription,
-                    { color: colors.textMuted, marginBottom: 8 },
-                  ]}
-                >
-                  A matching {importBank || "bank"} account will be used or
-                  created automatically when you confirm. This imports pasted
-                  alerts; automatic inbox access requires separate email
-                  authorization.
-                </Text>
+                </>
               )}
+
               {importMode === "email" && (
-                <TextInput
-                  multiline
-                  value={emailText}
-                  onChangeText={(value) => {
-                    setEmailText(value);
-                    setImportPreview(null);
-                  }}
-                  placeholder="Paste one or more bank transaction alert messages here..."
-                  placeholderTextColor={colors.textFaint}
-                  style={[
-                    styles.notesInput,
-                    {
-                      minHeight: 130,
-                      color: colors.text,
-                      backgroundColor: colors.background,
-                      borderColor: colors.inputBorder,
-                    },
-                  ]}
-                />
+                <>
+                  <Text
+                    style={[
+                      styles.optionDescription,
+                      { color: colors.textMuted, marginBottom: 8 },
+                    ]}
+                  >
+                    A matching bank account will be used or created
+                    automatically when you confirm. Automatic inbox access is
+                    not enabled.
+                  </Text>
+                  <Text
+                    style={[styles.inputLabel, { color: colors.textMuted }]}
+                  >
+                    2. Paste bank transaction alerts
+                  </Text>
+                  <TextInput
+                    multiline
+                    value={emailText}
+                    onChangeText={(value) => {
+                      setEmailText(value);
+                      setImportPreview(null);
+                    }}
+                    placeholder="Paste one or more bank transaction alert messages here..."
+                    placeholderTextColor={colors.textFaint}
+                    style={[
+                      styles.notesInput,
+                      {
+                        minHeight: 130,
+                        color: colors.text,
+                        backgroundColor: colors.background,
+                        borderColor: colors.inputBorder,
+                      },
+                    ]}
+                  />
+                </>
               )}
               {importPreview ? (
                 <View>
@@ -1797,7 +2024,8 @@ export default function Account() {
                   disabled={
                     importBusy ||
                     !importBank ||
-                    (importMode === "statement" && !importAccountId) ||
+                    (importMode === "statement" &&
+                      (!importAccountId || !selectedStatementFile)) ||
                     (importMode === "email" && !emailText.trim())
                   }
                   onPress={handlePreviewImport}
@@ -1818,8 +2046,8 @@ export default function Account() {
                     {importBusy
                       ? "Preparing preview..."
                       : importMode === "statement"
-                        ? "Choose statement file"
-                        : "Preview email alerts"}
+                        ? "Preview statement"
+                        : "Preview alerts"}
                   </Text>
                 </Pressable>
               )}
@@ -1980,11 +2208,13 @@ export default function Account() {
                       No bank / wallet / cash
                     </Text>
                   </Pressable>
-                  {NIGERIAN_BANKS.filter((bank) =>
-                    bank.name
-                      .toLowerCase()
-                      .includes(manualBankSearch.trim().toLowerCase()),
-                  ).map((bank) => (
+                  {NIGERIAN_BANKS.filter((bank) => {
+                    const search = manualBankSearch.trim().toLowerCase();
+                    return (
+                      bank.name.toLowerCase().includes(search) ||
+                      bank.category.toLowerCase().includes(search)
+                    );
+                  }).map((bank) => (
                     <Pressable
                       key={bank.name}
                       onPress={() => {
@@ -2008,14 +2238,21 @@ export default function Account() {
                           marginRight: 10,
                         }}
                       />
-                      <Text
-                        style={[
-                          styles.optionTitle,
-                          { color: colors.text, flex: 1 },
-                        ]}
-                      >
-                        {bank.name}
-                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[styles.optionTitle, { color: colors.text }]}
+                        >
+                          {bank.name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.optionDescription,
+                            { color: colors.textFaint },
+                          ]}
+                        >
+                          {bank.category}
+                        </Text>
+                      </View>
                     </Pressable>
                   ))}
                 </ScrollView>

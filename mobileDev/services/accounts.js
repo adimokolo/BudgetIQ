@@ -25,6 +25,7 @@ export const getAccounts = async () => {
 
 export const createAccount = async ({
   name,
+  bankName,
   currency,
   initialAmount,
   notes,
@@ -33,6 +34,7 @@ export const createAccount = async ({
   try {
     const response = await api.post("/accounts", {
       name,
+      bankName,
       currency,
       initialAmount,
       notes,
@@ -60,11 +62,12 @@ export const createAccount = async ({
 
 export const updateAccount = async (
   accountId,
-  { name, currency, initialAmount, notes, color },
+  { name, bankName, currency, initialAmount, notes, color },
 ) => {
   try {
     const response = await api.put(`/accounts/${accountId}`, {
       name,
+      bankName,
       currency,
       initialAmount,
       notes,
