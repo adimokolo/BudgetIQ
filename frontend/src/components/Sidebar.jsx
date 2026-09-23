@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import logoMark from '../assets/logo-mark.png';
-import { useAuth } from '../context/AuthContext';
+
 
 const LINKS = [
   { to: '/', label: 'Dashboard', icon: '◆', end: true },
@@ -11,15 +11,6 @@ const LINKS = [
 ];
 
 export default function Sidebar() {
-  const { user } = useAuth();
-
-  const links =
-    user?.role === 'admin'
-      ? [
-        ...LINKS,
-        { to: '/admin/users', label: 'Admin', icon: '♜' },
-      ]
-      : LINKS;
 
   return (
     <aside className="sidebar">
@@ -35,7 +26,7 @@ export default function Sidebar() {
 
       <nav>
         <ul className="nav-list">
-          {links.map((link) => (
+          {LINKS.map((link) => (
             <li key={link.to}>
               <NavLink
                 to={link.to}
