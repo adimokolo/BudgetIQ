@@ -1716,7 +1716,10 @@ export default function Transactions() {
 
   const hasLoadedOnce = useRef(false);
 
-  const [selectedDate, setSelectedDate] = useState(currentSystemDate);
+  // FIX: start with no date filter so ALL transactions show on first load.
+  // Previously this defaulted to today's date, which hid every transaction
+  // not dated today until "All types" was tapped.
+  const [selectedDate, setSelectedDate] = useState(null);
 
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const today = new Date();
@@ -2328,6 +2331,18 @@ export default function Transactions() {
           </View>
         </View>
 
+        {selectedDate && (
+          <TouchableOpacity
+            onPress={() => setSelectedDate(null)}
+            activeOpacity={0.7}
+            style={styles.clearDateRow}
+          >
+            <Text style={styles.clearDateText}>
+              Showing {selectedDate} · Clear
+            </Text>
+          </TouchableOpacity>
+        )}
+
         <View style={styles.listCard}>
           {filteredTransactions.length > 0 ? (
             filteredTransactions.map((transaction) => (
@@ -2344,11 +2359,15 @@ export default function Transactions() {
             ))
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No transactions yet</Text>
+              <Text style={styles.emptyTitle}>
+                {selectedDate
+                  ? "No transactions on this day"
+                  : "No transactions yet"}
+              </Text>
 
               <Text style={styles.emptyText}>
                 {selectedDate
-                  ? "No transactions were recorded on this day."
+                  ? "Tap the date above to clear the filter and see everything."
                   : "No transactions match this filter yet."}
               </Text>
             </View>
@@ -3283,6 +3302,18 @@ const createStyles = (colors) =>
 
     activeFilterText: {
       color: colors.primaryText,
+    },
+
+    clearDateRow: {
+      alignSelf: "flex-start",
+      marginBottom: 10,
+      paddingVertical: 4,
+    },
+
+    clearDateText: {
+      fontSize: 10,
+      fontFamily: fonts.bodySemiBold,
+      color: colors.primary,
     },
 
     listCard: {
