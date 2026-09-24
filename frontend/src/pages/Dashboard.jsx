@@ -5,11 +5,13 @@ import StatCard from '../components/StatCard';
 import MonthlyTrendChart from '../components/MonthlyTrendChart';
 import CategoryBreakdownChart from '../components/CategoryBreakdownChart';
 import ForecastCard from '../components/ForecastCard';
+import AdBanner from '../components/AdBanner';
 import RecentTransactions from '../components/RecentTransactions';
 import Skeleton from '../components/Skeleton';
 import { formatCurrency } from '../utils/format';
 import { TRANSACTION_CREATED_EVENT } from '../components/AddTransactionModal';
 import BudgetExpenseChart from '../components/BudgetExpenseChart';
+
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -111,7 +113,7 @@ export default function Dashboard() {
             />
             <ForecastCard forecast={data.forecast} currency={currency} />
           </div>
-
+          <AdBanner />
           <div className="grid grid--two" style={{ marginBottom: 18 }}>
             <MonthlyTrendChart data={data.monthlyTrend} currency={currency} />
 
