@@ -18,6 +18,10 @@ import Accounts from './pages/Accounts';
 import Settings from './pages/Settings';
 import AdminUsers from './pages/AdminUsers';
 import AdminRoute from './components/AdminRoute';
+import AdminLayout from './components/AdminLayout';
+import AdminOverview from './pages/AdminOverview';
+import AdminManagement from './pages/AdminManagement';
+import AdminAudit from "./pages/AdminAudit";
 
 function AppLayout({ children }) {
   return (
@@ -105,14 +109,53 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminRoute>
+              <AdminLayout>
+                <AdminOverview />
+              </AdminLayout>
+            </AdminRoute>
+          </ProtectedRoute>
+        }
+      />
+
+
       <Route
         path="/admin/users"
         element={
           <ProtectedRoute>
             <AdminRoute>
-              <AppLayout>
+              <AdminLayout>
                 <AdminUsers />
-              </AppLayout>
+              </AdminLayout>
+            </AdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/admins"
+        element={
+          <ProtectedRoute>
+            <AdminRoute>
+              <AdminLayout>
+                <AdminManagement />
+              </AdminLayout>
+            </AdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/audit"
+        element={
+          <ProtectedRoute>
+            <AdminRoute>
+              <AdminLayout>
+                <AdminAudit />
+              </AdminLayout>
             </AdminRoute>
           </ProtectedRoute>
         }

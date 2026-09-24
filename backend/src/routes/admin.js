@@ -8,6 +8,8 @@ const {
 const {
     getUsers,
     updateUserStatus,
+    updateUserRole,
+    getAuditLogs,
 } = require("../controllers/adminController");
 
 const router = express.Router();
@@ -27,5 +29,18 @@ router.patch(
     requireAdmin,
     updateUserStatus,
 );
-
+// Promote a user to admin or remove administrator access
+router.patch(
+    "/users/:id/role",
+    requireAuth,
+    requireAdmin,
+    updateUserRole,
+);
+// Get administrator audit history
+router.get(
+    "/audit-logs",
+    requireAuth,
+    requireAdmin,
+    getAuditLogs,
+);
 module.exports = router;
