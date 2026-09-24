@@ -125,7 +125,7 @@ export default function Budgets() {
   };
 
   return (
-    <div>
+    <div className="budgets-page">
       <div className="page-header">
         <div>
           <h1>Budgets</h1>
@@ -365,8 +365,8 @@ export default function Budgets() {
                                 key={category.id}
                                 type="button"
                                 className={`budget-category-option ${selected
-                                    ? "budget-category-option--selected"
-                                    : ""
+                                  ? "budget-category-option--selected"
+                                  : ""
                                   }`}
                                 onClick={() => {
                                   setForm((prev) => ({

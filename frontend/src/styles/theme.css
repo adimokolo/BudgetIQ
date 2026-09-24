@@ -1,11 +1,9 @@
 :root {
   --bg: #f3f8fe;
-  --bg-radial: radial-gradient(
-    circle at 15% 0%,
-    #e9f5ff 0%,
-    #f3f8fe 38%,
-    #f6f3fe 100%
-  );
+  --bg-radial: radial-gradient(circle at 15% 0%,
+      #e9f5ff 0%,
+      #f3f8fe 38%,
+      #f6f3fe 100%);
   --surface: rgba(255, 255, 255, 0.62);
   --surface-strong: rgba(255, 255, 255, 0.86);
   --surface-border: rgba(255, 255, 255, 0.9);
@@ -22,20 +20,16 @@
 
   --prism-3: #35e6c0;
 
-  --prism-gradient: linear-gradient(
-    115deg,
-    var(--prism-1) 0%,
-    var(--prism-2) 50%,
-    var(--prism-3) 100%
-  );
+  --prism-gradient: linear-gradient(115deg,
+      var(--prism-1) 0%,
+      var(--prism-2) 50%,
+      var(--prism-3) 100%);
 
   --brand-mid: #0f71b4;
   --brand-deep: #073e6e;
-  --brand-gradient: linear-gradient(
-    120deg,
-    var(--brand-mid) 0%,
-    var(--brand-deep) 100%
-  );
+  --brand-gradient: linear-gradient(120deg,
+      var(--brand-mid) 0%,
+      var(--brand-deep) 100%);
 
   --income: #17b07e;
   --income-soft: rgba(23, 176, 126, 0.12);
@@ -61,12 +55,10 @@
 
 [data-theme="dark"] {
   --bg: #060b14;
-  --bg-radial: radial-gradient(
-    circle at 20% -10%,
-    #0e1b2e 0%,
-    #070b13 45%,
-    #0a0715 100%
-  );
+  --bg-radial: radial-gradient(circle at 20% -10%,
+      #0e1b2e 0%,
+      #070b13 45%,
+      #0a0715 100%);
   --surface: rgba(255, 255, 255, 0.045);
   --surface-strong: rgba(255, 255, 255, 0.08);
   --surface-border: rgba(255, 255, 255, 0.12);
@@ -83,11 +75,9 @@
 
   --brand-mid: #2e8fd1;
   --brand-deep: #0b4c82;
-  --brand-gradient: linear-gradient(
-    120deg,
-    var(--brand-mid) 0%,
-    var(--brand-deep) 100%
-  );
+  --brand-gradient: linear-gradient(120deg,
+      var(--brand-mid) 0%,
+      var(--brand-deep) 100%);
 
   --income: #2fe1a3;
   --income-soft: rgba(47, 225, 163, 0.14);
@@ -175,6 +165,7 @@ select option {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -189,14 +180,12 @@ select option {
   background: var(--surface);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-lg);
-  clip-path: polygon(
-    var(--facet) 0%,
-    100% 0%,
-    100% calc(100% - var(--facet)),
-    calc(100% - var(--facet)) 100%,
-    0% 100%,
-    0% var(--facet)
-  );
+  clip-path: polygon(var(--facet) 0%,
+      100% 0%,
+      100% calc(100% - var(--facet)),
+      calc(100% - var(--facet)) 100%,
+      0% 100%,
+      0% var(--facet));
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   box-shadow: var(--surface-shadow);
@@ -235,6 +224,12 @@ select option {
 .facet-card--flush {
   padding: 0;
   overflow: hidden;
+}
+
+/* Opaque surfaces for transaction history and budget pages */
+#transactions-table-card,
+.budgets-page .facet-card {
+  background: var(--bg);
 }
 
 .prism-rule {
@@ -350,7 +345,7 @@ select option {
   gap: 8px;
 }
 
-.currency-register-dropdown > input {
+.currency-register-dropdown>input {
   width: 100%;
 }
 
