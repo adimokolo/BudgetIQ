@@ -1,52 +1,11 @@
 import React from "react";
-<<<<<<< HEAD
-import { View, Platform, StyleSheet } from "react-native";
-
-let BannerAd, BannerAdSize, TestIds;
-try {
-  ({
-    BannerAd,
-    BannerAdSize,
-    TestIds,
-  } = require("react-native-google-mobile-ads"));
-} catch (e) {
-  console.log("Google Mobile Ads native module unavailable:", e.message);
-}
-
-const AD_UNIT_IDS = {
-  android: "ca-app-pub-1490675395669448/1102787466",
-  ios: "ca-app-pub-1490675395669448/1314451169",
-};
-
-const ENABLE_LIVE_ADS = false;
-
-export default function AdBanner() {
-  // Native module missing (Expo Go or stale dev build): skip ads
-  if (!BannerAd) return null;
-
-  const productionAdUnitId = Platform.select({
-    android: AD_UNIT_IDS.android,
-    ios: AD_UNIT_IDS.ios,
-    default: null,
-  });
-
-  const adUnitId = __DEV__
-    ? TestIds.ADAPTIVE_BANNER
-    : ENABLE_LIVE_ADS
-      ? productionAdUnitId
-      : null;
-=======
 import { View, StyleSheet } from "react-native";
-import {
-  BannerAd,
-  BannerAdSize,
-} from "react-native-google-mobile-ads";
+import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 
 import { getBannerAdUnitId } from "../config/ads";
 
 export default function AdBanner() {
   const adUnitId = getBannerAdUnitId();
->>>>>>> fc6f0f14753154965fc6fc22706b948505e344b2
 
   if (!adUnitId) return null;
 
