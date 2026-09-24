@@ -5,8 +5,8 @@ import { TestIds } from "react-native-google-mobile-ads";
 // Do not use your Google App IDs here.
 
 const GOOGLE_AD_UNITS = {
-  android: "YOUR_ANDROID_BANNER_UNIT_ID",
-  ios: "YOUR_IOS_BANNER_UNIT_ID",
+  android: "ca-app-pub-1490675395669448/1102787466",
+  ios: "ca-app-pub-1490675395669448/1314451169",
 };
 
 // Keep production ads disabled until you have
