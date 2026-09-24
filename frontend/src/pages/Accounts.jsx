@@ -3,11 +3,9 @@ import { NavLink } from "react-router-dom";
 import { getAccounts, deleteAccount } from "../services/accounts";
 import AccountCard from "../components/AccountCard";
 import AccountModal from "../components/AccountModal";
-import BankSyncModal from "../components/BankSyncModal";
 import BankImportModal from "../components/BankImportModal";
 import logoMark from "../assets/logo-mark.png";
 import { formatCurrency } from "../utils/currency";
-
 
 const LINKS = [
   { to: "/", label: "Dashboard", icon: "◆", end: true },
@@ -22,17 +20,16 @@ export default function Accounts() {
   const [loading, setLoading] = useState(true);
   const [showAddChooser, setShowAddChooser] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showSyncModal, setShowSyncModal] = useState(false);
   const [importMode, setImportMode] = useState(null);
   const [editingAccount, setEditingAccount] = useState(null);
   const [error, setError] = useState(null);
+
   const totalBalance = accounts.reduce(
     (sum, account) => sum + Number(account.balance || 0),
     0
   );
 
-  const totalCurrency =
-    accounts[0]?.currency || "NGN";
+  const totalCurrency = accounts[0]?.currency || "NGN";
 
   const fetchAccounts = async () => {
     try {
@@ -52,6 +49,7 @@ export default function Accounts() {
 
   const handleDelete = async (accountId) => {
     if (!window.confirm("Delete this account?")) return;
+
     try {
       await deleteAccount(accountId);
       setAccounts((prev) => prev.filter((a) => a.id !== accountId));
@@ -84,6 +82,7 @@ export default function Accounts() {
             </span>
           </span>
         </div>
+
         <nav>
           <ul className="nav-list">
             {LINKS.map((link) => (
@@ -108,12 +107,18 @@ export default function Accounts() {
         <div className="page-header" style={{ marginBottom: 28 }}>
           <div>
             <h1>Accounts</h1>
-            <p style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: 4 }}>
+            <p
+              style={{
+                color: "var(--ink-soft)",
+                fontSize: 14,
+                marginTop: 4,
+              }}
+            >
               Manage your wallets and linked bank accounts.
             </p>
           </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
 
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <button
               className="btn btn--primary"
               onClick={() => setShowAddChooser(true)}
@@ -169,6 +174,7 @@ export default function Accounts() {
             <p style={{ color: "var(--ink-soft)", marginBottom: 16 }}>
               No accounts yet — add one to get started.
             </p>
+
             <button
               className="btn btn--primary"
               onClick={() => setShowAddChooser(true)}
@@ -189,6 +195,7 @@ export default function Accounts() {
           </div>
         )}
       </main>
+
       {showAddChooser && (
         <div className="modal-backdrop">
           <div
@@ -235,13 +242,11 @@ export default function Accounts() {
                 style={{
                   padding: 16,
                   textAlign: "left",
-                  cursor: "pointer",
+                  cursor: "default",
                   width: "100%",
                 }}
-                onClick={() => {
-                  setShowAddChooser(false);
-                  setShowSyncModal(true);
-                }}
+                onClick={() => { }}
+                aria-disabled="true"
               >
                 <strong>⇄ &nbsp; Bank Synchronization</strong>
                 <div
@@ -251,8 +256,8 @@ export default function Accounts() {
                     marginTop: 5,
                   }}
                 >
-                  Connect your bank account and automatically synchronize your
-                  transactions.
+                  Coming Soon — secure automatic bank synchronization will be
+                  available in a future BudgetIQ update.
                 </div>
               </button>
 
@@ -278,7 +283,8 @@ export default function Accounts() {
                     marginTop: 5,
                   }}
                 >
-                  Import PDF, CSV or Excel transactions into an existing account.
+                  Import PDF, CSV or Excel transactions into an existing
+                  account.
                 </div>
               </button>
 
@@ -304,8 +310,8 @@ export default function Accounts() {
                     marginTop: 5,
                   }}
                 >
-                  Import bank transaction alerts you explicitly provide. Automatic
-                  inbox connection is not enabled.
+                  Import bank transaction alerts you explicitly provide.
+                  Automatic inbox connection is not enabled.
                 </div>
               </button>
 
@@ -343,6 +349,7 @@ export default function Accounts() {
       {showAddModal && (
         <AccountModal account={editingAccount} onClose={handleModalClose} />
       )}
+
       {importMode && (
         <BankImportModal
           mode={importMode}
@@ -350,15 +357,6 @@ export default function Accounts() {
           onClose={() => setImportMode(null)}
           onImported={async () => {
             await fetchAccounts();
-          }}
-        />
-      )}
-
-      {showSyncModal && (
-        <BankSyncModal
-          onClose={() => {
-            setShowSyncModal(false);
-            fetchAccounts();
           }}
         />
       )}
