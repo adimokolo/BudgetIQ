@@ -2378,10 +2378,34 @@
    ========================================================= */
 
 .admin-shell {
+  --ink: #172033;
+  --ink-soft: #44536a;
+  --ink-muted: #617089;
+  --ink-faint: #8290a5;
+
+  --surface: #ffffff;
+  --surface-soft: #f7f9fc;
+  --surface-strong: #eef3f9;
+  --surface-border: #d7e0eb;
+
   min-height: 100vh;
   display: flex;
-  background: #090d16;
+  background: #f6f8fb;
   color: var(--ink);
+}
+
+[data-theme="dark"] .admin-shell {
+  --ink: #f4f7fb;
+  --ink-soft: #d6deea;
+  --ink-muted: #aab8cc;
+  --ink-faint: #8292aa;
+
+  --surface: #111725;
+  --surface-soft: #111725;
+  --surface-strong: #172033;
+  --surface-border: #2b3648;
+
+  background: #090d16;
 }
 
 .admin-sidebar {
@@ -2392,7 +2416,7 @@
   display: flex;
   flex-direction: column;
   padding: 28px 18px 22px;
-  background: #0d1320;
+  background: var(--surface);
   border-right: 1px solid var(--surface-border);
   z-index: 20;
 }
@@ -2508,7 +2532,7 @@
   display: flex;
   align-items: center;
   padding: 14px 32px;
-  background: #0d1320;
+  background: var(--surface);
   border-bottom: 1px solid var(--surface-border);
 }
 
@@ -2579,7 +2603,7 @@
   min-height: 165px;
   box-sizing: border-box;
   padding: 22px;
-  background: #111725;
+  background: var(--surface);
   border: 1px solid var(--surface-border);
   border-radius: 14px;
   transition:
