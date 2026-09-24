@@ -1449,7 +1449,7 @@
 .tx-date-filter-wrap .tx-segmented {
   display: grid;
   grid-template-columns: 160px 160px 54px;
-  background: #171a24;
+  background: var(--surface);
   width: 382px;
 }
 
