@@ -14,7 +14,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://dic5erfj6c3p4.cloudfront.net/api"
+        "EXPO_PUBLIC_API_URL": "https://dic5erfj6c3p4.cloudfront.net/api",
+        "ORG_GRADLE_PROJECT_RNGMA_ANDROID_BACKEND": "classic"
       }
     },
     "production": {
