@@ -515,36 +515,77 @@ router.post("/email/preview", async (req, res, next) => {
       return fail(res, 413, "Paste at most 200 alerts at once.");
     const rows = [];
     for (const block of blocks) {
-      const typeMatch = block.match(
-        /\b(debited|debit|withdrawal|credited|credit|deposit)\b|(?:Txn|Transaction)\s*:\s*(DR|CR)\b/i,
+      // Detect transaction direction from explicit debit/credit indicators.
+      const debitMatch = block.match(
+        /\b(debited|debit|withdrawal|withdrawn)\b|\bDR\b/i,
       );
-      const amountMatch = block.match(/(?:NGN|₦)\s*([\d,]+(?:\.\d{1,2})?)/i);
-      const dateMatch = block.match(
+
+      const creditMatch = block.match(
+        /\b(credited|credit)\b|\bCR\b/i,
+      );
+
+      let type = null;
+
+      if (debitMatch && !creditMatch) {
+        type = "expense";
+      } else if (creditMatch && !debitMatch) {
+        type = "income";
+      }
+
+      // Accept NGN5,700.00, ₦5,700.00 and N5,700.00,
+      // with or without a space after the currency marker.
+      const amountMatch = block.match(
+        /(?:NGN|₦|N(?=\s*\d))\s*([\d,]+(?:\.\d{1,2})?)/i,
+      );
+      // Accept numeric dates such as:
+      // 2026-09-23, 2026/09/23, 23/09/2026 and 23-09-2026.
+      const numericDateMatch = block.match(
         /\b(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\b/,
       );
-      const date = dateMatch ? dateValue(dateMatch[1]) : null;
+
+      // Accept month-name dates such as:
+      // Sep 23rd, 2026 16:31:24
+      // Sep 24th, 2026 17:36:20
+      const namedDateMatch = block.match(
+        /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/i,
+      );
+
+      let date = null;
+
+      if (numericDateMatch) {
+        date = dateValue(numericDateMatch[1]);
+      } else if (namedDateMatch) {
+        const months = {
+          jan: "01",
+          feb: "02",
+          mar: "03",
+          apr: "04",
+          may: "05",
+          jun: "06",
+          jul: "07",
+          aug: "08",
+          sep: "09",
+          oct: "10",
+          nov: "11",
+          dec: "12",
+        };
+
+        const month = months[namedDateMatch[1].slice(0, 3).toLowerCase()];
+        const day = namedDateMatch[2].padStart(2, "0");
+
+        date = dateValue(`${namedDateMatch[3]}-${month}-${day}`);
+      }
+
       const amount = amountMatch ? money(amountMatch[1]) : null;
-      if (!typeMatch || !date || !amount || amount <= 0)
+
+      if (!type || !date || !amount || amount <= 0) {
         return fail(
           res,
           422,
-          "Could not safely parse every alert. Each alert must contain an explicit debit/credit direction, NGN amount and full date (DD/MM/YYYY or YYYY-MM-DD). Separate alerts with a blank line. No data was imported.",
-        );
-      const direction = (typeMatch[1] || typeMatch[2] || "").toLowerCase();
-
-      let type;
-
-      if (["debited", "debit", "withdrawal", "dr"].includes(direction)) {
-        type = "expense";
-      } else if (["credited", "credit", "deposit", "cr"].includes(direction)) {
-        type = "income";
-      } else {
-        return fail(
-          res,
-          422,
-          "Could not determine whether this alert is a debit or credit. No data was imported.",
+          "Could not safely parse every alert. Each alert must contain a clear debit/credit direction, NGN/₦ amount and recognizable full date. Separate multiple alerts with a blank line. No data was imported.",
         );
       }
+
       rows.push({
         date,
         type,
