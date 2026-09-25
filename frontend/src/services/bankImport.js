@@ -28,6 +28,14 @@ export const previewEmailAlerts = async (emailText, bankName) => {
   return response.data;
 };
 
+export const updateEmailTypes = async (importId, transactions) => {
+  const response = await apiClient.patch(
+    `/bank-import/${importId}/email-types`,
+    { transactions },
+  );
+
+  return response.data;
+};
 export const confirmImport = async (importId) => {
   const response = await apiClient.post(
     `/bank-import/${importId}/confirm`,

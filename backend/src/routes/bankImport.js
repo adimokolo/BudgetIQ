@@ -578,11 +578,11 @@ router.post("/email/preview", async (req, res, next) => {
 
       const amount = amountMatch ? money(amountMatch[1]) : null;
 
-      if (!type || !date || !amount || amount <= 0) {
+      if (!date || !amount || amount <= 0) {
         return fail(
           res,
           422,
-          "Could not safely parse every alert. Each alert must contain a clear debit/credit direction, NGN/₦ amount and recognizable full date. Separate multiple alerts with a blank line. No data was imported.",
+          "Could not safely parse every alert. Each alert must contain an NGN/₦/N amount and recognizable full date. Separate multiple alerts with a blank line. No data was imported.",
         );
       }
 
@@ -592,9 +592,79 @@ router.post("/email/preview", async (req, res, next) => {
         amount,
         description: block.replace(/\s+/g, " ").slice(0, 255),
         reference: "",
+        needsReview: !type,
       });
     }
     return stage(req, res, "email", rows);
+  } catch (e) {
+    next(e);
+  }
+});
+router.patch("/:id/email-types", async (req, res, next) => {
+  try {
+    const updates = Array.isArray(req.body.transactions)
+      ? req.body.transactions
+      : [];
+
+    if (!updates.length) {
+      return fail(res, 400, "Select a transaction type before continuing.");
+    }
+
+    const batch = await pool.query(
+      `SELECT id, source_type, status, rows_json
+       FROM bank_import_batches
+       WHERE id=$1 AND user_id=$2`,
+      [req.params.id, req.user.id],
+    );
+
+    if (!batch.rowCount) {
+      return fail(res, 404, "Import preview not found.");
+    }
+
+    const b = batch.rows[0];
+
+    if (b.status !== "preview") {
+      return fail(res, 409, "This preview has already been confirmed.");
+    }
+
+    if (b.source_type !== "email") {
+      return fail(res, 400, "Transaction types can only be updated for email alert imports.");
+    }
+
+    const rows = b.rows_json;
+
+    for (const update of updates) {
+      const index = Number(update.index);
+
+      if (
+        !Number.isInteger(index) ||
+        index < 0 ||
+        index >= rows.length ||
+        !["income", "expense"].includes(update.type)
+      ) {
+        return fail(res, 400, "Invalid transaction type selection.");
+      }
+
+      rows[index] = {
+        ...rows[index],
+        type: update.type,
+        needsReview: false,
+      };
+    }
+
+    await pool.query(
+      `UPDATE bank_import_batches
+       SET rows_json=$1::jsonb
+       WHERE id=$2 AND user_id=$3`,
+      [JSON.stringify(rows), b.id, req.user.id],
+    );
+
+    return res.json({
+      importId: b.id,
+      count: rows.length,
+      transactions: rows.slice(0, 30),
+      message: "Transaction type updated.",
+    });
   } catch (e) {
     next(e);
   }
@@ -653,6 +723,19 @@ router.post("/:id/confirm", async (req, res, next) => {
       await client.query("ROLLBACK");
       return fail(res, 404, "Destination account no longer exists.");
     }
+    const unresolvedRows = b.rows_json.filter(
+      (row) => !["income", "expense"].includes(row.type),
+    );
+
+    if (unresolvedRows.length) {
+      await client.query("ROLLBACK");
+      return fail(
+        res,
+        422,
+        "Some transactions still need an Income or Expense type before they can be imported.",
+      );
+    }
+
     let imported = 0,
       skipped = 0;
     for (const row of b.rows_json) {
