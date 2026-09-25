@@ -59,6 +59,7 @@ import { getBankAccounts, refreshBankAccount } from "../../services/bankSync";
 import {
   previewStatement,
   previewEmailAlerts,
+  updateEmailTypes,
   confirmImport,
 } from "../../services/bankImport";
 
@@ -391,6 +392,7 @@ export default function Account() {
   const [emailText, setEmailText] = useState("");
   const [importPreview, setImportPreview] = useState(null);
   const [importBusy, setImportBusy] = useState(false);
+  const [importTypeSelections, setImportTypeSelections] = useState({});
 
   const openImport = (mode) => {
     setShowAddModal(false);
@@ -402,6 +404,7 @@ export default function Account() {
     setSelectedStatementFile(null);
     setEmailText("");
     setImportPreview(null);
+    setImportTypeSelections({});
     setImportMode(mode);
   };
 
@@ -420,6 +423,7 @@ export default function Account() {
       if (picked.canceled || !picked.assets?.length) return;
       setSelectedStatementFile(picked.assets[0]);
       setImportPreview(null);
+      setImportTypeSelections({});
     } catch (error) {
       Alert.alert(
         "File selection failed",
@@ -460,7 +464,10 @@ export default function Account() {
               importBank,
             )
           : await previewEmailAlerts(emailText, importBank);
-      if (result) setImportPreview(result);
+      if (result) {
+        setImportPreview(result);
+        setImportTypeSelections({});
+      }
     } catch (error) {
       Alert.alert(
         "Import preview failed",
@@ -475,8 +482,38 @@ export default function Account() {
 
   const handleConfirmImport = async () => {
     if (!importPreview?.importId) return;
+
+    const unresolved = (importPreview.transactions || [])
+      .map((item, index) => ({
+        item,
+        index,
+        type: importTypeSelections[index],
+      }))
+      .filter(({ item }) => importMode === "email" && item.needsReview);
+
+    if (unresolved.some(({ type }) => !type)) {
+      Alert.alert(
+        "Select transaction type",
+        "Choose Debit (Expense) or Credit (Income) for every transaction that needs review.",
+      );
+      return;
+    }
+
     try {
       setImportBusy(true);
+
+      if (unresolved.length) {
+        const updatedPreview = await updateEmailTypes(
+          importPreview.importId,
+          unresolved.map(({ index, type }) => ({ index, type })),
+        );
+
+        setImportPreview((current) => ({
+          ...current,
+          ...updatedPreview,
+        }));
+      }
+
       const result = await confirmImport(importPreview.importId);
       Alert.alert(
         "Import complete",
@@ -484,6 +521,7 @@ export default function Account() {
       );
       setImportMode(null);
       setImportPreview(null);
+      setImportTypeSelections({});
       await loadAccounts();
     } catch (error) {
       Alert.alert(
@@ -1727,6 +1765,7 @@ export default function Account() {
                           setBankSearch("");
                           setShowBankPicker(false);
                           setImportPreview(null);
+                          setImportTypeSelections({});
                         }}
                         style={[
                           styles.currencyOption,
@@ -1837,6 +1876,7 @@ export default function Account() {
                                   setImportAccountId(String(account.id));
                                   setShowAccountPicker(false);
                                   setImportPreview(null);
+                                  setImportTypeSelections({});
                                 }}
                                 style={[
                                   styles.currencyOption,
@@ -1927,6 +1967,7 @@ export default function Account() {
                     onChangeText={(value) => {
                       setEmailText(value);
                       setImportPreview(null);
+                      setImportTypeSelections({});
                     }}
                     placeholder="Paste one or more bank transaction alert messages here..."
                     placeholderTextColor={colors.textFaint}
@@ -1958,44 +1999,135 @@ export default function Account() {
                   </Text>
                   {(importPreview.transactions || [])
                     .slice(0, 30)
-                    .map((item, index) => (
-                      <View
-                        key={index}
-                        style={[
-                          styles.optionCard,
-                          {
-                            backgroundColor: colors.background,
-                            borderColor: colors.cardBorder,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[styles.optionTitle, { color: colors.text }]}
-                        >
-                          {item.type} · {item.amount} ·{" "}
-                          {item.occurred_on || item.date}
-                        </Text>
-                        <Text
+                    .map((item, index) => {
+                      const isEmailReview =
+                        importMode === "email" && item.needsReview;
+                      const selectedType = importTypeSelections[index];
+
+                      return (
+                        <View
+                          key={index}
                           style={[
-                            styles.optionDescription,
-                            { color: colors.textMuted },
+                            styles.optionCard,
+                            {
+                              backgroundColor: colors.background,
+                              borderColor: colors.cardBorder,
+                            },
                           ]}
                         >
-                          {item.description}
-                        </Text>
-                      </View>
-                    ))}
+                          <Text
+                            style={[styles.optionTitle, { color: colors.text }]}
+                          >
+                            {item.type
+                              ? `${item.type === "expense" ? "Debit (Expense)" : "Credit (Income)"} · `
+                              : ""}
+                            {item.amount} · {item.occurred_on || item.date}
+                          </Text>
+
+                          {isEmailReview && (
+                            <View style={{ marginTop: 8 }}>
+                              <Text
+                                style={[
+                                  styles.inputLabel,
+                                  {
+                                    color: colors.textMuted,
+                                    marginTop: 0,
+                                    marginBottom: 6,
+                                  },
+                                ]}
+                              >
+                                Transaction type
+                              </Text>
+                              <View style={{ flexDirection: "row", gap: 8 }}>
+                                {[
+                                  {
+                                    value: "expense",
+                                    label: "Debit (Expense)",
+                                  },
+                                  { value: "income", label: "Credit (Income)" },
+                                ].map((option) => (
+                                  <Pressable
+                                    key={option.value}
+                                    onPress={() =>
+                                      setImportTypeSelections((current) => ({
+                                        ...current,
+                                        [index]: option.value,
+                                      }))
+                                    }
+                                    style={[
+                                      styles.editButton,
+                                      {
+                                        flex: 1,
+                                        alignItems: "center",
+                                        backgroundColor:
+                                          selectedType === option.value
+                                            ? colors.primary
+                                            : colors.chipBg,
+                                      },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.editButtonText,
+                                        {
+                                          color:
+                                            selectedType === option.value
+                                              ? colors.primaryText
+                                              : colors.primary,
+                                        },
+                                      ]}
+                                    >
+                                      {option.label}
+                                    </Text>
+                                  </Pressable>
+                                ))}
+                              </View>
+                            </View>
+                          )}
+
+                          <Text
+                            style={[
+                              styles.optionDescription,
+                              { color: colors.textMuted, marginTop: 8 },
+                            ]}
+                          >
+                            {item.description}
+                          </Text>
+                        </View>
+                      );
+                    })}
                   {!!importPreview.warnings?.length && (
                     <Text style={{ color: colors.textMuted }}>
                       {importPreview.warnings.join("\n")}
                     </Text>
                   )}
                   <Pressable
-                    disabled={importBusy || !importPreview.transactions?.length}
+                    disabled={
+                      importBusy ||
+                      !importPreview.transactions?.length ||
+                      (importMode === "email" &&
+                        importPreview.transactions.some(
+                          (item, index) =>
+                            item.needsReview && !importTypeSelections[index],
+                        ))
+                    }
                     onPress={handleConfirmImport}
                     style={[
                       styles.saveButton,
-                      { backgroundColor: colors.primary },
+                      {
+                        backgroundColor: colors.primary,
+                        opacity:
+                          importBusy ||
+                          !importPreview.transactions?.length ||
+                          (importMode === "email" &&
+                            importPreview.transactions.some(
+                              (item, index) =>
+                                item.needsReview &&
+                                !importTypeSelections[index],
+                            ))
+                            ? 0.5
+                            : 1,
+                      },
                     ]}
                   >
                     <Text
@@ -2009,7 +2141,10 @@ export default function Account() {
                   </Pressable>
                   <Pressable
                     disabled={importBusy}
-                    onPress={() => setImportPreview(null)}
+                    onPress={() => {
+                      setImportPreview(null);
+                      setImportTypeSelections({});
+                    }}
                     style={styles.cancelButton}
                   >
                     <Text

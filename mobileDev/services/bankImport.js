@@ -58,6 +58,22 @@ export const previewEmailAlerts = async (emailText, bankName) => {
   }
 };
 
+export const updateEmailTypes = async (importId, transactions) => {
+  try {
+    const response = await api.patch(
+      `/bank-import/${importId}/email-types`,
+      { transactions },
+      {
+        timeout: 60000,
+      },
+    );
+
+    return response.data;
+  } catch (error) {
+    throwApiError(error, "Unable to update transaction types.");
+  }
+};
+
 export const confirmImport = async (importId) => {
   try {
     const response = await api.post(
