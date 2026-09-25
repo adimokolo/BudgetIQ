@@ -1,40 +1,13 @@
 import { useMemo, useState } from "react";
+import { NIGERIAN_BANKS } from "../utils/nigerianBanks";
 import {
   previewStatement,
   previewEmailAlerts,
+  updateEmailTypes,
   confirmImport,
 } from "../services/bankImport";
 
-const NIGERIAN_BANKS = [
-  "Access Bank",
-  "Citibank Nigeria",
-  "Ecobank Nigeria",
-  "Fidelity Bank",
-  "First Bank of Nigeria",
-  "First City Monument Bank",
-  "Globus Bank",
-  "Guaranty Trust Bank",
-  "Jaiz Bank",
-  "Keystone Bank",
-  "Lotus Bank",
-  "Optimus Bank",
-  "Parallex Bank",
-  "Polaris Bank",
-  "PremiumTrust Bank",
-  "Providus Bank",
-  "Signature Bank",
-  "Stanbic IBTC Bank",
-  "Standard Chartered Bank",
-  "Sterling Bank",
-  "SunTrust Bank",
-  "TAJBank",
-  "Titan Trust Bank",
-  "Union Bank of Nigeria",
-  "United Bank for Africa",
-  "Unity Bank",
-  "Wema Bank",
-  "Zenith Bank",
-];
+
 
 export default function BankImportModal({
   mode,
@@ -48,6 +21,7 @@ export default function BankImportModal({
   const [emailText, setEmailText] = useState("");
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [typeSelections, setTypeSelections] = useState({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -55,17 +29,19 @@ export default function BankImportModal({
   const isStatement = mode === "statement";
 
   const filteredBanks = useMemo(() => {
+    const banks = NIGERIAN_BANKS.map((bank) => bank.name);
     const search = bankSearch.trim().toLowerCase();
 
-    if (!search) return NIGERIAN_BANKS;
+    if (!search) return banks;
 
-    return NIGERIAN_BANKS.filter((bank) =>
+    return banks.filter((bank) =>
       bank.toLowerCase().includes(search),
     );
   }, [bankSearch]);
 
   const resetPreview = () => {
     setPreview(null);
+    setTypeSelections({});
     setMessage("");
   };
 
@@ -119,6 +95,36 @@ export default function BankImportModal({
     try {
       setBusy(true);
       setError("");
+
+      const unresolved = (preview.transactions || [])
+        .map((item, index) => ({
+          item,
+          index,
+          type: typeSelections[index],
+        }))
+        .filter(({ item }) => !isStatement && item.needsReview);
+
+      if (unresolved.some(({ type }) => !type)) {
+        setError(
+          "Select Debit (Expense) or Credit (Income) for every transaction that needs review.",
+        );
+        return;
+      }
+
+      if (unresolved.length) {
+        const updatedPreview = await updateEmailTypes(
+          preview.importId,
+          unresolved.map(({ index, type }) => ({
+            index,
+            type,
+          })),
+        );
+
+        setPreview((current) => ({
+          ...current,
+          ...updatedPreview,
+        }));
+      }
 
       const result = await confirmImport(preview.importId);
 
@@ -429,9 +435,49 @@ export default function BankImportModal({
                     style={{ padding: 12 }}
                   >
                     <strong style={{ fontSize: 13 }}>
-                      {item.type} · {item.amount} ·{" "}
-                      {item.occurred_on || item.date}
+                      {item.type
+                        ? `${item.type === "expense" ? "Debit (Expense)" : "Credit (Income)"} · `
+                        : ""}
+                      {item.amount} · {item.occurred_on || item.date}
                     </strong>
+
+                    {!isStatement && item.needsReview && (
+                      <div style={{ marginTop: 10 }}>
+                        <label
+                          style={{
+                            display: "block",
+                            fontSize: 14,
+                            fontWeight: 700,
+                            marginBottom: 7,
+                            color: "var(--ink)",
+                          }}
+                        >
+                          Transaction type
+                        </label>
+
+                        <select
+                          className="bank-import-type-select"
+                          value={typeSelections[index] || ""}
+                          onChange={(event) =>
+                            setTypeSelections((current) => ({
+                              ...current,
+                              [index]: event.target.value,
+                            }))
+                          }
+                          style={{
+                            width: "100%",
+                            fontSize: 15,
+                            fontWeight: 600,
+                            padding: "10px 12px",
+                            borderRadius: 8,
+                          }}
+                        >
+                          <option value="">Select transaction type</option>
+                          <option value="expense">Debit (Expense)</option>
+                          <option value="income">Credit (Income)</option>
+                        </select>
+                      </div>
+                    )}
 
                     <div
                       style={{
@@ -478,7 +524,15 @@ export default function BankImportModal({
                 <button
                   type="button"
                   className="btn btn--primary"
-                  disabled={busy || !preview.transactions?.length}
+                  disabled={
+                    busy ||
+                    !preview.transactions?.length ||
+                    (!isStatement &&
+                      preview.transactions.some(
+                        (item, index) =>
+                          item.needsReview && !typeSelections[index],
+                      ))
+                  }
                   onClick={handleConfirm}
                 >
                   {busy ? "Importing..." : "Confirm import"}
@@ -491,8 +545,15 @@ export default function BankImportModal({
             <p
               style={{
                 marginTop: 14,
-                fontSize: 13,
-                color: "var(--ink-soft)",
+                marginBottom: 0,
+                padding: "10px 12px",
+                fontSize: 15,
+                fontWeight: 700,
+                lineHeight: 1.4,
+                color: "var(--ink)",
+                background: "var(--surface-strong)",
+                border: "1px solid var(--surface-border)",
+                borderRadius: 8,
               }}
             >
               Import complete: {message}

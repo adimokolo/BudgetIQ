@@ -515,45 +515,156 @@ router.post("/email/preview", async (req, res, next) => {
       return fail(res, 413, "Paste at most 200 alerts at once.");
     const rows = [];
     for (const block of blocks) {
-      const typeMatch = block.match(
-        /\b(debited|debit|withdrawal|credited|credit|deposit)\b|(?:Txn|Transaction)\s*:\s*(DR|CR)\b/i,
+      // Detect transaction direction from explicit debit/credit indicators.
+      const debitMatch = block.match(
+        /\b(debited|debit|withdrawal|withdrawn)\b|\bDR\b/i,
       );
-      const amountMatch = block.match(/(?:NGN|₦)\s*([\d,]+(?:\.\d{1,2})?)/i);
-      const dateMatch = block.match(
+
+      const creditMatch = block.match(
+        /\b(credited|credit)\b|\bCR\b/i,
+      );
+
+      let type = null;
+
+      if (debitMatch && !creditMatch) {
+        type = "expense";
+      } else if (creditMatch && !debitMatch) {
+        type = "income";
+      }
+
+      // Accept NGN5,700.00, ₦5,700.00 and N5,700.00,
+      // with or without a space after the currency marker.
+      const amountMatch = block.match(
+        /(?:NGN|₦|N(?=\s*\d))\s*([\d,]+(?:\.\d{1,2})?)/i,
+      );
+      // Accept numeric dates such as:
+      // 2026-09-23, 2026/09/23, 23/09/2026 and 23-09-2026.
+      const numericDateMatch = block.match(
         /\b(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4})\b/,
       );
-      const date = dateMatch ? dateValue(dateMatch[1]) : null;
+
+      // Accept month-name dates such as:
+      // Sep 23rd, 2026 16:31:24
+      // Sep 24th, 2026 17:36:20
+      const namedDateMatch = block.match(
+        /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/i,
+      );
+
+      let date = null;
+
+      if (numericDateMatch) {
+        date = dateValue(numericDateMatch[1]);
+      } else if (namedDateMatch) {
+        const months = {
+          jan: "01",
+          feb: "02",
+          mar: "03",
+          apr: "04",
+          may: "05",
+          jun: "06",
+          jul: "07",
+          aug: "08",
+          sep: "09",
+          oct: "10",
+          nov: "11",
+          dec: "12",
+        };
+
+        const month = months[namedDateMatch[1].slice(0, 3).toLowerCase()];
+        const day = namedDateMatch[2].padStart(2, "0");
+
+        date = dateValue(`${namedDateMatch[3]}-${month}-${day}`);
+      }
+
       const amount = amountMatch ? money(amountMatch[1]) : null;
-      if (!typeMatch || !date || !amount || amount <= 0)
+
+      if (!date || !amount || amount <= 0) {
         return fail(
           res,
           422,
-          "Could not safely parse every alert. Each alert must contain an explicit debit/credit direction, NGN amount and full date (DD/MM/YYYY or YYYY-MM-DD). Separate alerts with a blank line. No data was imported.",
-        );
-      const direction = (typeMatch[1] || typeMatch[2] || "").toLowerCase();
-
-      let type;
-
-      if (["debited", "debit", "withdrawal", "dr"].includes(direction)) {
-        type = "expense";
-      } else if (["credited", "credit", "deposit", "cr"].includes(direction)) {
-        type = "income";
-      } else {
-        return fail(
-          res,
-          422,
-          "Could not determine whether this alert is a debit or credit. No data was imported.",
+          "Could not safely parse every alert. Each alert must contain an NGN/₦/N amount and recognizable full date. Separate multiple alerts with a blank line. No data was imported.",
         );
       }
+
       rows.push({
         date,
         type,
         amount,
         description: block.replace(/\s+/g, " ").slice(0, 255),
         reference: "",
+        needsReview: !type,
       });
     }
     return stage(req, res, "email", rows);
+  } catch (e) {
+    next(e);
+  }
+});
+router.patch("/:id/email-types", async (req, res, next) => {
+  try {
+    const updates = Array.isArray(req.body.transactions)
+      ? req.body.transactions
+      : [];
+
+    if (!updates.length) {
+      return fail(res, 400, "Select a transaction type before continuing.");
+    }
+
+    const batch = await pool.query(
+      `SELECT id, source_type, status, rows_json
+       FROM bank_import_batches
+       WHERE id=$1 AND user_id=$2`,
+      [req.params.id, req.user.id],
+    );
+
+    if (!batch.rowCount) {
+      return fail(res, 404, "Import preview not found.");
+    }
+
+    const b = batch.rows[0];
+
+    if (b.status !== "preview") {
+      return fail(res, 409, "This preview has already been confirmed.");
+    }
+
+    if (b.source_type !== "email") {
+      return fail(res, 400, "Transaction types can only be updated for email alert imports.");
+    }
+
+    const rows = b.rows_json;
+
+    for (const update of updates) {
+      const index = Number(update.index);
+
+      if (
+        !Number.isInteger(index) ||
+        index < 0 ||
+        index >= rows.length ||
+        !["income", "expense"].includes(update.type)
+      ) {
+        return fail(res, 400, "Invalid transaction type selection.");
+      }
+
+      rows[index] = {
+        ...rows[index],
+        type: update.type,
+        needsReview: false,
+      };
+    }
+
+    await pool.query(
+      `UPDATE bank_import_batches
+       SET rows_json=$1::jsonb
+       WHERE id=$2 AND user_id=$3`,
+      [JSON.stringify(rows), b.id, req.user.id],
+    );
+
+    return res.json({
+      importId: b.id,
+      count: rows.length,
+      transactions: rows.slice(0, 30),
+      message: "Transaction type updated.",
+    });
   } catch (e) {
     next(e);
   }
@@ -612,6 +723,19 @@ router.post("/:id/confirm", async (req, res, next) => {
       await client.query("ROLLBACK");
       return fail(res, 404, "Destination account no longer exists.");
     }
+    const unresolvedRows = b.rows_json.filter(
+      (row) => !["income", "expense"].includes(row.type),
+    );
+
+    if (unresolvedRows.length) {
+      await client.query("ROLLBACK");
+      return fail(
+        res,
+        422,
+        "Some transactions still need an Income or Expense type before they can be imported.",
+      );
+    }
+
     let imported = 0,
       skipped = 0;
     for (const row of b.rows_json) {

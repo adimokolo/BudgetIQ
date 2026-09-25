@@ -89,13 +89,37 @@
   color-scheme: dark;
 }
 
-[data-theme="dark"] .field select option {
+[data-theme="dark"] select option {
   background-color: #060b14;
   color: #eaf2ff;
 }
 
 [data-theme="dark"] select {
   background-color: rgba(255, 255, 255, 0.08);
+  color: #eaf2ff;
+}
+
+/* Email Alert Import transaction-type dropdown */
+.bank-import-type-select {
+  background-color: #ffffff;
+  color: #0b1e33;
+  border: 1px solid rgba(11, 30, 51, 0.18);
+  opacity: 1;
+}
+
+.bank-import-type-select option {
+  background-color: #ffffff;
+  color: #0b1e33;
+}
+
+[data-theme="dark"] .bank-import-type-select {
+  background-color: #121923;
+  color: #eaf2ff;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] .bank-import-type-select option {
+  background-color: #060b14;
   color: #eaf2ff;
 }
 
@@ -149,8 +173,8 @@ option {
 }
 
 select option {
-  background-color: #1a1f2e;
-  color: #e2e8f0;
+  background-color: #ffffff;
+  color: #0b1e33;
 }
 
 ::selection {
@@ -291,6 +315,18 @@ select option {
 
 .btn--primary:hover {
   box-shadow: 0 8px 26px rgba(11, 76, 130, 0.4);
+}
+
+.btn--primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn--primary:disabled:hover {
+  box-shadow: none;
+  transform: none;
 }
 
 .btn--ghost {
