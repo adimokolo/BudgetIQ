@@ -1,36 +1,45 @@
-import { Platform } from "react-native";
 import { TestIds } from "react-native-google-mobile-ads";
 
-// Replace these with your real Google banner ad unit IDs.
-// Do not use your Google App IDs here.
+/*
+|--------------------------------------------------------------------------
+| BudgetIQ - Google AdMob Configuration
+|--------------------------------------------------------------------------
+|
+| CURRENT MODE: TESTING
+|
+| We are temporarily forcing Google's official test banner ad so that
+| BudgetIQ can display ads in:
+|
+| - Expo development builds
+| - EAS preview builds
+| - Android emulator
+| - Android physical devices
+|
+| We are NOT using the real BudgetIQ AdMob banner ID yet.
+|
+| Once the test banner works correctly, this file will be updated so:
+|
+| Development -> Google Test Ads
+| Preview     -> Google Test Ads
+| Production  -> Real BudgetIQ Ads
+|
+|--------------------------------------------------------------------------
+*/
 
-const GOOGLE_AD_UNITS = {
-  android: "ca-app-pub-1490675395669448/1102787466",
-  ios: "ca-app-pub-1490675395669448/1314451169",
-};
-
-// Keep production ads disabled until you have
-// completed the required consent and privacy setup.
-export const ENABLE_PRODUCTION_ADS = false;
-
+/**
+ * Return the AdMob banner ad unit ID that BudgetIQ should use.
+ *
+ * For now we always return Google's official adaptive banner
+ * test ID.
+ */
 export const getBannerAdUnitId = () => {
-  if (__DEV__) {
-    return TestIds.ADAPTIVE_BANNER;
-  }
-
-  if (!ENABLE_PRODUCTION_ADS) {
-    return null;
-  }
-
-  const adUnitId = Platform.select({
-    android: GOOGLE_AD_UNITS.android,
-    ios: GOOGLE_AD_UNITS.ios,
-    default: null,
-  });
-
-  if (!adUnitId || adUnitId.startsWith("YOUR_")) {
-    return null;
-  }
-
-  return adUnitId;
+  return TestIds.ADAPTIVE_BANNER;
 };
+
+/**
+ * Indicates whether BudgetIQ is currently configured
+ * to serve real production advertisements.
+ *
+ * Keep this false while testing.
+ */
+export const ENABLE_PRODUCTION_ADS = false;
