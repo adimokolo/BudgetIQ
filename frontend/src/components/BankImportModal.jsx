@@ -1,40 +1,12 @@
 import { useMemo, useState } from "react";
+import { NIGERIAN_BANKS } from "../utils/nigerianBanks";
 import {
   previewStatement,
   previewEmailAlerts,
   confirmImport,
 } from "../services/bankImport";
 
-const NIGERIAN_BANKS = [
-  "Access Bank",
-  "Citibank Nigeria",
-  "Ecobank Nigeria",
-  "Fidelity Bank",
-  "First Bank of Nigeria",
-  "First City Monument Bank",
-  "Globus Bank",
-  "Guaranty Trust Bank",
-  "Jaiz Bank",
-  "Keystone Bank",
-  "Lotus Bank",
-  "Optimus Bank",
-  "Parallex Bank",
-  "Polaris Bank",
-  "PremiumTrust Bank",
-  "Providus Bank",
-  "Signature Bank",
-  "Stanbic IBTC Bank",
-  "Standard Chartered Bank",
-  "Sterling Bank",
-  "SunTrust Bank",
-  "TAJBank",
-  "Titan Trust Bank",
-  "Union Bank of Nigeria",
-  "United Bank for Africa",
-  "Unity Bank",
-  "Wema Bank",
-  "Zenith Bank",
-];
+
 
 export default function BankImportModal({
   mode,
@@ -55,11 +27,12 @@ export default function BankImportModal({
   const isStatement = mode === "statement";
 
   const filteredBanks = useMemo(() => {
+    const banks = NIGERIAN_BANKS.map((bank) => bank.name);
     const search = bankSearch.trim().toLowerCase();
 
-    if (!search) return NIGERIAN_BANKS;
+    if (!search) return banks;
 
-    return NIGERIAN_BANKS.filter((bank) =>
+    return banks.filter((bank) =>
       bank.toLowerCase().includes(search),
     );
   }, [bankSearch]);
