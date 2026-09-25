@@ -33,7 +33,7 @@ export default function AdBanner() {
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
+    width: "95%",
     minHeight: 60,
     alignItems: "center",
     justifyContent: "center",

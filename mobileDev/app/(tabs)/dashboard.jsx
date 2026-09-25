@@ -1108,7 +1108,7 @@ export default function Dashboard() {
             </Text>
           </View>
         </View>
-        <AdBanner />
+
         <View style={styles.chartsRow}>
           <View
             style={[
@@ -1486,6 +1486,7 @@ export default function Dashboard() {
             </Text>
           )}
         </View>
+        <AdBanner />
       </ScrollView>
     </SafeAreaView>
   );

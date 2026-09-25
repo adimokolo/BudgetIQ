@@ -63,11 +63,7 @@ import {
   confirmImport,
 } from "../../services/bankImport";
 
-// Customer-facing Nigerian financial institutions. Colors are UI identifiers,
-// not official brand assets. Keep names stable because email imports use the
-// selected value to find or create the matching BudgetIQ account.
 const NIGERIAN_BANKS = [
-  // Commercial banks
   ["Access Bank", "Commercial bank", "#F58220"],
   ["Citibank Nigeria", "Commercial bank", "#056DAE"],
   ["Ecobank Nigeria", "Commercial bank", "#146A45"],
@@ -95,19 +91,16 @@ const NIGERIAN_BANKS = [
   ["Wema Bank", "Commercial bank", "#8C367D"],
   ["Zenith Bank", "Commercial bank", "#C51E2D"],
 
-  // Non-interest banks
   ["Alternative Bank", "Non-interest bank", "#147D52"],
   ["Jaiz Bank", "Non-interest bank", "#14633D"],
   ["Lotus Bank", "Non-interest bank", "#168B71"],
   ["TAJBank", "Non-interest bank", "#2B7A55"],
 
-  // Merchant banks
   ["Coronation Merchant Bank", "Merchant bank", "#8B5D3B"],
   ["FBNQuest Merchant Bank", "Merchant bank", "#31568D"],
   ["Greenwich Merchant Bank", "Merchant bank", "#286C59"],
   ["Rand Merchant Bank Nigeria", "Merchant bank", "#42658B"],
 
-  // Payment service banks and mobile money wallets
   ["9 Payment Service Bank (9PSB)", "Payment service bank", "#40A629"],
   ["Hope Payment Service Bank", "Payment service bank", "#1C6B48"],
   ["MoneyMaster Payment Service Bank", "Payment service bank", "#F2B705"],
