@@ -24,6 +24,25 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 
 import Svg, { Circle } from "react-native-svg";
 
+import { useFonts } from "expo-font";
+import {
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from "@expo-google-fonts/space-grotesk";
+
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+} from "@expo-google-fonts/inter";
+
+import {
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+} from "@expo-google-fonts/jetbrains-mono";
+
 import { getTransactions } from "../services/transactions";
 import { getCategories } from "../services/categories";
 
@@ -274,6 +293,20 @@ export default function TransactionChart() {
   const { colors } = useTheme();
 
   const { baseCurrency: currency } = useCurrency();
+
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+
+    JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
+  });
 
   const styles = createStyles(colors);
 
@@ -544,6 +577,18 @@ export default function TransactionChart() {
   }, [transactions, isIncome, selectedMonth, customRange]);
 
   const typeLabel = isIncome ? "income" : "expenses";
+
+  if (!fontsLoaded) {
+    return (
+      <SafeAreaView style={styles.screen} edges={["top"]}>
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color={colors.primary} />
+
+          <Text style={styles.loadingText}>Loading chart...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>

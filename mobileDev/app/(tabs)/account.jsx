@@ -1,3 +1,4 @@
+import AdBanner from "../../components/AdBanner";
 import React, { useState } from "react";
 import {
   View,
@@ -386,6 +387,7 @@ export default function Account() {
   const [importPreview, setImportPreview] = useState(null);
   const [importBusy, setImportBusy] = useState(false);
   const [importTypeSelections, setImportTypeSelections] = useState({});
+  const [openTypeDropdownIndex, setOpenTypeDropdownIndex] = useState(null);
 
   const openImport = (mode) => {
     setShowAddModal(false);
@@ -398,6 +400,7 @@ export default function Account() {
     setEmailText("");
     setImportPreview(null);
     setImportTypeSelections({});
+    setOpenTypeDropdownIndex(null);
     setImportMode(mode);
   };
 
@@ -417,6 +420,7 @@ export default function Account() {
       setSelectedStatementFile(picked.assets[0]);
       setImportPreview(null);
       setImportTypeSelections({});
+      setOpenTypeDropdownIndex(null);
     } catch (error) {
       Alert.alert(
         "File selection failed",
@@ -460,6 +464,7 @@ export default function Account() {
       if (result) {
         setImportPreview(result);
         setImportTypeSelections({});
+        setOpenTypeDropdownIndex(null);
       }
     } catch (error) {
       Alert.alert(
@@ -515,6 +520,7 @@ export default function Account() {
       setImportMode(null);
       setImportPreview(null);
       setImportTypeSelections({});
+      setOpenTypeDropdownIndex(null);
       await loadAccounts();
     } catch (error) {
       Alert.alert(
@@ -765,6 +771,7 @@ export default function Account() {
       ]}
     >
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
@@ -1360,6 +1367,8 @@ export default function Account() {
         )}
       </ScrollView>
 
+      <AdBanner />
+
       <Modal
         visible={showAddModal}
         transparent
@@ -1759,6 +1768,7 @@ export default function Account() {
                           setShowBankPicker(false);
                           setImportPreview(null);
                           setImportTypeSelections({});
+                          setOpenTypeDropdownIndex(null);
                         }}
                         style={[
                           styles.currencyOption,
@@ -1870,6 +1880,7 @@ export default function Account() {
                                   setShowAccountPicker(false);
                                   setImportPreview(null);
                                   setImportTypeSelections({});
+                                  setOpenTypeDropdownIndex(null);
                                 }}
                                 style={[
                                   styles.currencyOption,
@@ -1961,6 +1972,7 @@ export default function Account() {
                       setEmailText(value);
                       setImportPreview(null);
                       setImportTypeSelections({});
+                      setOpenTypeDropdownIndex(null);
                     }}
                     placeholder="Paste one or more bank transaction alert messages here..."
                     placeholderTextColor={colors.textFaint}
@@ -2031,50 +2043,92 @@ export default function Account() {
                               >
                                 Transaction type
                               </Text>
-                              <View style={{ flexDirection: "row", gap: 8 }}>
-                                {[
+
+                              <Pressable
+                                onPress={() =>
+                                  setOpenTypeDropdownIndex((current) =>
+                                    current === index ? null : index,
+                                  )
+                                }
+                                style={[
+                                  styles.selectInput,
                                   {
-                                    value: "expense",
-                                    label: "Debit (Expense)",
+                                    backgroundColor: colors.background,
+                                    borderColor: colors.inputBorder,
                                   },
-                                  { value: "income", label: "Credit (Income)" },
-                                ].map((option) => (
-                                  <Pressable
-                                    key={option.value}
-                                    onPress={() =>
-                                      setImportTypeSelections((current) => ({
-                                        ...current,
-                                        [index]: option.value,
-                                      }))
-                                    }
-                                    style={[
-                                      styles.editButton,
-                                      {
-                                        flex: 1,
-                                        alignItems: "center",
-                                        backgroundColor:
-                                          selectedType === option.value
-                                            ? colors.primary
-                                            : colors.chipBg,
-                                      },
-                                    ]}
-                                  >
-                                    <Text
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.selectText,
+                                    {
+                                      color: selectedType
+                                        ? colors.text
+                                        : colors.textFaint,
+                                    },
+                                  ]}
+                                >
+                                  {selectedType
+                                    ? selectedType === "expense"
+                                      ? "Debit (Expense)"
+                                      : "Credit (Income)"
+                                    : "Choose transaction type"}
+                                </Text>
+                                <Text style={{ color: colors.textFaint }}>
+                                  {openTypeDropdownIndex === index ? "⌃" : "⌄"}
+                                </Text>
+                              </Pressable>
+
+                              {openTypeDropdownIndex === index && (
+                                <View
+                                  style={[
+                                    styles.currencyDropdown,
+                                    {
+                                      backgroundColor: colors.card,
+                                      borderColor: colors.cardBorder,
+                                      marginTop: 5,
+                                    },
+                                  ]}
+                                >
+                                  {[
+                                    {
+                                      value: "expense",
+                                      label: "Debit (Expense)",
+                                    },
+                                    {
+                                      value: "income",
+                                      label: "Credit (Income)",
+                                    },
+                                  ].map((option) => (
+                                    <Pressable
+                                      key={option.value}
+                                      onPress={() => {
+                                        setImportTypeSelections((current) => ({
+                                          ...current,
+                                          [index]: option.value,
+                                        }));
+                                        setOpenTypeDropdownIndex(null);
+                                      }}
                                       style={[
-                                        styles.editButtonText,
-                                        {
-                                          color:
-                                            selectedType === option.value
-                                              ? colors.primaryText
-                                              : colors.primary,
-                                        },
+                                        styles.currencyOption,
+                                        { borderBottomColor: colors.divider },
                                       ]}
                                     >
-                                      {option.label}
-                                    </Text>
-                                  </Pressable>
-                                ))}
-                              </View>
+                                      <Text
+                                        style={[
+                                          styles.optionTitle,
+                                          { color: colors.text, flex: 1 },
+                                        ]}
+                                      >
+                                        {selectedType === option.value
+                                          ? "● "
+                                          : ""}
+                                        {option.label}
+                                      </Text>
+                                    </Pressable>
+                                  ))}
+                                </View>
+                              )}
                             </View>
                           )}
 
@@ -2137,6 +2191,7 @@ export default function Account() {
                     onPress={() => {
                       setImportPreview(null);
                       setImportTypeSelections({});
+                      setOpenTypeDropdownIndex(null);
                     }}
                     style={styles.cancelButton}
                   >
@@ -2786,6 +2841,10 @@ export default function Account() {
 
 const styles = StyleSheet.create({
   screen: {
+    flex: 1,
+  },
+
+  scrollView: {
     flex: 1,
   },
 
