@@ -2013,7 +2013,7 @@ export default function Account() {
                         <View
                           key={index}
                           style={[
-                            styles.optionCard,
+                            styles.transactionReviewCard,
                             {
                               backgroundColor: colors.background,
                               borderColor: colors.cardBorder,
@@ -2030,7 +2030,7 @@ export default function Account() {
                           </Text>
 
                           {isEmailReview && (
-                            <View style={{ marginTop: 8 }}>
+                            <View style={styles.transactionTypePicker}>
                               <Text
                                 style={[
                                   styles.inputLabel,
@@ -2135,7 +2135,8 @@ export default function Account() {
                           <Text
                             style={[
                               styles.optionDescription,
-                              { color: colors.textMuted, marginTop: 8 },
+                              styles.transactionReviewDescription,
+                              { color: colors.textMuted },
                             ]}
                           >
                             {item.description}
@@ -3167,6 +3168,30 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 13,
     marginBottom: 10,
+  },
+
+  // Used specifically for each transaction row inside the import preview.
+  // Unlike optionCard (which lays icon + text + chevron out in a row for
+  // the bank/import option pickers), this card stacks its contents
+  // vertically: the amount/date line, then (when applicable) the
+  // transaction-type dropdown, then the description. Reusing optionCard's
+  // flexDirection: "row" here was the root cause of the garbled, overlapping
+  // layout — every child was being squeezed onto one line instead of
+  // stacking, which is why the web version (which stacks by default) read
+  // fine while this screen did not.
+  transactionReviewCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 13,
+    marginBottom: 10,
+  },
+
+  transactionTypePicker: {
+    marginTop: 10,
+  },
+
+  transactionReviewDescription: {
+    marginTop: 10,
   },
 
   optionIcon: {
