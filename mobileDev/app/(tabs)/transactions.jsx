@@ -1,3 +1,4 @@
+import AdBanner from "../../components/AdBanner";
 import React, {
   useState,
   useEffect,
@@ -2387,6 +2388,8 @@ export default function Transactions() {
           colors={colors}
           styles={styles}
         />
+
+        <AdBanner />
       </ScrollView>
 
       <Modal

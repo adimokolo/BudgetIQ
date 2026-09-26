@@ -24,6 +24,25 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 
 import Svg, { Circle } from "react-native-svg";
 
+import { useFonts } from "expo-font";
+import {
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from "@expo-google-fonts/space-grotesk";
+
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+} from "@expo-google-fonts/inter";
+
+import {
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+} from "@expo-google-fonts/jetbrains-mono";
+
 import { getTransactions } from "../services/transactions";
 import { getCategories } from "../services/categories";
 
@@ -199,14 +218,9 @@ function BreakdownCard({
     <View style={styles.breakdownCard}>
       <View style={styles.breakdownHeader}>
         <View
-          style={[
-            styles.breakdownHeaderIcon,
-            { backgroundColor: `${iconColor}22` },
-          ]}
+          style={[styles.breakdownHeaderIcon, { backgroundColor: iconColor }]}
         >
-          <Text style={[styles.breakdownHeaderGlyph, { color: iconColor }]}>
-            {icon}
-          </Text>
+          <Text style={styles.breakdownHeaderGlyph}>{icon}</Text>
         </View>
 
         <View style={styles.breakdownHeaderText}>
@@ -274,6 +288,20 @@ export default function TransactionChart() {
   const { colors } = useTheme();
 
   const { baseCurrency: currency } = useCurrency();
+
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+
+    JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
+  });
 
   const styles = createStyles(colors);
 
@@ -545,6 +573,18 @@ export default function TransactionChart() {
 
   const typeLabel = isIncome ? "income" : "expenses";
 
+  if (!fontsLoaded) {
+    return (
+      <SafeAreaView style={styles.screen} edges={["top"]}>
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color={colors.primary} />
+
+          <Text style={styles.loadingText}>Loading chart...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <View style={styles.header}>
@@ -767,7 +807,7 @@ export default function TransactionChart() {
                     ? "Where your money came from"
                     : "Where your money went"
                 }
-                icon="▰"
+                icon="🏷️"
                 iconColor={colors.income}
                 data={items}
                 total={total}
@@ -778,7 +818,7 @@ export default function TransactionChart() {
               <BreakdownCard
                 title="By Account"
                 subtitle="Activity across your accounts"
-                icon="▣"
+                icon="🏦"
                 iconColor="#8B5CF6"
                 data={accountItems}
                 total={total}
@@ -1177,18 +1217,18 @@ const createStyles = (colors) =>
     },
 
     breakdownHeaderIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
       alignItems: "center",
       justifyContent: "center",
       marginRight: 12,
     },
 
     breakdownHeaderGlyph: {
-      fontSize: 17,
+      fontSize: 16,
       lineHeight: 21,
-      fontFamily: fonts.bodySemiBold,
+      textAlign: "center",
     },
 
     breakdownHeaderText: {
@@ -1196,15 +1236,14 @@ const createStyles = (colors) =>
     },
 
     breakdownTitle: {
-      fontSize: 14,
-      fontFamily: fonts.displayBold,
+      fontSize: 12,
+      fontFamily: fonts.displaySemiBold,
       color: colors.text,
     },
 
     breakdownSubtitle: {
-      marginTop: 2,
-      fontSize: 10,
-      lineHeight: 14,
+      marginTop: 3,
+      fontSize: 9,
       fontFamily: fonts.bodyRegular,
       color: colors.textMuted,
     },
