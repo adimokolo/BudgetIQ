@@ -168,7 +168,6 @@ export function formatCurrency(amount, currencyCode = "NGN") {
       maximumFractionDigits: 2,
     }).format(value);
   } catch (error) {
-    // Unknown/unsupported code - fall back to a plain, still-readable format.
     console.log("formatCurrency fallback for code:", currencyCode, error);
 
     return `${currencyCode} ${value.toLocaleString("en", {

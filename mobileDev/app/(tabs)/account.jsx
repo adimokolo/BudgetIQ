@@ -118,7 +118,6 @@ const NIGERIAN_BANKS = [
   ["Teasy Mobile Money", "Mobile money / fintech", "#167B55"],
   ["Xpress Wallet", "Mobile money / fintech", "#2257A6"],
 
-  // Digital banks, finance apps and fintech wallets
   ["Carbon", "Digital finance / fintech", "#22A65A"],
   ["FairMoney", "Digital finance / fintech", "#1859C9"],
   ["Kuda Bank", "Digital bank / MFB", "#40196D"],
@@ -140,7 +139,6 @@ const NIGERIAN_BANKS = [
   ["Leatherback", "Digital finance / fintech", "#2E4DA7"],
   ["LemFi", "Digital finance / fintech", "#00A86B"],
 
-  // Microfinance banks commonly used for personal and business accounts
   ["AB Microfinance Bank", "Microfinance bank", "#315C83"],
   ["Accion Microfinance Bank", "Microfinance bank", "#E16B2D"],
   ["Addosser Microfinance Bank", "Microfinance bank", "#216D60"],
@@ -179,7 +177,6 @@ const NIGERIAN_BANKS = [
   ["Verite Microfinance Bank", "Microfinance bank", "#4B6F84"],
   ["Wetland Microfinance Bank", "Microfinance bank", "#347566"],
 
-  // Primary mortgage banks
   ["Abbey Mortgage Bank", "Mortgage bank", "#236B7C"],
   ["AG Mortgage Bank", "Mortgage bank", "#4B6288"],
   ["Brent Mortgage Bank", "Mortgage bank", "#547184"],
@@ -628,8 +625,6 @@ export default function Account() {
       return;
     }
 
-    // Allow a new wallet/account to be created with a zero balance.
-    // If the field is left blank, treat it as 0.00.
     const amount = initialAmount.trim() === "" ? 0 : Number(initialAmount);
 
     if (Number.isNaN(amount) || amount < 0) {
@@ -3170,15 +3165,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  // Used specifically for each transaction row inside the import preview.
-  // Unlike optionCard (which lays icon + text + chevron out in a row for
-  // the bank/import option pickers), this card stacks its contents
-  // vertically: the amount/date line, then (when applicable) the
-  // transaction-type dropdown, then the description. Reusing optionCard's
-  // flexDirection: "row" here was the root cause of the garbled, overlapping
-  // layout — every child was being squeezed onto one line instead of
-  // stacking, which is why the web version (which stacks by default) read
-  // fine while this screen did not.
   transactionReviewCard: {
     borderWidth: 1,
     borderRadius: 12,

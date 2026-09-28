@@ -75,7 +75,7 @@ export default function NotificationBell() {
     try {
       await apiClient.patch(`/notifications/${id}/read`);
     } catch {
-      load(); // resync on failure
+      load();
     }
   };
 

@@ -19,12 +19,6 @@ const TREND_COPY = {
   },
 };
 
-/*
-|--------------------------------------------------------------------------
-| CURRENCY FORMATTER
-|--------------------------------------------------------------------------
-*/
-
 function formatCurrency(amount, currency = "NGN") {
   const numericAmount = Number(amount || 0);
 
@@ -42,12 +36,6 @@ function formatCurrency(amount, currency = "NGN") {
     })}`;
   }
 }
-
-/*
-|--------------------------------------------------------------------------
-| FORECAST CARD
-|--------------------------------------------------------------------------
-*/
 
 export default function ForecastCard({ forecast, currency = "NGN", colors }) {
   const trend = TREND_COPY[forecast?.trend] || TREND_COPY.flat;
@@ -67,8 +55,6 @@ export default function ForecastCard({ forecast, currency = "NGN", colors }) {
         },
       ]}
     >
-      {/* Decorative gradient glow */}
-
       <LinearGradient
         pointerEvents="none"
         colors={[
@@ -80,8 +66,6 @@ export default function ForecastCard({ forecast, currency = "NGN", colors }) {
         end={{ x: 1, y: 1 }}
         style={styles.gradientGlow}
       />
-
-      {/* TITLE */}
 
       <Text
         style={[
@@ -96,8 +80,6 @@ export default function ForecastCard({ forecast, currency = "NGN", colors }) {
         FORECAST
       </Text>
 
-      {/* FORECAST VALUE */}
-
       <Text
         style={[
           styles.statValue,
@@ -111,11 +93,7 @@ export default function ForecastCard({ forecast, currency = "NGN", colors }) {
         {formatCurrency(forecast?.nextMonthPredictedExpense, currency)}
       </Text>
 
-      {/* TREND + CONFIDENCE */}
-
       <View style={styles.pillsContainer}>
-        {/* TREND */}
-
         <View
           style={[
             styles.pill,
@@ -131,8 +109,6 @@ export default function ForecastCard({ forecast, currency = "NGN", colors }) {
             {trend.label}
           </Text>
         </View>
-
-        {/* CONFIDENCE */}
 
         <View
           style={[
@@ -155,8 +131,6 @@ export default function ForecastCard({ forecast, currency = "NGN", colors }) {
         </View>
       </View>
 
-      {/* DESCRIPTION */}
-
       <Text
         style={[
           styles.helperText,
@@ -171,12 +145,6 @@ export default function ForecastCard({ forecast, currency = "NGN", colors }) {
     </View>
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| STYLES
-|--------------------------------------------------------------------------
-*/
 
 const styles = StyleSheet.create({
   card: {
@@ -203,12 +171,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 
-  /*
-  |--------------------------------------------------------------------------
-  | GRADIENT
-  |--------------------------------------------------------------------------
-  */
-
   gradientGlow: {
     position: "absolute",
 
@@ -223,12 +185,6 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
 
-  /*
-  |--------------------------------------------------------------------------
-  | LABEL
-  |--------------------------------------------------------------------------
-  */
-
   statLabel: {
     fontSize: 15,
 
@@ -241,12 +197,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  /*
-  |--------------------------------------------------------------------------
-  | VALUE
-  |--------------------------------------------------------------------------
-  */
-
   statValue: {
     fontSize: 30,
 
@@ -256,12 +206,6 @@ const styles = StyleSheet.create({
 
     marginBottom: 14,
   },
-
-  /*
-  |--------------------------------------------------------------------------
-  | PILLS
-  |--------------------------------------------------------------------------
-  */
 
   pillsContainer: {
     flexDirection: "row",
@@ -308,12 +252,6 @@ const styles = StyleSheet.create({
   warningText: {
     color: "#F59E0B",
   },
-
-  /*
-  |--------------------------------------------------------------------------
-  | HELPER TEXT
-  |--------------------------------------------------------------------------
-  */
 
   helperText: {
     fontSize: 14,

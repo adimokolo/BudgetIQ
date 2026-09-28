@@ -354,11 +354,8 @@ export default function Budgets() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // FIX: only the very first load blocks the screen with the loading card.
-  // Every later focus refetches silently, so the list never blanks out.
   const hasLoadedOnce = useRef(false);
 
-  // Sum of every budget's monthly limit. Recalculates whenever `budgets` changes.
   const totalBudget = budgets.reduce(
     (sum, budget) => sum + Number(budget.monthly_limit || 0),
     0,
@@ -529,7 +526,6 @@ export default function Budgets() {
       resetForm();
       setShowAddModal(false);
 
-      // Refresh in place rather than blanking the list behind a spinner.
       await loadBudgets(false);
     } catch (error) {
       console.log("Save budget error:", error);

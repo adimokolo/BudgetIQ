@@ -544,10 +544,12 @@
 }
 
 .skeleton {
-  background: linear-gradient(90deg,
-      var(--surface-strong) 25%,
-      var(--surface-border) 37%,
-      var(--surface-strong) 63%);
+  background: linear-gradient(
+    90deg,
+    var(--surface-strong) 25%,
+    var(--surface-border) 37%,
+    var(--surface-strong) 63%
+  );
   background-size: 400% 100%;
   animation: skeleton-shimmer 1.4s ease infinite;
 }
@@ -696,13 +698,13 @@
   overflow: visible;
 }
 
-.modal-card>form {
+.modal-card > form {
   max-height: calc(94vh - 110px);
   overflow-y: auto;
   padding-right: 4px;
 }
 
-.modal-card>form {
+.modal-card > form {
   max-height: calc(94vh - 110px);
   overflow-y: auto;
   padding-right: 4px;
@@ -975,7 +977,7 @@
   margin-top: 4px;
 }
 
-.currency-picker-list~* {
+.currency-picker-list ~ * {
   margin-top: 0;
 }
 
@@ -1175,8 +1177,8 @@
   gap: 10px;
 }
 
-.account-bank-select__value>span:last-child,
-.account-bank-option>span:last-child {
+.account-bank-select__value > span:last-child,
+.account-bank-option > span:last-child {
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -1368,10 +1370,6 @@
   text-align: center;
 }
 
-/* =========================================================
-   Transaction Charts — BudgetIQ analytics
-   ========================================================= */
-
 .tx-chart-page {
   width: 100%;
   font: inherit;
@@ -1381,7 +1379,6 @@
   margin-bottom: 26px;
 }
 
-/* Filters */
 .tx-chart-filters {
   display: flex;
   justify-content: space-between;
@@ -1474,7 +1471,6 @@
   color: #fff;
 }
 
-/* Shared cards */
 .tx-chart-card {
   min-width: 0;
   border: 1px solid var(--border);
@@ -1483,7 +1479,6 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
-/* Main overview */
 .tx-overview-card {
   padding: 24px 28px 28px;
   margin-bottom: 20px;
@@ -1496,7 +1491,7 @@
   gap: 24px;
 }
 
-.tx-overview-heading>div {
+.tx-overview-heading > div {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1575,8 +1570,6 @@
   color: var(--muted);
   font-size: 0.8rem;
 }
-
-/* Transaction chart custom date range */
 
 .tx-custom-date-picker {
   position: absolute;
@@ -1702,7 +1695,6 @@
   text-align: right;
 }
 
-/* Lower breakdown cards */
 .tx-breakdown-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1777,7 +1769,7 @@
   font-weight: 500;
 }
 
-.tx-breakdown-name>span:last-child {
+.tx-breakdown-name > span:last-child {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1816,7 +1808,6 @@
   border-radius: inherit;
 }
 
-/* Loading / error / empty */
 .tx-chart-state {
   min-height: 300px;
   display: flex;
@@ -1844,7 +1835,6 @@
   color: var(--danger);
 }
 
-/* Tablet */
 @media (max-width: 980px) {
   .tx-overview-body {
     grid-template-columns: 1fr;
@@ -1862,7 +1852,6 @@
   }
 }
 
-/* Mobile */
 @media (max-width: 700px) {
   .tx-chart-filters {
     flex-direction: column;
@@ -1922,7 +1911,6 @@
   }
 }
 
-/* Transaction chart selected controls */
 .tx-segmented button.active,
 .tx-segmented button.active:hover {
   background: #1677ff;
@@ -1972,7 +1960,6 @@
   color: #fff !important;
 }
 
-/* Recent activity — keep long imported descriptions compact */
 .recent-transaction-description {
   min-width: 0;
   max-width: 100%;
@@ -1984,20 +1971,16 @@
   cursor: help;
 }
 
-.list-row>span:first-child {
+.list-row > span:first-child {
   min-width: 0;
   flex: 1;
   overflow: hidden;
 }
 
-.list-row>.mono {
+.list-row > .mono {
   flex-shrink: 0;
   margin-left: 20px;
 }
-
-/* =========================================================
-   Admin — User Management
-   ========================================================= */
 
 .admin-users-page {
   width: 100%;
@@ -2017,7 +2000,6 @@
   color: var(--ink-soft);
 }
 
-/* Summary */
 .admin-user-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2045,7 +2027,6 @@
   line-height: 1;
 }
 
-/* Main card */
 .admin-users-card {
   padding: 24px;
 }
@@ -2094,7 +2075,6 @@
   box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.13);
 }
 
-/* Table */
 .admin-users-table-wrap {
   width: 100%;
   overflow-x: auto;
@@ -2188,7 +2168,6 @@
   color: var(--expense);
 }
 
-/* Actions */
 .admin-user-action {
   min-width: 94px;
   min-height: 36px;
@@ -2239,7 +2218,6 @@
   font-size: 0.88rem;
 }
 
-/* Responsive */
 @media (max-width: 800px) {
   .admin-user-stats {
     grid-template-columns: 1fr;
@@ -2373,10 +2351,6 @@
   }
 }
 
-/* =========================================================
-   BudgetIQ Admin Console
-   ========================================================= */
-
 .admin-shell {
   --ink: #172033;
   --ink-soft: #44536a;
@@ -2459,7 +2433,9 @@
   color: var(--ink-muted);
   text-decoration: none;
   font-weight: 600;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .admin-nav-link:hover {
@@ -2536,7 +2512,7 @@
   border-bottom: 1px solid var(--surface-border);
 }
 
-.admin-topbar>div {
+.admin-topbar > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -2571,10 +2547,6 @@
     padding-right: 20px;
   }
 }
-
-/* =========================================================
-   Admin Overview
-   ========================================================= */
 
 .admin-page-heading {
   margin-bottom: 28px;
@@ -2616,7 +2588,7 @@
   transform: translateY(-2px);
 }
 
-.admin-overview-card>span {
+.admin-overview-card > span {
   display: block;
   margin-bottom: 12px;
   color: #5ca8ff;
@@ -2653,7 +2625,6 @@
   outline-offset: 3px;
 }
 
-/* Admin Audit Log */
 .admin-users-table .admin-user-email {
   display: block;
   margin-top: 4px;

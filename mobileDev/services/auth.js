@@ -2,8 +2,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api, { saveToken, readToken, removeToken } from "./api";
 import { USER_KEY } from "./constants";
 
-// Logs only safe fields, and only in development.
-// Never log the raw axios error: it includes request headers (JWT) and body (passwords).
 const logApiError = (label, error) => {
   if (!__DEV__) return;
 
@@ -14,7 +12,6 @@ const logApiError = (label, error) => {
   });
 };
 
-// Normalises whatever went wrong into an object with a `message`.
 const toApiError = (error, fallbackMessage) =>
   error?.response?.data || {
     message: error?.message || fallbackMessage,
@@ -106,7 +103,6 @@ export const getSavedUser = async () => {
 
     return user ? JSON.parse(user) : null;
   } catch (error) {
-    // Corrupted or unreadable saved user: treat as logged out
     await AsyncStorage.removeItem(USER_KEY);
 
     return null;

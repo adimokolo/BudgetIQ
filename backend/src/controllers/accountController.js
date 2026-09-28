@@ -36,8 +36,6 @@ async function getAccounts(req, res) {
 }
 
 async function createAccount(req, res) {
-  // Using a single client so the account insert and the matching income
-  // transaction either both succeed or both roll back together.
   const client = await pool.connect();
 
   try {
@@ -57,7 +55,6 @@ async function createAccount(req, res) {
       });
     }
 
-    // Allow empty amount and default it to 0.00
     const amount =
       initialAmount === undefined ||
       initialAmount === null ||
@@ -124,9 +121,6 @@ async function createAccount(req, res) {
 
     const account = accountResult.rows[0];
 
-    // Record the opening balance as an income transaction so it shows up
-    // in transaction history and counts toward dashboard income totals.
-    // A zero-balance account (e.g. a fresh wallet) doesn't need one.
     if (amount > 0) {
       await client.query(
         `
@@ -183,7 +177,6 @@ async function updateAccount(req, res) {
       });
     }
 
-    // Allow blank balance and treat it as 0.00
     const amount =
       initialAmount === undefined ||
       initialAmount === null ||
@@ -267,11 +260,6 @@ async function updateAccount(req, res) {
 }
 
 async function deleteAccount(req, res) {
-  // Deleting an account shouldn't erase the money-movement history tied to
-  // it, and a naive DELETE would either violate the transactions.account_id
-  // foreign key or leave it dangling. So: detach (null out) account_id on
-  // every transaction that points at this account, then delete the account,
-  // both inside one DB transaction.
   const client = await pool.connect();
 
   try {
@@ -280,8 +268,6 @@ async function deleteAccount(req, res) {
 
     await client.query("BEGIN");
 
-    // Ownership check happens implicitly: the UPDATE and DELETE below both
-    // filter on user_id, so a user can't detach or delete another user's data.
     await client.query(
       `
       UPDATE transactions

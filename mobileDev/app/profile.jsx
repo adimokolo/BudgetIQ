@@ -28,7 +28,7 @@ import { useCurrency } from "../contexts/CurrencyContext";
 
 import { ALL_CURRENCIES, currencyLabel } from "../utils/currency";
 
-const SUPPORT_EMAIL = "budget442@gmail.com";
+const SUPPORT_EMAIL = "budgetiq.inquries@gmail.com";
 const SUPPORT_PHONE = "+234 80 0000-0000";
 
 const FAQ_ITEMS = [
@@ -236,13 +236,6 @@ export default function Profile() {
       );
     }
   };
-
-  /*
-   * Filter currencies by code or name.
-   *
-   * Matches are case-insensitive and match anywhere in either
-   * field, so typing "dollar" or "us" both find USD.
-   */
 
   const filteredCurrencies = useMemo(() => {
     const query = currencySearch.trim().toLowerCase();
