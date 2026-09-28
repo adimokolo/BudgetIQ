@@ -31,7 +31,6 @@ import { getCurrencySymbol } from "../../utils/currency";
 const BUDGET_BLUE = "#3B82F6";
 const EXPENSE_RED = "#FF7A93";
 
-// Shared by the y-axis and the spacer under it, so labels line up
 const Y_AXIS_WIDTH = 48;
 
 function StatCard({
@@ -189,7 +188,6 @@ function Donut({ segments, colors, size = 160, strokeWidth = 24 }) {
   );
 }
 
-// Short axis numbers so they fit in a half-width card: 1.2K, 45K, 3.4M
 function compactNumber(value) {
   const n = Number(value || 0);
   const abs = Math.abs(n);
@@ -204,8 +202,6 @@ function compactNumber(value) {
   return trim(n);
 }
 
-// Generic two-series grouped bar chart, sized to fit inside a half-width card.
-// Used for both "Income vs. spending" and "Budget vs. expense".
 function GroupedBarChart({
   labels,
   titles,
@@ -486,14 +482,8 @@ export default function Dashboard() {
 
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
-  // FIX: only the very first load shows the full-screen spinner. Without this,
-  // every tab switch flashes "Loading dashboard..." over good data.
   const hasLoadedOnce = useRef(false);
 
-  // FIX: loadUser used to depend on `baseCurrency`, which changed its identity
-  // every time the currency changed. Since loadUser is a dependency of the
-  // effect that calls it, and it calls setBaseCurrency, that is a refetch loop.
-  // Reading the current currency from a ref keeps loadUser stable forever.
   const baseCurrencyRef = useRef(baseCurrency);
 
   useEffect(() => {
@@ -619,9 +609,6 @@ export default function Dashboard() {
 
       setAvatarUrl(null);
     }
-    // setBaseCurrency is intentionally left out: if it is not memoised in
-    // CurrencyContext, including it here re-creates loadUser on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadAll = useCallback(
@@ -644,10 +631,6 @@ export default function Dashboard() {
     ],
   );
 
-  // FIX: this screen stays mounted in the tab navigator, so a mount-only
-  // useEffect meant the dashboard never saw transactions, budgets or
-  // categories created on the other tabs. useFocusEffect refetches every
-  // time the tab comes back into view.
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -861,8 +844,6 @@ export default function Dashboard() {
       ? monthlyTrend.map((item) => Number(item.expense || 0))
       : [0];
 
-  // Budget vs. expense: total of all monthly budget limits, compared with
-  // total spending for each of the same months shown in the trend chart.
   const totalBudget = budgets.reduce(
     (sum, budget) => sum + Number(budget.monthly_limit || 0),
     0,

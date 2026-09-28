@@ -18,7 +18,6 @@ export const readToken = async () => {
   const token = await SecureStore.getItemAsync(SECURE_TOKEN_KEY);
   if (token) return token;
 
-  // One-time migration for users already logged in via AsyncStorage
   const legacy = await AsyncStorage.getItem(TOKEN_KEY);
   if (legacy) {
     await SecureStore.setItemAsync(SECURE_TOKEN_KEY, legacy);

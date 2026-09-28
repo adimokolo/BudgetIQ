@@ -142,8 +142,6 @@ const ICON_OPTIONS = [
   "🏷️",
 ];
 
-// Category icon keys stay unchanged in the shared backend. This mapping only
-// changes how they are displayed so mobile matches the frontend icon style.
 const CATEGORY_ICON_MAP = {
   "fast-food-outline": "🍔",
   "restaurant-outline": "🍽️",
@@ -1717,9 +1715,6 @@ export default function Transactions() {
 
   const hasLoadedOnce = useRef(false);
 
-  // FIX: start with no date filter so ALL transactions show on first load.
-  // Previously this defaulted to today's date, which hid every transaction
-  // not dated today until "All types" was tapped.
   const [selectedDate, setSelectedDate] = useState(null);
 
   const [calendarMonth, setCalendarMonth] = useState(() => {

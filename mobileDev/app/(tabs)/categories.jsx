@@ -365,7 +365,6 @@ export default function Categories() {
   const [icon, setIcon] = useState(ICON_OPTIONS[0]);
   const [color, setColor] = useState(SWATCHES[0]);
 
-  // Only the first load blocks the screen with a spinner.
   const hasLoadedOnce = useRef(false);
 
   const [fontsLoaded] = useFonts({
@@ -384,8 +383,6 @@ export default function Categories() {
     JetBrainsMono_500Medium,
   });
 
-  // FIX: a single memoised fetcher, so it can safely be a hook dependency.
-  // `showLoader` lets callers refresh silently in the background.
   const loadCategories = useCallback(async (showLoader = true) => {
     try {
       if (showLoader) {
@@ -423,8 +420,6 @@ export default function Categories() {
     }
   }, []);
 
-  // FIX: was a mount-only useEffect, so categories created elsewhere (or
-  // deleted on another device) never showed up until the app restarted.
   useFocusEffect(
     useCallback(() => {
       if (!fontsLoaded) return;
@@ -484,8 +479,6 @@ export default function Categories() {
         });
       }
 
-      // Refreshes both the Quick Add status and the category lists behind
-      // the modal immediately after an add or remove operation.
       await loadCategories(false);
     } catch (error) {
       Alert.alert(

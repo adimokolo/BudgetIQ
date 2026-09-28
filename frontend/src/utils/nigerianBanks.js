@@ -1,5 +1,4 @@
 export const NIGERIAN_BANKS = [
-  // Commercial banks
   ["Access Bank", "Commercial bank", "#F58220"],
   ["Citibank Nigeria", "Commercial bank", "#056DAE"],
   ["Ecobank Nigeria", "Commercial bank", "#146A45"],
@@ -27,19 +26,16 @@ export const NIGERIAN_BANKS = [
   ["Wema Bank", "Commercial bank", "#8C367D"],
   ["Zenith Bank", "Commercial bank", "#C51E2D"],
 
-  // Non-interest banks
   ["Alternative Bank", "Non-interest bank", "#147D52"],
   ["Jaiz Bank", "Non-interest bank", "#14633D"],
   ["Lotus Bank", "Non-interest bank", "#168B71"],
   ["TAJBank", "Non-interest bank", "#2B7A55"],
 
-  // Merchant banks
   ["Coronation Merchant Bank", "Merchant bank", "#8B5D3B"],
   ["FBNQuest Merchant Bank", "Merchant bank", "#31568D"],
   ["Greenwich Merchant Bank", "Merchant bank", "#286C59"],
   ["Rand Merchant Bank Nigeria", "Merchant bank", "#42658B"],
 
-  // Payment service banks and mobile money wallets
   ["9 Payment Service Bank (9PSB)", "Payment service bank", "#40A629"],
   ["Hope Payment Service Bank", "Payment service bank", "#1C6B48"],
   ["MoneyMaster Payment Service Bank", "Payment service bank", "#F2B705"],
@@ -56,7 +52,6 @@ export const NIGERIAN_BANKS = [
   ["Teasy Mobile Money", "Mobile money / fintech", "#167B55"],
   ["Xpress Wallet", "Mobile money / fintech", "#2257A6"],
 
-  // Digital banks, finance apps and fintech wallets
   ["Carbon", "Digital finance / fintech", "#22A65A"],
   ["FairMoney", "Digital finance / fintech", "#1859C9"],
   ["Kuda Bank", "Digital bank / MFB", "#40196D"],
@@ -78,7 +73,6 @@ export const NIGERIAN_BANKS = [
   ["Leatherback", "Digital finance / fintech", "#2E4DA7"],
   ["LemFi", "Digital finance / fintech", "#00A86B"],
 
-  // Microfinance banks commonly used for personal and business accounts
   ["AB Microfinance Bank", "Microfinance bank", "#315C83"],
   ["Accion Microfinance Bank", "Microfinance bank", "#E16B2D"],
   ["Addosser Microfinance Bank", "Microfinance bank", "#216D60"],
@@ -117,7 +111,6 @@ export const NIGERIAN_BANKS = [
   ["Verite Microfinance Bank", "Microfinance bank", "#4B6F84"],
   ["Wetland Microfinance Bank", "Microfinance bank", "#347566"],
 
-  // Primary mortgage banks
   ["Abbey Mortgage Bank", "Mortgage bank", "#236B7C"],
   ["AG Mortgage Bank", "Mortgage bank", "#4B6288"],
   ["Brent Mortgage Bank", "Mortgage bank", "#547184"],

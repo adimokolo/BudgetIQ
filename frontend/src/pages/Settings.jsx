@@ -6,7 +6,7 @@ import apiClient from "../api/client";
 import { resizeImageFile } from "../utils/imageResize";
 import { ALL_CURRENCIES, currencyLabel } from "../utils/currency";
 
-const SUPPORT_EMAIL = "support@budgetiq.app";
+const SUPPORT_EMAIL = "budgetiq.inquries@gmail.com";
 
 const FAQ_ITEMS = [
   {
