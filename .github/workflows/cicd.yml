@@ -7,6 +7,9 @@ on:
   pull_request:
     branches:
       - main
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   frontend:
@@ -62,3 +65,65 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/budgetiq-backend:${{ github.sha }}
             ${{ secrets.DOCKERHUB_USERNAME }}/budgetiq-backend:latest
+
+  deployment-connectivity:
+    name: EC2 Deployment Connectivity Test
+    runs-on: ubuntu-latest
+    needs: backend
+    if: github.event_name == 'push'
+
+    env:
+      AWS_REGION: eu-central-1
+      EC2_SECURITY_GROUP_ID: sg-0ef91ba4bc9029a9e
+
+    steps:
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get GitHub runner public IP
+        id: runner-ip
+        run: |
+          RUNNER_IP="$(curl -fsSL https://checkip.amazonaws.com)"
+          echo "ip=$RUNNER_IP" >> "$GITHUB_OUTPUT"
+
+      - name: Temporarily allow runner SSH access
+        run: |
+          aws ec2 authorize-security-group-ingress \
+            --group-id "$EC2_SECURITY_GROUP_ID" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${{ steps.runner-ip.outputs.ip }}/32"
+
+      - name: Test SSH connection to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/budgetiq_deploy
+          chmod 600 ~/.ssh/budgetiq_deploy
+
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+          ssh \
+            -i ~/.ssh/budgetiq_deploy \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            "$EC2_USER@$EC2_HOST" \
+            'echo "BudgetIQ GitHub Actions SSH connectivity successful"'
+
+      - name: Remove temporary runner SSH access
+        if: always() && steps.runner-ip.outputs.ip != ''
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id "$EC2_SECURITY_GROUP_ID" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${{ steps.runner-ip.outputs.ip }}/32"
