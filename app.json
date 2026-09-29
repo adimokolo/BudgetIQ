@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "7ee21a31-4893-4a79-9810-1493b0d234f1"
+      }
+    },
+    "android": {
+      "package": "com.getbudgetiq.budgetiq"
+    }
+  }
+}
