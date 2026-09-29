@@ -1,0 +1,288 @@
+name: BudgetIQ CI
+
+on:
+  push:
+    branches:
+      - Barnie/ci-cd_pipeline
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  frontend:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        env:
+          VITE_API_URL: /api
+        run: npm run build
+
+      - name: Upload frontend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          if-no-files-found: error
+          retention-days: 1
+
+  backend:
+    name: Backend Docker Build & Push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build backend Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/budgetiq-backend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/budgetiq-backend:latest
+
+  deploy-backend:
+    name: Deploy Backend to EC2
+    runs-on: ubuntu-latest
+    needs: backend
+    if: github.event_name == 'push'
+
+    env:
+      AWS_REGION: eu-central-1
+      EC2_SECURITY_GROUP_ID: sg-0fbae35d664855732
+
+    steps:
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get GitHub runner public IP
+        id: runner-ip
+        run: |
+          RUNNER_IP="$(curl -fsSL https://checkip.amazonaws.com)"
+          echo "ip=$RUNNER_IP" >> "$GITHUB_OUTPUT"
+
+      - name: Temporarily allow runner SSH access
+        run: |
+          aws ec2 authorize-security-group-ingress \
+            --group-id "$EC2_SECURITY_GROUP_ID" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${{ steps.runner-ip.outputs.ip }}/32"
+
+      - name: Deploy backend with automatic rollback
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          NEW_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/budgetiq-backend:${{ github.sha }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/budgetiq_deploy
+          chmod 600 ~/.ssh/budgetiq_deploy
+
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+          ssh \
+            -i ~/.ssh/budgetiq_deploy \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            "$EC2_USER@$EC2_HOST" \
+            "NEW_IMAGE='$NEW_IMAGE' bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          CONTAINER="budgetiq-backend"
+          ENV_FILE="/home/budgetiquser/budgetiq-backend.env"
+
+          echo "=== BudgetIQ backend deployment ==="
+
+          CURRENT_IMAGE="$(docker inspect "$CONTAINER" --format '{{.Config.Image}}')"
+          echo "Current image: $CURRENT_IMAGE"
+          echo "New image:     $NEW_IMAGE"
+
+          if [ ! -f "$ENV_FILE" ]; then
+            echo "ERROR: Production environment file not found."
+            exit 1
+          fi
+
+          echo "Pulling new image..."
+          docker pull "$NEW_IMAGE"
+
+          rollback() {
+            echo "Deployment failed. Rolling back to $CURRENT_IMAGE..."
+
+            docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+
+            docker run -d \
+              --name "$CONTAINER" \
+              --restart unless-stopped \
+              --env-file "$ENV_FILE" \
+              -p 5000:5000 \
+              "$CURRENT_IMAGE"
+
+            echo "Waiting for rollback container health..."
+
+            for i in $(seq 1 12); do
+              STATUS="$(docker inspect "$CONTAINER" \
+                --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}')"
+
+              echo "Rollback health: $STATUS"
+
+              if [ "$STATUS" = "healthy" ]; then
+                echo "Rollback successful. Previous image restored."
+                return 0
+              fi
+
+              if [ "$STATUS" = "unhealthy" ]; then
+                break
+              fi
+
+              sleep 5
+            done
+
+            echo "CRITICAL: Rollback container did not become healthy."
+            return 1
+          }
+
+          echo "Replacing current container..."
+          docker rm -f "$CONTAINER"
+
+          if ! docker run -d \
+            --name "$CONTAINER" \
+            --restart unless-stopped \
+            --env-file "$ENV_FILE" \
+            -p 5000:5000 \
+            "$NEW_IMAGE"; then
+            rollback || true
+            echo "ERROR: New container failed to start."
+            exit 1
+          fi
+
+          echo "Waiting for new container health..."
+
+          DEPLOYED=false
+
+          for i in $(seq 1 12); do
+            STATUS="$(docker inspect "$CONTAINER" \
+              --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}')"
+
+            echo "New container health: $STATUS"
+
+            if [ "$STATUS" = "healthy" ]; then
+              DEPLOYED=true
+              break
+            fi
+
+            if [ "$STATUS" = "unhealthy" ]; then
+              break
+            fi
+
+            sleep 5
+          done
+
+          if [ "$DEPLOYED" != "true" ]; then
+            rollback || {
+              echo "CRITICAL: New deployment failed and rollback failed."
+              exit 2
+            }
+
+            echo "ERROR: New deployment failed health checks; previous image restored."
+            exit 1
+          fi
+
+          echo "Verifying API health..."
+          if ! curl -fsS http://localhost:5000/api/health; then
+            echo
+            rollback || {
+              echo "CRITICAL: API verification failed and rollback failed."
+              exit 2
+            }
+
+            echo "ERROR: API verification failed; previous image restored."
+            exit 1
+          fi
+
+          echo
+          echo "Deployment successful: $NEW_IMAGE"
+          REMOTE
+
+      - name: Remove temporary runner SSH access
+        if: always() && steps.runner-ip.outputs.ip != ''
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id "$EC2_SECURITY_GROUP_ID" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${{ steps.runner-ip.outputs.ip }}/32"
+
+  deploy-frontend:
+    name: Deploy Frontend to S3
+    runs-on: ubuntu-latest
+    needs: frontend
+    if: github.event_name == 'push'
+
+    env:
+      AWS_REGION: eu-central-1
+      FRONTEND_BUCKET: budgetiq-frontend-prod
+      CLOUDFRONT_DISTRIBUTION_ID: E3HU962K15N32S
+
+    steps:
+      - name: Download frontend build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy frontend to S3
+        run: |
+          aws s3 sync frontend-dist/ "s3://$FRONTEND_BUCKET/" --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --paths "/*"
