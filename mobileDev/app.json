@@ -1,14 +1,15 @@
 {
   "expo": {
-    "name": "BudgetIQ-Mobile-App",
+    "name": "BudgetIQ",
     "slug": "BudgetIQ-Mobile-App",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "budgetiqmobileapp",
+    "scheme": "budgetiq",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.getbudgetiq.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -16,7 +17,7 @@
         "foregroundImage": "./assets/images/foreground-icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.olatundepedro.BudgetIQMobileApp"
+      "package": "com.getbudgetiq.app"
     },
     "web": {
       "output": "static",
