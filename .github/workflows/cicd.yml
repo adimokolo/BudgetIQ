@@ -74,7 +74,7 @@ jobs:
 
     env:
       AWS_REGION: eu-central-1
-      EC2_SECURITY_GROUP_ID: sg-0ef91ba4bc9029a9e
+      EC2_SECURITY_GROUP_ID: sg-0fbae35d664855732
 
     steps:
       - name: Configure AWS credentials using OIDC
