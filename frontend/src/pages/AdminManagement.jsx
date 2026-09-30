@@ -43,8 +43,8 @@ export default function AdminManagement() {
 
     const confirmed = window.confirm(
       promoting
-        ? `Grant administrator access to ${targetUser.full_name || targetUser.email}?\n\nThey will be able to access BudgetIQ administration features.`
-        : `Remove administrator access from ${targetUser.full_name || targetUser.email}?\n\nTheir BudgetIQ account will remain active as a regular user.`,
+        ? `Grant administrator access to ${targetUser.full_name || targetUser.email}?\n\nThey will be able to access KashMetrix administration features.`
+        : `Remove administrator access from ${targetUser.full_name || targetUser.email}?\n\nTheir KashMetrix account will remain active as a regular user.`,
     );
 
     if (!confirmed) return;

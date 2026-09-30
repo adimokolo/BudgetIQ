@@ -106,7 +106,7 @@ export default function Login() {
           className="helper-text"
           style={{ marginTop: 18, textAlign: "center" }}
         >
-          New to BudgetIQ?{" "}
+          New to KashMetrix?{" "}
           <Link
             to="/register"
             style={{ color: "var(--brand-mid)", fontWeight: 600 }}

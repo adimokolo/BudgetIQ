@@ -3,9 +3,9 @@ import logoMark from "../assets/logo-mark.png";
 export default function AuthLogo() {
   return (
     <div className="auth-logo">
-      <img src={logoMark} alt="BudgetIQ" className="auth-logo-mark" />
+      <img src={logoMark} alt="KashMetrix" className="auth-logo-mark" />
       <span className="auth-logo-word">KashMetrix</span>
-      <span className="auth-logo-tagline">Track smarter, Understand more.</span>
+      <span className="auth-logo-tagline">Track smarter. Understand more.</span>
     </div>
   );
 }
