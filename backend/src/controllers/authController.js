@@ -92,7 +92,7 @@ async function issueOtp(client, userId, email, fullName) {
   if (process.env.NODE_ENV !== "production") {
     console.log("");
     console.log("========================================");
-    console.log("🔐 BUDGETIQ DEVELOPMENT OTP");
+    console.log("🔐 KASHMETRIX DEVELOPMENT OTP");
     console.log(`📧 Email: ${email}`);
     console.log(`🔢 OTP: ${code}`);
     console.log(`⏰ Expires in: ${OTP_TTL_MINUTES} minutes`);
@@ -103,15 +103,15 @@ async function issueOtp(client, userId, email, fullName) {
   try {
     await sendEmail({
       to: email,
-      subject: "Verify your BudgetIQ account",
-      text: `Hi ${fullName}, your BudgetIQ verification code is ${code}. It expires in ${OTP_TTL_MINUTES} minutes.`,
+      subject: "Verify your KashMetrix account",
+      text: `Hi ${fullName}, your KashMetrix verification code is ${code}. It expires in ${OTP_TTL_MINUTES} minutes.`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 30px;">
-          <h2 style="color: #14274E;">BudgetIQ</h2>
+          <h2 style="color: #14274E;">KashMetrix</h2>
 
           <p>Hi ${fullName},</p>
 
-          <p>Your BudgetIQ email verification code is:</p>
+          <p>Your KashMetrix email verification code is:</p>
 
           <div
             style="
@@ -555,11 +555,11 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
     await sendEmail({
       to: user.email,
-      subject: "Reset your BudgetIQ password",
+      subject: "Reset your KashMetrix password",
       text: `
 Hi ${user.full_name},
 
-Reset your BudgetIQ password here:
+Reset your KashMetrix password here:
 
 ${resetUrl}
 
@@ -569,7 +569,7 @@ This link expires in ${RESET_TOKEN_TTL_MINUTES} minutes.
         <p>Hi ${user.full_name},</p>
 
         <p>
-          Click below to reset your BudgetIQ password.
+          Click below to reset your KashMetrix password.
         </p>
 
         <p>
@@ -746,7 +746,7 @@ const forgotPasswordOtp = asyncHandler(async (req, res) => {
     if (process.env.NODE_ENV !== "production") {
       console.log("");
       console.log("========================================");
-      console.log("🔐 BUDGETIQ PASSWORD RESET OTP");
+      console.log("🔐 KASHMETRIX PASSWORD RESET OTP");
       console.log(`📧 Email: ${user.email}`);
       console.log(`🔢 OTP: ${code}`);
       console.log(`⏰ Expires in: ${OTP_TTL_MINUTES} minutes`);
@@ -757,18 +757,18 @@ const forgotPasswordOtp = asyncHandler(async (req, res) => {
     try {
       await sendEmail({
         to: user.email,
-        subject: "Reset your BudgetIQ password",
+        subject: "Reset your KashMetrix password",
         text: `
 Hi ${user.full_name},
 
-Your BudgetIQ password reset code is ${code}.
+Your KashMetrix password reset code is ${code}.
 
 It expires in ${OTP_TTL_MINUTES} minutes.
         `,
         html: `
           <p>Hi ${user.full_name},</p>
 
-          <p>Your BudgetIQ password reset code is:</p>
+          <p>Your KashMetrix password reset code is:</p>
 
           <h2>${code}</h2>
 

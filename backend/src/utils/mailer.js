@@ -95,7 +95,7 @@ async function sendEmail({ to, subject, text, html }) {
   }
 
   const result = await emailTransporter.sendMail({
-    from: process.env.EMAIL_FROM || `BudgetIQ <${process.env.SMTP_USER}>`,
+    from: process.env.EMAIL_FROM || `KashMetrix <${process.env.SMTP_USER}>`,
     to,
     subject,
     text,
@@ -156,7 +156,7 @@ async function sendNotificationEmail({ to, title, body }) {
                 color: #174e78;
               "
             >
-              BudgetIQ
+              KashMetrix
             </h2>
 
             <h3
@@ -185,7 +185,7 @@ async function sendNotificationEmail({ to, title, body }) {
                 font-size: 12px;
               "
             >
-              This notification was sent by BudgetIQ.
+              This notification was sent by KashMetrix.
             </p>
           </div>
         </body>
