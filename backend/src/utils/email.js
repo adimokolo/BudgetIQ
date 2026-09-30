@@ -40,7 +40,7 @@ async function sendEmail({ to, subject, html, text }) {
   }
 
   await t.sendMail({
-    from: process.env.EMAIL_FROM || "BudgetIQ <no-reply@budgetiq.app>",
+    from: process.env.EMAIL_FROM || "KashMetrix <enquiry@kashmetrix.com>",
     to,
     subject,
     html,
