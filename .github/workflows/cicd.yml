@@ -3,7 +3,7 @@ name: BudgetIQ CI
 on:
   push:
     branches:
-      - Barnie/ci-cd_pipeline
+      - main
   pull_request:
     branches:
       - main
@@ -242,6 +242,28 @@ jobs:
 
           echo
           echo "Deployment successful: $NEW_IMAGE"
+
+          echo "Cleaning up obsolete backend images..."
+          echo "Keeping current deployment: $NEW_IMAGE"
+          echo "Keeping rollback image:      $CURRENT_IMAGE"
+
+          BACKEND_REPO="${NEW_IMAGE%:*}"
+
+          while read -r IMAGE; do
+            if [ "$IMAGE" != "$NEW_IMAGE" ] && [ "$IMAGE" != "$CURRENT_IMAGE" ]; then
+              echo "Removing obsolete image: $IMAGE"
+              docker image rm "$IMAGE" || true
+            fi
+          done < <(
+            docker image ls "$BACKEND_REPO" --format '{{.Repository}}:{{.Tag}}'
+          )
+
+          echo "Docker storage after cleanup:"
+          docker system df
+
+          echo "Root filesystem after cleanup:"
+          df -h /
+
           REMOTE
 
       - name: Remove temporary runner SSH access
