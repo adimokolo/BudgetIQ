@@ -296,7 +296,7 @@ async function verifyAccount(req, res, source) {
   // use UUIDs. Accept either representation and compare as text so this route
   // works safely with the database schema that is actually installed.
   if (!uuidPattern.test(accountId) && !numericIdPattern.test(accountId)) {
-    fail(res, 400, "Select a valid BudgetIQ account.");
+    fail(res, 400, "Select a valid KashMetrix account.");
     return null;
   }
   const found = await pool.query(
@@ -304,7 +304,7 @@ async function verifyAccount(req, res, source) {
     [accountId, req.user.id],
   );
   if (!found.rowCount) {
-    fail(res, 404, "BudgetIQ account not found.");
+    fail(res, 404, "KashMetrix account not found.");
     return null;
   }
   if (found.rows[0].currency !== "NGN") {

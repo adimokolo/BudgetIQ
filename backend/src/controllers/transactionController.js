@@ -192,7 +192,7 @@ async function checkBudgetAlerts(userId, categoryId) {
             to: user.email,
             subject: `Budget alert: you've exceeded your ${label} limit`,
             text: `Hi ${user.full_name}, you've spent ${currency} ${spent.toFixed(2)} against your ${currency} ${limit.toFixed(2)} monthly limit for ${label}.`,
-            html: `<p>Hi ${user.full_name},</p><p>You've exceeded your monthly budget for <strong>${label}</strong>.</p><p>Spent: <strong>${currency} ${spent.toFixed(2)}</strong> / Limit: <strong>${currency} ${limit.toFixed(2)}</strong></p><p>You can review and adjust this budget any time in BudgetIQ.</p>`,
+            html: `<p>Hi ${user.full_name},</p><p>You've exceeded your monthly budget for <strong>${label}</strong>.</p><p>Spent: <strong>${currency} ${spent.toFixed(2)}</strong> / Limit: <strong>${currency} ${limit.toFixed(2)}</strong></p><p>You can review and adjust this budget any time in KashMetrix.</p>`,
           });
         } catch (emailErr) {
           console.error("Failed to send budget alert email:", emailErr.message);

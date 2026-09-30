@@ -62,7 +62,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.get("/api/health", (req, res) => {
   return res.json({
     success: true,
-    message: "BudgetIQ API is running.",
+    message: "KashMetrix API is running.",
     environment: process.env.NODE_ENV || "development",
   });
 });
@@ -131,7 +131,7 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("========================================");
-  console.log("       BudgetIQ API Server");
+  console.log("       KashMetrix API Server");
   console.log("========================================");
   console.log(`Server running on port ${PORT}`);
   console.log(`Local: http://localhost:${PORT}`);
