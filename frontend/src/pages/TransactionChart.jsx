@@ -1,52 +1,40 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-} from 'recharts';
-import apiClient from '../api/client';
-import { useAuth } from '../context/AuthContext';
-import { formatCurrency } from '../utils/format';
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import apiClient from "../api/client";
+import { useAuth } from "../context/AuthContext";
+import { formatCurrency } from "../utils/format";
 
 const CHART_COLORS = [
-  '#2ed47a',
-  '#38bdf8',
-  '#8b5cf6',
-  '#ff9f2f',
-  '#ec4899',
-  '#14b8a6',
-  '#facc15',
-  '#64748b',
+  "#2ed47a",
+  "#38bdf8",
+  "#8b5cf6",
+  "#ff9f2f",
+  "#ec4899",
+  "#14b8a6",
+  "#facc15",
+  "#64748b",
 ];
 
 function toDateKey(date) {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
 function getDateRange(period) {
   const today = new Date();
 
-  if (period === 'last') {
+  if (period === "last") {
     return {
-      from: toDateKey(
-        new Date(today.getFullYear(), today.getMonth() - 1, 1),
-      ),
-      to: toDateKey(
-        new Date(today.getFullYear(), today.getMonth(), 0),
-      ),
+      from: toDateKey(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+      to: toDateKey(new Date(today.getFullYear(), today.getMonth(), 0)),
     };
   }
 
   return {
-    from: toDateKey(
-      new Date(today.getFullYear(), today.getMonth(), 1),
-    ),
+    from: toDateKey(new Date(today.getFullYear(), today.getMonth(), 1)),
     to: toDateKey(today),
   };
 }
@@ -55,30 +43,30 @@ function formatCompactCurrency(value, currency) {
   const absolute = Math.abs(amount);
 
   let compactValue = amount;
-  let suffix = '';
+  let suffix = "";
 
   if (absolute >= 1_000_000_000) {
     compactValue = amount / 1_000_000_000;
-    suffix = 'B';
+    suffix = "B";
   } else if (absolute >= 1_000_000) {
     compactValue = amount / 1_000_000;
-    suffix = 'M';
+    suffix = "M";
   } else if (absolute >= 1_000) {
     compactValue = amount / 1_000;
-    suffix = 'K';
+    suffix = "K";
   } else {
     return formatCurrency(amount, currency);
   }
 
   const symbol =
-    currency === 'NGN'
-      ? '₦'
-      : currency === 'USD'
-        ? '$'
-        : currency === 'GBP'
-          ? '£'
-          : currency === 'EUR'
-            ? '€'
+    currency === "NGN"
+      ? "₦"
+      : currency === "USD"
+        ? "$"
+        : currency === "GBP"
+          ? "£"
+          : currency === "EUR"
+            ? "€"
             : `${currency} `;
 
   return `${symbol}${compactValue.toFixed(2)}${suffix}`;
@@ -99,14 +87,7 @@ function groupTransactions(transactions, key, fallback) {
   })).sort((a, b) => b.amount - a.amount);
 }
 
-function BreakdownCard({
-  title,
-  subtitle,
-  data,
-  total,
-  currency,
-  icon,
-}) {
+function BreakdownCard({ title, subtitle, data, total, currency, icon }) {
   return (
     <section className="tx-chart-card tx-breakdown-card">
       <div className="tx-breakdown-heading">
@@ -120,8 +101,7 @@ function BreakdownCard({
 
       <div className="tx-breakdown-list">
         {data.map((item, index) => {
-          const percentage =
-            total > 0 ? (item.amount / total) * 100 : 0;
+          const percentage = total > 0 ? (item.amount / total) * 100 : 0;
 
           return (
             <div className="tx-breakdown-item" key={item.name}>
@@ -131,17 +111,13 @@ function BreakdownCard({
                     className="tx-breakdown-dot"
                     style={{
                       backgroundColor:
-                        CHART_COLORS[
-                        index % CHART_COLORS.length
-                        ],
+                        CHART_COLORS[index % CHART_COLORS.length],
                     }}
                   />
                   <span>{item.name}</span>
                 </div>
 
-                <strong>
-                  {formatCurrency(item.amount, currency)}
-                </strong>
+                <strong>{formatCurrency(item.amount, currency)}</strong>
 
                 <span className="tx-breakdown-percent">
                   {percentage.toFixed(1)}%
@@ -153,10 +129,7 @@ function BreakdownCard({
                   className="tx-breakdown-fill"
                   style={{
                     width: `${Math.min(percentage, 100)}%`,
-                    backgroundColor:
-                      CHART_COLORS[
-                      index % CHART_COLORS.length
-                      ],
+                    backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
                   }}
                 />
               </div>
@@ -172,35 +145,35 @@ export default function TransactionChart() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [type, setType] = useState('expense');
-  const [period, setPeriod] = useState('current');
+  const [type, setType] = useState("expense");
+  const [period, setPeriod] = useState("current");
 
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [customFrom, setCustomFrom] = useState('');
-  const [customTo, setCustomTo] = useState('');
-  const [appliedFrom, setAppliedFrom] = useState('');
-  const [appliedTo, setAppliedTo] = useState('');
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [appliedFrom, setAppliedFrom] = useState("");
+  const [appliedTo, setAppliedTo] = useState("");
 
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  const currency = user?.currency || 'NGN';
+  const currency = user?.currency || "NGN";
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadTransactions() {
       setLoading(true);
-      setError('');
+      setError("");
 
       try {
         const { from, to } =
-          period === 'custom'
+          period === "custom"
             ? {
-              from: appliedFrom,
-              to: appliedTo,
-            }
+                from: appliedFrom,
+                to: appliedTo,
+              }
             : getDateRange(period);
 
         const limit = 100;
@@ -209,7 +182,7 @@ export default function TransactionChart() {
         let totalRows = 0;
 
         do {
-          const response = await apiClient.get('/transactions', {
+          const response = await apiClient.get("/transactions", {
             params: {
               type,
               from,
@@ -223,9 +196,7 @@ export default function TransactionChart() {
 
           allTransactions = [...allTransactions, ...batch];
 
-          totalRows = Number(
-            response.data.pagination?.total || 0,
-          );
+          totalRows = Number(response.data.pagination?.total || 0);
 
           page += 1;
         } while (allTransactions.length < totalRows);
@@ -237,8 +208,7 @@ export default function TransactionChart() {
         if (!cancelled) {
           setTransactions([]);
           setError(
-            err.response?.data?.error ||
-            'Unable to load transaction chart.',
+            err.response?.data?.error || "Unable to load transaction chart.",
           );
         }
       } finally {
@@ -258,30 +228,19 @@ export default function TransactionChart() {
   const total = useMemo(
     () =>
       transactions.reduce(
-        (sum, transaction) =>
-          sum + Number(transaction.amount || 0),
+        (sum, transaction) => sum + Number(transaction.amount || 0),
         0,
       ),
     [transactions],
   );
 
   const categoryData = useMemo(
-    () =>
-      groupTransactions(
-        transactions,
-        'category_name',
-        'Uncategorised',
-      ),
+    () => groupTransactions(transactions, "category_name", "Uncategorised"),
     [transactions],
   );
 
   const accountData = useMemo(
-    () =>
-      groupTransactions(
-        transactions,
-        'account_name',
-        'No account',
-      ),
+    () => groupTransactions(transactions, "account_name", "No account"),
     [transactions],
   );
 
@@ -291,31 +250,28 @@ export default function TransactionChart() {
   }));
 
   const periodLabel =
-    period === 'current'
-      ? 'This Month'
-      : period === 'last'
-        ? 'Last Month'
+    period === "current"
+      ? "This Month"
+      : period === "last"
+        ? "Last Month"
         : appliedFrom && appliedTo
           ? `${appliedFrom} – ${appliedTo}`
-          : 'Custom Range';
+          : "Custom Range";
 
-  const typeLabel =
-    type === 'expense' ? 'Expenses' : 'Income';
+  const typeLabel = type === "expense" ? "Expenses" : "Income";
 
   return (
     <div className="tx-chart-page">
       <div className="page-header tx-chart-page-header">
         <div>
           <h1>Transaction Charts</h1>
-          <p>
-            See where your money is coming from and where it goes.
-          </p>
+          <p>See where your money is coming from and where it goes.</p>
         </div>
 
         <button
           type="button"
           className="btn btn--ghost"
-          onClick={() => navigate('/transactions')}
+          onClick={() => navigate("/transactions")}
         >
           ← Transactions
         </button>
@@ -325,8 +281,8 @@ export default function TransactionChart() {
         <div className="tx-segmented">
           <button
             type="button"
-            className={type === 'expense' ? 'active' : ''}
-            onClick={() => setType('expense')}
+            className={type === "expense" ? "active" : ""}
+            onClick={() => setType("expense")}
           >
             <span className="tx-segment-icon">◔</span>
             Expenses
@@ -334,22 +290,21 @@ export default function TransactionChart() {
 
           <button
             type="button"
-            className={type === 'income' ? 'active' : ''}
-            onClick={() => setType('income')}
+            className={type === "income" ? "active" : ""}
+            onClick={() => setType("income")}
           >
             <span className="tx-segment-icon">▥</span>
             Income
           </button>
         </div>
 
-
         <div className="tx-date-filter-wrap">
           <div className="tx-segmented">
             <button
               type="button"
-              className={period === 'last' ? 'active' : ''}
+              className={period === "last" ? "active" : ""}
               onClick={() => {
-                setPeriod('last');
+                setPeriod("last");
                 setShowDatePicker(false);
               }}
             >
@@ -359,9 +314,9 @@ export default function TransactionChart() {
 
             <button
               type="button"
-              className={period === 'current' ? 'active' : ''}
+              className={period === "current" ? "active" : ""}
               onClick={() => {
-                setPeriod('current');
+                setPeriod("current");
                 setShowDatePicker(false);
               }}
             >
@@ -371,8 +326,9 @@ export default function TransactionChart() {
 
             <button
               type="button"
-              className={`tx-calendar-button ${showDatePicker || period === 'custom' ? 'active' : ''
-                }`}
+              className={`tx-calendar-button ${
+                showDatePicker || period === "custom" ? "active" : ""
+              }`}
               onClick={() => setShowDatePicker((open) => !open)}
               aria-label="Select custom date range"
               title="Select custom date range"
@@ -440,7 +396,7 @@ export default function TransactionChart() {
                   onClick={() => {
                     setAppliedFrom(customFrom);
                     setAppliedTo(customTo);
-                    setPeriod('custom');
+                    setPeriod("custom");
                     setShowDatePicker(false);
                   }}
                 >
@@ -453,19 +409,14 @@ export default function TransactionChart() {
       </div>
 
       {loading ? (
-        <div className="tx-chart-state">
-          Loading chart…
-        </div>
+        <div className="tx-chart-state">Loading chart…</div>
       ) : error ? (
-        <div className="tx-chart-state tx-chart-state--error">
-          {error}
-        </div>
+        <div className="tx-chart-state tx-chart-state--error">{error}</div>
       ) : transactions.length === 0 ? (
         <div className="tx-chart-state">
           <h3>No {type} transactions</h3>
           <p>
-            There are no {type} transactions for{' '}
-            {periodLabel.toLowerCase()}.
+            There are no {type} transactions for {periodLabel.toLowerCase()}.
           </p>
         </div>
       ) : (
@@ -473,18 +424,14 @@ export default function TransactionChart() {
           <section className="tx-chart-card tx-overview-card">
             <div className="tx-overview-heading">
               <div>
-                <span className="tx-overview-label">
-                  Total {typeLabel}
-                </span>
+                <span className="tx-overview-label">Total {typeLabel}</span>
 
                 <strong className="tx-overview-amount">
                   {formatCurrency(total, currency)}
                 </strong>
               </div>
 
-              <span className="tx-period-pill">
-                {periodLabel}
-              </span>
+              <span className="tx-period-pill">{periodLabel}</span>
             </div>
 
             <div className="tx-overview-body">
@@ -503,19 +450,13 @@ export default function TransactionChart() {
                       stroke="none"
                     >
                       {chartData.map((entry) => (
-                        <Cell
-                          key={entry.name}
-                          fill={entry.color}
-                        />
+                        <Cell key={entry.name} fill={entry.color} />
                       ))}
                     </Pie>
 
                     <Tooltip
                       formatter={(value) =>
-                        formatCurrency(
-                          Number(value),
-                          currency,
-                        )
+                        formatCurrency(Number(value), currency)
                       }
                     />
                   </PieChart>
@@ -533,35 +474,21 @@ export default function TransactionChart() {
               <div className="tx-chart-legend">
                 {categoryData.map((item, index) => {
                   const percentage =
-                    total > 0
-                      ? (item.amount / total) * 100
-                      : 0;
+                    total > 0 ? (item.amount / total) * 100 : 0;
 
                   return (
-                    <div
-                      className="tx-chart-legend-row"
-                      key={item.name}
-                    >
+                    <div className="tx-chart-legend-row" key={item.name}>
                       <span
                         className="tx-chart-legend-dot"
                         style={{
                           backgroundColor:
-                            CHART_COLORS[
-                            index % CHART_COLORS.length
-                            ],
+                            CHART_COLORS[index % CHART_COLORS.length],
                         }}
                       />
 
-                      <span className="tx-chart-legend-name">
-                        {item.name}
-                      </span>
+                      <span className="tx-chart-legend-name">{item.name}</span>
 
-                      <strong>
-                        {formatCurrency(
-                          item.amount,
-                          currency,
-                        )}
-                      </strong>
+                      <strong>{formatCurrency(item.amount, currency)}</strong>
 
                       <span className="tx-chart-legend-percent">
                         {percentage.toFixed(1)}%
@@ -577,14 +504,14 @@ export default function TransactionChart() {
             <BreakdownCard
               title="By Category"
               subtitle={
-                type === 'expense'
-                  ? 'Where your money went'
-                  : 'Where your money came from'
+                type === "expense"
+                  ? "Where your money went"
+                  : "Where your money came from"
               }
               data={categoryData}
               total={total}
               currency={currency}
-              icon="▰"
+              icon="🏷️"
             />
 
             <BreakdownCard
@@ -593,7 +520,7 @@ export default function TransactionChart() {
               data={accountData}
               total={total}
               currency={currency}
-              icon="▣"
+              icon="🏦"
             />
           </div>
         </>

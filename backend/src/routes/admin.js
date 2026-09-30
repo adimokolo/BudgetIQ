@@ -1,46 +1,21 @@
 const express = require("express");
 
-const {
-    requireAuth,
-    requireAdmin,
-} = require("../middleware/auth");
+const { requireAuth, requireAdmin } = require("../middleware/auth");
 
 const {
-    getUsers,
-    updateUserStatus,
-    updateUserRole,
-    getAuditLogs,
+  getUsers,
+  updateUserStatus,
+  updateUserRole,
+  getAuditLogs,
 } = require("../controllers/adminController");
 
 const router = express.Router();
 
-// Get all registered BudgetIQ users
-router.get(
-    "/users",
-    requireAuth,
-    requireAdmin,
-    getUsers,
-);
+router.get("/users", requireAuth, requireAdmin, getUsers);
 
-// Suspend, reactivate, or deactivate a user
-router.patch(
-    "/users/:id/status",
-    requireAuth,
-    requireAdmin,
-    updateUserStatus,
-);
-// Promote a user to admin or remove administrator access
-router.patch(
-    "/users/:id/role",
-    requireAuth,
-    requireAdmin,
-    updateUserRole,
-);
-// Get administrator audit history
-router.get(
-    "/audit-logs",
-    requireAuth,
-    requireAdmin,
-    getAuditLogs,
-);
+router.patch("/users/:id/status", requireAuth, requireAdmin, updateUserStatus);
+
+router.patch("/users/:id/role", requireAuth, requireAdmin, updateUserRole);
+
+router.get("/audit-logs", requireAuth, requireAdmin, getAuditLogs);
 module.exports = router;

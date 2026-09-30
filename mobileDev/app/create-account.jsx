@@ -295,9 +295,9 @@ export default function SignupScreen() {
             resizeMode="contain"
           />
 
-          <Text style={styles.brand}>BUDGETIQ</Text>
+          <Text style={styles.brand}>KashMetrix</Text>
 
-          <Text style={styles.tagline}>SPEND WITH INSIGHT, NOT GUESSWORK.</Text>
+          <Text style={styles.tagline}>Track smarter. Understand more.</Text>
 
           <Text style={styles.welcome}>Create your account</Text>
 

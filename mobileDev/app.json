@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "BudgetIQ",
-    "slug": "BudgetIQ-Mobile-App",
+    "name": "KashMetrix",
+    "slug": "KashMetrix-Mobile-App",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -44,8 +44,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-1490675395669448~2603482105",
-          "iosAppId": "ca-app-pub-1490675395669448~7364854190"
+          "androidAppId": "ca-app-pub-8683588639077779~3693928842",
+          "iosAppId": "ca-app-pub-8683588639077779~8124128442"
         }
       ],
       "expo-build-properties"

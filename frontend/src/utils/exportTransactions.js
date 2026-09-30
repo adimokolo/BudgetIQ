@@ -1,8 +1,8 @@
-import { formatDate } from './format';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { formatDate } from "./format";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
-const SLOGAN = 'BudgetIQ — Spend with insight, not guesswork.';
+const SLOGAN = "KashMetrix — Track smart. Understand more.";
 
 const COLOR = {
   brand: [15, 113, 180],
@@ -14,33 +14,39 @@ const COLOR = {
 };
 
 function escapeCell(cell) {
-  const str = String(cell ?? '');
+  const str = String(cell ?? "");
   return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 }
 
-export function exportTransactionsToCsv(transactions, currency = 'NGN') {
+export function exportTransactionsToCsv(transactions, currency = "NGN") {
   if (!transactions || transactions.length === 0) return;
 
-  const header = ['Date', 'Type', 'Category', 'Description', `Amount (${currency})`];
+  const header = [
+    "Date",
+    "Type",
+    "Category",
+    "Description",
+    `Amount (${currency})`,
+  ];
 
   const rows = transactions.map((t) => [
     formatDate(t.occurred_on),
     t.type,
-    t.category_name || 'Uncategorized',
-    t.description || '',
+    t.category_name || "Uncategorized",
+    t.description || "",
     Number(t.amount).toFixed(2),
   ]);
 
   const csv = [header, ...rows]
-    .map((row) => row.map(escapeCell).join(','))
-    .join('\n');
+    .map((row) => row.map(escapeCell).join(","))
+    .join("\n");
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
 
   link.href = url;
-  link.download = `budgetiq-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.download = `KashMetrix-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
 
   document.body.appendChild(link);
   link.click();
@@ -48,72 +54,72 @@ export function exportTransactionsToCsv(transactions, currency = 'NGN') {
   URL.revokeObjectURL(url);
 }
 
-export function exportTransactionsToPdf(transactions, currency = 'NGN') {
+export function exportTransactionsToPdf(transactions, currency = "NGN") {
   if (!transactions || transactions.length === 0) return;
 
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const today = new Date().toISOString().slice(0, 10);
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
   const income = transactions
-    .filter((t) => t.type === 'income')
+    .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
   const expense = transactions
-    .filter((t) => t.type === 'expense')
+    .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
   const net = income - expense;
 
   doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLOR.dark);
-  doc.text('BudgetIQ — Transactions', 14, 20);
+  doc.text("KashMetrix — Transactions", 14, 20);
 
   doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(...COLOR.muted);
   doc.text(`Exported on ${today}`, 14, 26);
 
   const summaryY = 34;
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont("helvetica", "bold");
 
   doc.setTextColor(...COLOR.dark);
-  doc.text('Income:', 14, summaryY);
+  doc.text("Income:", 14, summaryY);
   doc.setTextColor(...COLOR.credit);
   doc.text(`${currency} ${income.toFixed(2)}`, 35, summaryY);
 
   doc.setTextColor(...COLOR.dark);
-  doc.text('Expense:', 80, summaryY);
+  doc.text("Expense:", 80, summaryY);
   doc.setTextColor(...COLOR.debit);
   doc.text(`${currency} ${expense.toFixed(2)}`, 103, summaryY);
 
   doc.setTextColor(...COLOR.dark);
-  doc.text('Net:', 148, summaryY);
+  doc.text("Net:", 148, summaryY);
   doc.setTextColor(...(net >= 0 ? COLOR.credit : COLOR.debit));
   doc.text(`${currency} ${net.toFixed(2)}`, 160, summaryY);
 
   autoTable(doc, {
     startY: summaryY + 6,
 
-    head: [['Date', 'Type', 'Category', 'Description', `Amount (${currency})`]],
+    head: [["Date", "Type", "Category", "Description", `Amount (${currency})`]],
 
     body: transactions.map((t) => [
       formatDate(t.occurred_on),
-      t.type === 'income' ? 'Credit' : 'Debit',
-      t.category_name || 'Uncategorized',
-      t.description || '—',
-      `${t.type === 'income' ? '+' : '-'}${Number(t.amount || 0).toFixed(2)}`,
+      t.type === "income" ? "Credit" : "Debit",
+      t.category_name || "Uncategorized",
+      t.description || "—",
+      `${t.type === "income" ? "+" : "-"}${Number(t.amount || 0).toFixed(2)}`,
     ]),
 
     headStyles: {
       fillColor: COLOR.brand,
       textColor: [255, 255, 255],
-      fontStyle: 'bold',
+      fontStyle: "bold",
       fontSize: 9,
-      halign: 'left',
+      halign: "left",
     },
 
     bodyStyles: {
@@ -130,14 +136,14 @@ export function exportTransactionsToPdf(transactions, currency = 'NGN') {
       0: { cellWidth: 24 },
       1: { cellWidth: 18 },
       2: { cellWidth: 34 },
-      3: { cellWidth: 'auto' },
-      4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },
+      3: { cellWidth: "auto" },
+      4: { cellWidth: 30, halign: "right", fontStyle: "bold" },
     },
 
     didParseCell(data) {
-      if (data.section !== 'body' || data.column.index !== 4) return;
+      if (data.section !== "body" || data.column.index !== 4) return;
 
-      const isCredit = data.row.raw[1] === 'Credit';
+      const isCredit = data.row.raw[1] === "Credit";
       data.cell.styles.textColor = isCredit ? COLOR.credit : COLOR.debit;
     },
 
@@ -145,9 +151,9 @@ export function exportTransactionsToPdf(transactions, currency = 'NGN') {
       const footerY = pageH - 8;
 
       doc.setFontSize(8);
-      doc.setFont('helvetica', 'italic');
+      doc.setFont("helvetica", "italic");
       doc.setTextColor(...COLOR.muted);
-      doc.text(SLOGAN, pageW / 2, footerY, { align: 'center' });
+      doc.text(SLOGAN, pageW / 2, footerY, { align: "center" });
 
       doc.setDrawColor(...COLOR.muted);
       doc.setLineWidth(0.2);
@@ -155,5 +161,5 @@ export function exportTransactionsToPdf(transactions, currency = 'NGN') {
     },
   });
 
-  doc.save(`budgetiq-transactions-${today}.pdf`);
+  doc.save(`kashmetrix-transactions-${today}.pdf`);
 }

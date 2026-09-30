@@ -204,9 +204,9 @@ export default function LoginScreen() {
             resizeMode="contain"
           />
 
-          <Text style={styles.brand}>BUDGETIQ</Text>
+          <Text style={styles.brand}>KashMetrix</Text>
 
-          <Text style={styles.tagline}>SPEND WITH INSIGHT, NOT GUESSWORK.</Text>
+          <Text style={styles.tagline}>Track smarter. Understand more.</Text>
 
           <Text style={styles.welcome}>Welcome back</Text>
 

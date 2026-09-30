@@ -72,6 +72,7 @@ export const NIGERIAN_BANKS = [
   ["Chipper Cash", "Digital finance / fintech", "#6C4CF1"],
   ["Leatherback", "Digital finance / fintech", "#2E4DA7"],
   ["LemFi", "Digital finance / fintech", "#00A86B"],
+  ["Zojapay", "Digital finance / fintech", "#2E4DA7"],
 
   ["AB Microfinance Bank", "Microfinance bank", "#315C83"],
   ["Accion Microfinance Bank", "Microfinance bank", "#E16B2D"],

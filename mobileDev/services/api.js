@@ -3,10 +3,10 @@ import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TOKEN_KEY } from "./constants";
 
-// const API_URL =
-// process.env.EXPO_PUBLIC_API_URL || "https://dic5erfj6c3p4.cloudfront.net/api";
+const API_URL =
+  process.env.EXPO_PUBLIC_API_URL || "https://dic5erfj6c3p4.cloudfront.net/api";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:5000/api";
+// const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:5000/api";
 
 const SECURE_TOKEN_KEY = "budgetiq_token";
 
