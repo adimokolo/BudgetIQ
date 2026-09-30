@@ -1,20 +1,20 @@
-import { useEffect, useMemo, useState } from 'react';
-import apiClient from '../api/client';
+import { useEffect, useMemo, useState } from "react";
+import apiClient from "../api/client";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [updatingUserId, setUpdatingUserId] = useState(null);
-  const [actionError, setActionError] = useState('');
+  const [actionError, setActionError] = useState("");
   useEffect(() => {
     const loadUsers = async () => {
       try {
         setLoading(true);
-        setError('');
+        setError("");
 
-        const response = await apiClient.get('/admin/users');
+        const response = await apiClient.get("/admin/users");
 
         setUsers(
           Array.isArray(response.data)
@@ -22,10 +22,7 @@ export default function AdminUsers() {
             : response.data?.users || [],
         );
       } catch (err) {
-        setError(
-          err.response?.data?.error ||
-          'Unable to load users.',
-        );
+        setError(err.response?.data?.error || "Unable to load users.");
       } finally {
         setLoading(false);
       }
@@ -34,9 +31,9 @@ export default function AdminUsers() {
     loadUsers();
   }, []);
   const handleStatusChange = async (user, nextStatus) => {
-    if (nextStatus === 'suspended') {
+    if (nextStatus === "suspended") {
       const confirmed = window.confirm(
-        `Suspend ${user.full_name || user.email}?\n\nThey will be unable to access BudgetIQ until reactivated.`
+        `Suspend ${user.full_name || user.email}?\n\nThey will be unable to access KashMetrix until reactivated.`,
       );
 
       if (!confirmed) return;
@@ -44,26 +41,22 @@ export default function AdminUsers() {
 
     try {
       setUpdatingUserId(user.id);
-      setActionError('');
+      setActionError("");
 
-      const response = await apiClient.patch(
-        `/admin/users/${user.id}/status`,
-        { status: nextStatus }
-      );
+      const response = await apiClient.patch(`/admin/users/${user.id}/status`, {
+        status: nextStatus,
+      });
 
       const updatedUser = response.data.user;
 
       setUsers((currentUsers) =>
         currentUsers.map((item) =>
-          item.id === updatedUser.id
-            ? { ...item, ...updatedUser }
-            : item
-        )
+          item.id === updatedUser.id ? { ...item, ...updatedUser } : item,
+        ),
       );
     } catch (err) {
       setActionError(
-        err.response?.data?.error ||
-        'Unable to update this user.'
+        err.response?.data?.error || "Unable to update this user.",
       );
     } finally {
       setUpdatingUserId(null);
@@ -78,9 +71,7 @@ export default function AdminUsers() {
     return users.filter((user) =>
       [user.full_name, user.email]
         .filter(Boolean)
-        .some((value) =>
-          value.toLowerCase().includes(query),
-        ),
+        .some((value) => value.toLowerCase().includes(query)),
     );
   }, [users, search]);
 
@@ -89,14 +80,10 @@ export default function AdminUsers() {
       <div className="page-header">
         <div>
           <h1>Admin</h1>
-          <p>Manage BudgetIQ users and account access.</p>
+          <p>Manage KashMetrix users and account access.</p>
         </div>
       </div>
-      {actionError && (
-        <div className="admin-action-error">
-          {actionError}
-        </div>
-      )}
+      {actionError && <div className="admin-action-error">{actionError}</div>}
       <div className="admin-user-stats">
         <div className="facet-card admin-stat-card">
           <span>Total users</span>
@@ -106,14 +93,14 @@ export default function AdminUsers() {
         <div className="facet-card admin-stat-card">
           <span>Active users</span>
           <strong>
-            {users.filter((user) => user.status === 'active').length}
+            {users.filter((user) => user.status === "active").length}
           </strong>
         </div>
 
         <div className="facet-card admin-stat-card">
           <span>Suspended</span>
           <strong>
-            {users.filter((user) => user.status === 'suspended').length}
+            {users.filter((user) => user.status === "suspended").length}
           </strong>
         </div>
       </div>
@@ -123,7 +110,7 @@ export default function AdminUsers() {
           <div>
             <h2>User management</h2>
             <p>
-              {users.length} {users.length === 1 ? 'user' : 'users'}
+              {users.length} {users.length === 1 ? "user" : "users"}
             </p>
           </div>
 
@@ -141,9 +128,7 @@ export default function AdminUsers() {
         ) : error ? (
           <div className="empty-state">{error}</div>
         ) : filteredUsers.length === 0 ? (
-          <div className="empty-state">
-            No users found.
-          </div>
+          <div className="empty-state">No users found.</div>
         ) : (
           <div className="admin-users-table-wrap">
             <table className="admin-users-table">
@@ -162,69 +147,61 @@ export default function AdminUsers() {
                   <tr key={user.id}>
                     <td>
                       <div className="admin-user-identity">
-                        <strong>
-                          {user.full_name || 'Unnamed user'}
-                        </strong>
+                        <strong>{user.full_name || "Unnamed user"}</strong>
                         <span>{user.email}</span>
                       </div>
                     </td>
 
                     <td>
                       <span
-                        className={`admin-role-badge admin-role-badge--${user.role || 'user'
-                          }`}
+                        className={`admin-role-badge admin-role-badge--${
+                          user.role || "user"
+                        }`}
                       >
-                        {user.role || 'user'}
+                        {user.role || "user"}
                       </span>
                     </td>
 
                     <td>
                       <span
-                        className={`admin-status-badge admin-status-badge--${user.status || 'active'
-                          }`}
+                        className={`admin-status-badge admin-status-badge--${
+                          user.status || "active"
+                        }`}
                       >
-                        {user.status || 'active'}
+                        {user.status || "active"}
                       </span>
                     </td>
 
                     <td>
                       {user.created_at
-                        ? new Date(
-                          user.created_at,
-                        ).toLocaleDateString()
-                        : '—'}
+                        ? new Date(user.created_at).toLocaleDateString()
+                        : "—"}
                     </td>
 
                     <td>
-                      {user.role === 'admin' ? (
-                        <span className="admin-action-placeholder">
-                          —
-                        </span>
-                      ) : user.status === 'active' ? (
+                      {user.role === "admin" ? (
+                        <span className="admin-action-placeholder">—</span>
+                      ) : user.status === "active" ? (
                         <button
                           type="button"
                           className="admin-user-action admin-user-action--suspend"
                           disabled={updatingUserId === user.id}
-                          onClick={() =>
-                            handleStatusChange(user, 'suspended')
-                          }
+                          onClick={() => handleStatusChange(user, "suspended")}
                         >
                           {updatingUserId === user.id
-                            ? 'Updating...'
-                            : 'Suspend'}
+                            ? "Updating..."
+                            : "Suspend"}
                         </button>
                       ) : (
                         <button
                           type="button"
                           className="admin-user-action admin-user-action--activate"
                           disabled={updatingUserId === user.id}
-                          onClick={() =>
-                            handleStatusChange(user, 'active')
-                          }
+                          onClick={() => handleStatusChange(user, "active")}
                         >
                           {updatingUserId === user.id
-                            ? 'Updating...'
-                            : 'Reactivate'}
+                            ? "Updating..."
+                            : "Reactivate"}
                         </button>
                       )}
                     </td>

@@ -1,12 +1,12 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import logoMark from '../assets/logo-mark.png';
-import { useAuth } from '../context/AuthContext';
+import { NavLink, useNavigate } from "react-router-dom";
+import logoMark from "../assets/logo-mark.png";
+import { useAuth } from "../context/AuthContext";
 
 const ADMIN_LINKS = [
-  { to: '/admin', label: 'Overview', icon: '◆', end: true },
-  { to: '/admin/users', label: 'Users', icon: '♟' },
-  { to: '/admin/admins', label: 'Admin Management', icon: '♜' },
-  { to: '/admin/audit', label: 'Audit Log', icon: '▤' },
+  { to: "/admin", label: "Overview", icon: "◆", end: true },
+  { to: "/admin/users", label: "Users", icon: "♟" },
+  { to: "/admin/admins", label: "Admin Management", icon: "♜" },
+  { to: "/admin/audit", label: "Audit Log", icon: "▤" },
 ];
 
 export default function AdminLayout({ children }) {
@@ -17,10 +17,10 @@ export default function AdminLayout({ children }) {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-brand">
-          <img src={logoMark} alt="BudgetIQ" className="brand-mark" />
+          <img src={logoMark} alt="KashMetrix" className="brand-mark" />
 
           <div>
-            <div className="brand-name">BudgetIQ</div>
+            <div className="brand-name">KashMetrix</div>
             <div className="admin-brand-label">Administration</div>
           </div>
         </div>
@@ -33,7 +33,7 @@ export default function AdminLayout({ children }) {
                   to={link.to}
                   end={link.end}
                   className={({ isActive }) =>
-                    `admin-nav-link${isActive ? ' active' : ''}`
+                    `admin-nav-link${isActive ? " active" : ""}`
                   }
                 >
                   <span className="admin-nav-icon">{link.icon}</span>
@@ -46,14 +46,16 @@ export default function AdminLayout({ children }) {
 
         <div className="admin-sidebar-footer">
           <div className="admin-user">
-            <strong>{user?.fullName || user?.full_name || 'Administrator'}</strong>
+            <strong>
+              {user?.fullName || user?.full_name || "Administrator"}
+            </strong>
             <span>{user?.email}</span>
           </div>
 
           <button
             type="button"
             className="admin-return-button"
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
           >
             ← Return to BudgetIQ
           </button>

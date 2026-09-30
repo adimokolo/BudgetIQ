@@ -1,24 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
-import apiClient from '../api/client';
-import { useAuth } from '../context/AuthContext';
+import { useEffect, useMemo, useState } from "react";
+import apiClient from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 export default function AdminManagement() {
   const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [actionError, setActionError] = useState('');
+  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [updatingUserId, setUpdatingUserId] = useState(null);
 
   useEffect(() => {
     const loadUsers = async () => {
       try {
         setLoading(true);
-        setError('');
+        setError("");
 
-        const response = await apiClient.get('/admin/users');
+        const response = await apiClient.get("/admin/users");
 
         setUsers(
           Array.isArray(response.data)
@@ -28,7 +28,7 @@ export default function AdminManagement() {
       } catch (err) {
         setError(
           err.response?.data?.error ||
-          'Unable to load administrator information.',
+            "Unable to load administrator information.",
         );
       } finally {
         setLoading(false);
@@ -39,7 +39,7 @@ export default function AdminManagement() {
   }, []);
 
   const handleRoleChange = async (targetUser, nextRole) => {
-    const promoting = nextRole === 'admin';
+    const promoting = nextRole === "admin";
 
     const confirmed = window.confirm(
       promoting
@@ -51,7 +51,7 @@ export default function AdminManagement() {
 
     try {
       setUpdatingUserId(targetUser.id);
-      setActionError('');
+      setActionError("");
 
       const response = await apiClient.patch(
         `/admin/users/${targetUser.id}/role`,
@@ -62,15 +62,12 @@ export default function AdminManagement() {
 
       setUsers((currentUsers) =>
         currentUsers.map((item) =>
-          item.id === updatedUser.id
-            ? { ...item, ...updatedUser }
-            : item,
+          item.id === updatedUser.id ? { ...item, ...updatedUser } : item,
         ),
       );
     } catch (err) {
       setActionError(
-        err.response?.data?.error ||
-        'Unable to update administrator access.',
+        err.response?.data?.error || "Unable to update administrator access.",
       );
     } finally {
       setUpdatingUserId(null);
@@ -85,32 +82,22 @@ export default function AdminManagement() {
     return users.filter((user) =>
       [user.full_name, user.email]
         .filter(Boolean)
-        .some((value) =>
-          value.toLowerCase().includes(query),
-        ),
+        .some((value) => value.toLowerCase().includes(query)),
     );
   }, [users, search]);
 
-  const adminCount = users.filter(
-    (user) => user.role === 'admin',
-  ).length;
+  const adminCount = users.filter((user) => user.role === "admin").length;
 
   return (
     <div className="admin-users-page">
       <div className="page-header">
         <div>
           <h1>Admin Management</h1>
-          <p>
-            Control administrator access to the BudgetIQ console.
-          </p>
+          <p>Control administrator access to the KashMetrix console.</p>
         </div>
       </div>
 
-      {actionError && (
-        <div className="admin-action-error">
-          {actionError}
-        </div>
-      )}
+      {actionError && <div className="admin-action-error">{actionError}</div>}
 
       <div className="admin-user-stats">
         <div className="facet-card admin-stat-card">
@@ -133,9 +120,7 @@ export default function AdminManagement() {
         <div className="admin-users-toolbar">
           <div>
             <h2>Administrator access</h2>
-            <p>
-              Promote registered users or remove administrator access.
-            </p>
+            <p>Promote registered users or remove administrator access.</p>
           </div>
 
           <input
@@ -167,33 +152,30 @@ export default function AdminManagement() {
 
               <tbody>
                 {filteredUsers.map((user) => {
-                  const isCurrentAdmin =
-                    user.id === currentUser?.id;
+                  const isCurrentAdmin = user.id === currentUser?.id;
 
                   return (
                     <tr key={user.id}>
                       <td>
                         <div className="admin-user-identity">
-                          <strong>
-                            {user.full_name || 'Unnamed user'}
-                          </strong>
+                          <strong>{user.full_name || "Unnamed user"}</strong>
                           <span>{user.email}</span>
                         </div>
                       </td>
 
                       <td>
                         <span
-                          className={`admin-role-badge admin-role-badge--${user.role || 'user'}`}
+                          className={`admin-role-badge admin-role-badge--${user.role || "user"}`}
                         >
-                          {user.role || 'user'}
+                          {user.role || "user"}
                         </span>
                       </td>
 
                       <td>
                         <span
-                          className={`admin-status-badge admin-status-badge--${user.status || 'active'}`}
+                          className={`admin-status-badge admin-status-badge--${user.status || "active"}`}
                         >
-                          {user.status || 'active'}
+                          {user.status || "active"}
                         </span>
                       </td>
 
@@ -202,18 +184,16 @@ export default function AdminManagement() {
                           <span className="admin-action-placeholder">
                             Current admin
                           </span>
-                        ) : user.role === 'admin' ? (
+                        ) : user.role === "admin" ? (
                           <button
                             type="button"
                             className="admin-user-action admin-user-action--suspend"
                             disabled={updatingUserId === user.id}
-                            onClick={() =>
-                              handleRoleChange(user, 'user')
-                            }
+                            onClick={() => handleRoleChange(user, "user")}
                           >
                             {updatingUserId === user.id
-                              ? 'Updating...'
-                              : 'Remove Admin'}
+                              ? "Updating..."
+                              : "Remove Admin"}
                           </button>
                         ) : (
                           <button
@@ -221,15 +201,13 @@ export default function AdminManagement() {
                             className="admin-user-action admin-user-action--activate"
                             disabled={
                               updatingUserId === user.id ||
-                              user.status !== 'active'
+                              user.status !== "active"
                             }
-                            onClick={() =>
-                              handleRoleChange(user, 'admin')
-                            }
+                            onClick={() => handleRoleChange(user, "admin")}
                           >
                             {updatingUserId === user.id
-                              ? 'Updating...'
-                              : 'Make Admin'}
+                              ? "Updating..."
+                              : "Make Admin"}
                           </button>
                         )}
                       </td>

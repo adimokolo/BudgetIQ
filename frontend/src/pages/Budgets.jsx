@@ -16,14 +16,14 @@ export default function Budgets() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingBudget, setEditingBudget] = useState(null); // null = creating, object = editing
+  const [editingBudget, setEditingBudget] = useState(null);
   const [form, setForm] = useState({ categoryId: "", monthlyLimit: "" });
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   const [error, setError] = useState(null);
   const totalBudget = budgets.reduce(
     (sum, budget) => sum + Number(budget.monthly_limit || 0),
-    0
+    0,
   );
 
   const loadBudgets = () => {
@@ -83,17 +83,16 @@ export default function Budgets() {
     }
     if (!editingBudget) {
       const duplicate = budgets.some(
-        (budget) =>
-          String(budget.category_id) === String(form.categoryId)
+        (budget) => String(budget.category_id) === String(form.categoryId),
       );
 
       if (duplicate) {
         const category = categories.find(
-          (c) => String(c.id) === String(form.categoryId)
+          (c) => String(c.id) === String(form.categoryId),
         );
 
         setError(
-          `${category?.name || "This category"} already has a monthly budget. Edit the existing budget instead.`
+          `${category?.name || "This category"} already has a monthly budget. Edit the existing budget instead.`,
         );
         return;
       }
@@ -310,19 +309,20 @@ export default function Budgets() {
 
               {(() => {
                 const selectedCategory = categories.find(
-                  (c) => String(c.id) === String(form.categoryId)
+                  (c) => String(c.id) === String(form.categoryId),
                 );
 
                 return (
                   <>
                     <button
                       type="button"
-                      className={`budget-category-trigger ${showCategoryPicker ? "budget-category-trigger--open" : ""
-                        }`}
+                      className={`budget-category-trigger ${
+                        showCategoryPicker
+                          ? "budget-category-trigger--open"
+                          : ""
+                      }`}
                       disabled={Boolean(editingBudget)}
-                      onClick={() =>
-                        setShowCategoryPicker((open) => !open)
-                      }
+                      onClick={() => setShowCategoryPicker((open) => !open)}
                     >
                       <span className="budget-category-trigger-content">
                         {selectedCategory ? (
@@ -330,13 +330,12 @@ export default function Budgets() {
                             <span
                               className="budget-category-icon"
                               style={{
-                                background:
-                                  selectedCategory.color || "#647089",
+                                background: selectedCategory.color || "#647089",
                               }}
                             >
                               {getIcon(
                                 selectedCategory.icon ||
-                                fallbackIconFor("expense")
+                                  fallbackIconFor("expense"),
                               )}
                             </span>
 
@@ -357,17 +356,17 @@ export default function Budgets() {
                         <div className="budget-category-grid">
                           {categories.map((category) => {
                             const selected =
-                              String(category.id) ===
-                              String(form.categoryId);
+                              String(category.id) === String(form.categoryId);
 
                             return (
                               <button
                                 key={category.id}
                                 type="button"
-                                className={`budget-category-option ${selected
-                                  ? "budget-category-option--selected"
-                                  : ""
-                                  }`}
+                                className={`budget-category-option ${
+                                  selected
+                                    ? "budget-category-option--selected"
+                                    : ""
+                                }`}
                                 onClick={() => {
                                   setForm((prev) => ({
                                     ...prev,
@@ -379,13 +378,11 @@ export default function Budgets() {
                                 <span
                                   className="budget-category-option-icon"
                                   style={{
-                                    background:
-                                      category.color || "#647089",
+                                    background: category.color || "#647089",
                                   }}
                                 >
                                   {getIcon(
-                                    category.icon ||
-                                    fallbackIconFor("expense")
+                                    category.icon || fallbackIconFor("expense"),
                                   )}
                                 </span>
 
@@ -399,8 +396,8 @@ export default function Budgets() {
 
                     {editingBudget && (
                       <p className="helper-text">
-                        Category can't be changed on an existing budget —
-                        delete and create a new one instead.
+                        Category can't be changed on an existing budget — delete
+                        and create a new one instead.
                       </p>
                     )}
                   </>

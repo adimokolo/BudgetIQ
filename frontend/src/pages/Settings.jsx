@@ -6,7 +6,7 @@ import apiClient from "../api/client";
 import { resizeImageFile } from "../utils/imageResize";
 import { ALL_CURRENCIES, currencyLabel } from "../utils/currency";
 
-const SUPPORT_EMAIL = "budgetiq.inquries@gmail.com";
+const SUPPORT_EMAIL = "enquiry@kashmetrix.com";
 
 const FAQ_ITEMS = [
   {
@@ -243,7 +243,7 @@ export default function Settings() {
       <div className="facet-card" style={{ marginTop: 18 }}>
         <h3 className="section-title">Appearance</h3>
         <p className="section-subtitle">
-          Choose how BudgetIQ looks on this device.
+          Choose how KashMetrix looks on this device.
         </p>
         <div
           className="theme-segmented"

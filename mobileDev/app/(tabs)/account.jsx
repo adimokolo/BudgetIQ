@@ -138,6 +138,7 @@ const NIGERIAN_BANKS = [
   ["Chipper Cash", "Digital finance / fintech", "#6C4CF1"],
   ["Leatherback", "Digital finance / fintech", "#2E4DA7"],
   ["LemFi", "Digital finance / fintech", "#00A86B"],
+  ["Zojapay", "Digital finance / fintech", "#2E4DA7"],
 
   ["AB Microfinance Bank", "Microfinance bank", "#315C83"],
   ["Accion Microfinance Bank", "Microfinance bank", "#E16B2D"],
@@ -430,14 +431,14 @@ export default function Account() {
     if (!importBank) {
       Alert.alert(
         "Select bank",
-        "Choose the Nigerian bank that issued the statement or email alert.",
+        "Choose the bank that issued the statement or email alert.",
       );
       return;
     }
     if (importMode === "statement" && !importAccountId) {
       Alert.alert(
         "Select account",
-        "Choose an existing BudgetIQ account to import into.",
+        "Choose an existing KashMetrix account to import into.",
       );
       return;
     }
@@ -1649,7 +1650,7 @@ export default function Account() {
                     style={[styles.modalSubtitle, { color: colors.textFaint }]}
                   >
                     {importMode === "statement"
-                      ? "Choose the issuing bank and an existing BudgetIQ account, then upload your statement."
+                      ? "Choose the issuing bank and an existing KashMetrix account, then upload your statement."
                       : "Choose the issuing bank and paste transaction alerts you explicitly provide."}
                   </Text>
                 </View>
@@ -1677,7 +1678,7 @@ export default function Account() {
               </Text>
 
               <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
-                1. Select Nigerian bank
+                1. Select bank
               </Text>
               <Pressable
                 disabled={importBusy}
@@ -1731,7 +1732,7 @@ export default function Account() {
                   <TextInput
                     value={bankSearch}
                     onChangeText={setBankSearch}
-                    placeholder="Search Nigerian banks..."
+                    placeholder="Search banks..."
                     placeholderTextColor={colors.textFaint}
                     style={[
                       styles.textInput,
@@ -2300,7 +2301,7 @@ export default function Account() {
             </View>
 
             <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
-              Choose Nigerian bank (optional)
+              Choose bank (optional)
             </Text>
             <Pressable
               disabled={savingAccount}
@@ -2356,7 +2357,7 @@ export default function Account() {
                 <TextInput
                   value={manualBankSearch}
                   onChangeText={setManualBankSearch}
-                  placeholder="Search Nigerian banks..."
+                  placeholder="Search banks..."
                   placeholderTextColor={colors.textFaint}
                   style={[
                     styles.textInput,
