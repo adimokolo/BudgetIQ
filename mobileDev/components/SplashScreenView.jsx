@@ -8,8 +8,8 @@ export default function SplashScreenView() {
         style={styles.logo}
         resizeMode="contain"
       />
-      <Text style={styles.title}>Kash Metrix</Text>
-      <Text style={styles.tagline}>Track smarter. Understand more</Text>
+      <Text style={styles.title}>KashMetrix</Text>
+      <Text style={styles.tagline}>Track smarter. Understand more.</Text>
     </View>
   );
 }

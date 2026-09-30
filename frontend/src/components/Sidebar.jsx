@@ -15,11 +15,11 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <img src={logoMark} alt="BudgetIQ" className="brand-mark" />
+        <img src={logoMark} alt="KashMetrix" className="brand-mark" />
         <span>
-          <span className="brand-name">BudgetIQ</span>
+          <span className="brand-name">KashMetrix</span>
           <span className="brand-tagline">
-            Spend with insight, not guesswork.
+            Track smarter. Understand more.
           </span>
         </span>
       </div>

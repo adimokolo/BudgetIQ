@@ -299,7 +299,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <View style={styles.signupRow}>
-            <Text style={styles.signupText}>New to BudgetIQ? </Text>
+            <Text style={styles.signupText}>New to KashMetrix? </Text>
 
             <Link href="/create-account" asChild>
               <TouchableOpacity disabled={loading}>

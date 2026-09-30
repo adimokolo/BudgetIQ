@@ -74,11 +74,11 @@ export default function Accounts() {
       {/* ── Sidebar ── */}
       <aside className="sidebar">
         <div className="brand">
-          <img src={logoMark} alt="BudgetIQ" className="brand-mark" />
+          <img src={logoMark} alt="KashMetrix" className="brand-mark" />
           <span>
-            <span className="brand-name">Kashmetrix</span>
+            <span className="brand-name">KashMetrix</span>
             <span className="brand-tagline">
-              Track smarter, Understand more.
+              Track smarter. Understand more.
             </span>
           </span>
         </div>

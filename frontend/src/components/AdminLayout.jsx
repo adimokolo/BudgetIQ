@@ -57,7 +57,7 @@ export default function AdminLayout({ children }) {
             className="admin-return-button"
             onClick={() => navigate("/")}
           >
-            ← Return to BudgetIQ
+            ← Return to KashMetrix
           </button>
         </div>
       </aside>
@@ -66,7 +66,7 @@ export default function AdminLayout({ children }) {
         <header className="admin-topbar">
           <div>
             <strong>Administration Console</strong>
-            <span>BudgetIQ management</span>
+            <span>KashMetrix management</span>
           </div>
         </header>
 

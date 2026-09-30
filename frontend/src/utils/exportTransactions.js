@@ -2,7 +2,7 @@ import { formatDate } from "./format";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-const SLOGAN = "KashMetrix — Track smart. Understand more.";
+const SLOGAN = "KashMetrix — Track smarter. Understand more.";
 
 const COLOR = {
   brand: [15, 113, 180],
