@@ -49,7 +49,7 @@ export default function AccountModal({ account, onClose }) {
     return NIGERIAN_BANKS.filter(
       (bank) =>
         bank.name.toLowerCase().includes(query) ||
-        bank.category.toLowerCase().includes(query)
+        bank.category.toLowerCase().includes(query),
     );
   }, [bankSearch]);
 
@@ -63,21 +63,18 @@ export default function AccountModal({ account, onClose }) {
     return ALL_CURRENCIES.filter(
       (currency) =>
         currency.code.toLowerCase().includes(query) ||
-        currency.name.toLowerCase().includes(query)
+        currency.name.toLowerCase().includes(query),
     );
   }, [currencySearch]);
 
   const selectedCurrency = useMemo(
-    () =>
-      ALL_CURRENCIES.find(
-        (currency) => currency.code === form.currency
-      ),
-    [form.currency]
+    () => ALL_CURRENCIES.find((currency) => currency.code === form.currency),
+    [form.currency],
   );
 
   const selectedBank = useMemo(
     () => NIGERIAN_BANKS.find((bank) => bank.name === form.bankName),
-    [form.bankName]
+    [form.bankName],
   );
 
   const handleChange = (e) => {
@@ -178,10 +175,9 @@ export default function AccountModal({ account, onClose }) {
                 </span>
 
                 <span
-                  className={`account-bank-chevron${showBankPicker
-                    ? " account-bank-chevron--open"
-                    : ""
-                    }`}
+                  className={`account-bank-chevron${
+                    showBankPicker ? " account-bank-chevron--open" : ""
+                  }`}
                   aria-hidden="true"
                 >
                   ⌄
@@ -193,7 +189,7 @@ export default function AccountModal({ account, onClose }) {
                   <input
                     type="search"
                     className="account-bank-search"
-                    placeholder="Search Nigerian banks..."
+                    placeholder="Search banks..."
                     value={bankSearch}
                     onChange={(e) => setBankSearch(e.target.value)}
                     autoFocus
@@ -202,10 +198,9 @@ export default function AccountModal({ account, onClose }) {
                   <div className="account-bank-list">
                     <button
                       type="button"
-                      className={`account-bank-option${!form.bankName
-                        ? " account-bank-option--selected"
-                        : ""
-                        }`}
+                      className={`account-bank-option${
+                        !form.bankName ? " account-bank-option--selected" : ""
+                      }`}
                       onClick={() => handleBankSelect("")}
                     >
                       <span className="account-bank-none">—</span>
@@ -217,20 +212,16 @@ export default function AccountModal({ account, onClose }) {
                     </button>
 
                     {filteredBanks.map((bank) => {
-                      const isSelected =
-                        form.bankName === bank.name;
+                      const isSelected = form.bankName === bank.name;
 
                       return (
                         <button
                           key={bank.name}
                           type="button"
-                          className={`account-bank-option${isSelected
-                            ? " account-bank-option--selected"
-                            : ""
-                            }`}
-                          onClick={() =>
-                            handleBankSelect(bank.name)
-                          }
+                          className={`account-bank-option${
+                            isSelected ? " account-bank-option--selected" : ""
+                          }`}
+                          onClick={() => handleBankSelect(bank.name)}
                         >
                           <span
                             className="account-bank-dot"
@@ -279,10 +270,9 @@ export default function AccountModal({ account, onClose }) {
                 </span>
 
                 <span
-                  className={`account-bank-chevron${showCurrencyPicker
-                      ? " account-bank-chevron--open"
-                      : ""
-                    }`}
+                  className={`account-bank-chevron${
+                    showCurrencyPicker ? " account-bank-chevron--open" : ""
+                  }`}
                   aria-hidden="true"
                 >
                   ⌄
@@ -296,25 +286,23 @@ export default function AccountModal({ account, onClose }) {
                     className="account-currency-search"
                     placeholder="Search currencies..."
                     value={currencySearch}
-                    onChange={(e) =>
-                      setCurrencySearch(e.target.value)
-                    }
+                    onChange={(e) => setCurrencySearch(e.target.value)}
                     autoFocus
                   />
 
                   <div className="account-currency-list">
                     {filteredCurrencies.map((currency) => {
-                      const isSelected =
-                        form.currency === currency.code;
+                      const isSelected = form.currency === currency.code;
 
                       return (
                         <button
                           key={currency.code}
                           type="button"
-                          className={`account-currency-option${isSelected
+                          className={`account-currency-option${
+                            isSelected
                               ? " account-currency-option--selected"
                               : ""
-                            }`}
+                          }`}
                           onClick={() => {
                             setForm((prev) => ({
                               ...prev,
@@ -354,9 +342,7 @@ export default function AccountModal({ account, onClose }) {
                 }}
               />
 
-              <span>
-                Choose a color to help identify this account.
-              </span>
+              <span>Choose a color to help identify this account.</span>
             </div>
 
             <div className="account-color-picker">
@@ -367,10 +353,9 @@ export default function AccountModal({ account, onClose }) {
                   <button
                     key={color}
                     type="button"
-                    className={`account-color-swatch${isSelected
-                      ? " account-color-swatch--selected"
-                      : ""
-                      }`}
+                    className={`account-color-swatch${
+                      isSelected ? " account-color-swatch--selected" : ""
+                    }`}
                     style={{
                       backgroundColor: color,
                     }}
@@ -428,11 +413,7 @@ export default function AccountModal({ account, onClose }) {
               className="btn btn--primary"
               disabled={loading}
             >
-              {loading
-                ? "Saving…"
-                : isEditing
-                  ? "Save Changes"
-                  : "Add Account"}
+              {loading ? "Saving…" : isEditing ? "Save Changes" : "Add Account"}
             </button>
           </div>
         </form>

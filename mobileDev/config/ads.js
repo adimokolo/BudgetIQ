@@ -4,8 +4,8 @@ import { TestIds } from "react-native-google-mobile-ads";
 export const ENABLE_PRODUCTION_ADS = true;
 
 const PRODUCTION_BANNER_AD_UNIT_ID = {
-  ios: "ca-app-pub-1490675395669448/1314451169",
-  android: "ca-app-pub-1490675395669448/1102787466",
+  ios: "ca-app-pub-8683588639077779/2077594847",
+  android: "ca-app-pub-8683588639077779/2356796449",
 };
 
 export const getBannerAdUnitId = () => {

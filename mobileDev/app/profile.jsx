@@ -28,7 +28,7 @@ import { useCurrency } from "../contexts/CurrencyContext";
 
 import { ALL_CURRENCIES, currencyLabel } from "../utils/currency";
 
-const SUPPORT_EMAIL = "budgetiq.inquries@gmail.com";
+const SUPPORT_EMAIL = "enquiry@kashmetrix.com";
 const SUPPORT_PHONE = "+234 80 0000-0000";
 
 const FAQ_ITEMS = [
@@ -333,7 +333,7 @@ export default function Profile() {
       setDeleting(true);
       setDeleteError("");
 
-      console.log("🗑️ Deleting BudgetIQ account from backend...");
+      console.log("🗑️ Deleting KashMetrix account from backend...");
 
       const response = await api.delete("/auth/account", {
         data: { password: deletePassword },
@@ -347,7 +347,7 @@ export default function Profile() {
 
       Alert.alert(
         "Account deleted",
-        "Your BudgetIQ account and all associated data have been permanently deleted.",
+        "Your KashMetrix account and all associated data have been permanently deleted.",
         [
           {
             text: "OK",

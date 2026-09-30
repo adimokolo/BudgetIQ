@@ -60,7 +60,7 @@ export async function exportTransactionsToCsv(transactions, currency = "NGN") {
 
   await Sharing.shareAsync(fileUri, {
     mimeType: "text/csv",
-    dialogTitle: "Export BudgetIQ Transactions",
+    dialogTitle: "Export KashMetrix Transactions",
     UTI: "public.comma-separated-values-text",
   });
 }
@@ -288,7 +288,7 @@ export async function exportTransactionsToPdf(transactions, currency = "NGN") {
         </table>
 
         <div class="footer">
-          BudgetIQ — Spend with insight, not guesswork.
+          KashMetrix — Track smarter. Understand more.
         </div>
 
       </body>
@@ -309,7 +309,7 @@ export async function exportTransactionsToPdf(transactions, currency = "NGN") {
 
   await Sharing.shareAsync(uri, {
     mimeType: "application/pdf",
-    dialogTitle: "Export BudgetIQ Transactions",
+    dialogTitle: "Export KashMetrix Transactions",
     UTI: "com.adobe.pdf",
   });
 }

@@ -26,7 +26,7 @@ export default function Accounts() {
 
   const totalBalance = accounts.reduce(
     (sum, account) => sum + Number(account.balance || 0),
-    0
+    0,
   );
 
   const totalCurrency = accounts[0]?.currency || "NGN";
@@ -76,9 +76,9 @@ export default function Accounts() {
         <div className="brand">
           <img src={logoMark} alt="BudgetIQ" className="brand-mark" />
           <span>
-            <span className="brand-name">BudgetIQ</span>
+            <span className="brand-name">Kashmetrix</span>
             <span className="brand-tagline">
-              Spend with insight, not guesswork.
+              Track smarter, Understand more.
             </span>
           </span>
         </div>
@@ -215,7 +215,7 @@ export default function Accounts() {
                     marginTop: 5,
                   }}
                 >
-                  Choose how you want to add account information to BudgetIQ.
+                  Choose how you want to add account information to KashMetrix.
                 </p>
               </div>
 
@@ -245,7 +245,7 @@ export default function Accounts() {
                   cursor: "default",
                   width: "100%",
                 }}
-                onClick={() => { }}
+                onClick={() => {}}
                 aria-disabled="true"
               >
                 <strong>⇄ &nbsp; Bank Synchronization</strong>
@@ -257,7 +257,7 @@ export default function Accounts() {
                   }}
                 >
                   Coming Soon — secure automatic bank synchronization will be
-                  available in a future BudgetIQ update.
+                  available in a future KashMetrix update.
                 </div>
               </button>
 

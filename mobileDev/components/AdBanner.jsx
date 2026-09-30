@@ -21,10 +21,10 @@ export default function AdBanner() {
           requestNonPersonalizedAdsOnly: true,
         }}
         onAdLoaded={() => {
-          console.log("BudgetIQ banner loaded successfully");
+          console.log("KashMetrix banner loaded successfully");
         }}
         onAdFailedToLoad={(error) => {
-          console.log("BudgetIQ banner error:", error);
+          console.log("KashMetrix banner error:", error);
         }}
       />
     </View>

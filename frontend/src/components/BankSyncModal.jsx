@@ -32,8 +32,8 @@ export default function BankSyncModal({ onClose }) {
       <div className="modal-card">
         <h2>🏦 Sync Your Bank Account</h2>
         <p>
-          Connect your Nigerian bank account securely via Mono. Your credentials
-          are never stored by BudgetIQ.
+          Connect your bank account securely via Mono. Your credentials are
+          never stored by KashMetrix.
         </p>
 
         {error && <p className="error-text">{error}</p>}

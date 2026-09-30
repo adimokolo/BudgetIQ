@@ -8,8 +8,8 @@ export default function SplashScreenView() {
         style={styles.logo}
         resizeMode="contain"
       />
-      <Text style={styles.title}>BUDGETIQ</Text>
-      <Text style={styles.tagline}>SPEND WITH INSIGHT, NOT GUESSWORK.</Text>
+      <Text style={styles.title}>Kash Metrix</Text>
+      <Text style={styles.tagline}>Track smarter. Understand more</Text>
     </View>
   );
 }
