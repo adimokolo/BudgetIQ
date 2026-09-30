@@ -7,8 +7,6 @@ import {
   confirmImport,
 } from "../services/bankImport";
 
-
-
 export default function BankImportModal({
   mode,
   accounts = [],
@@ -34,9 +32,7 @@ export default function BankImportModal({
 
     if (!search) return banks;
 
-    return banks.filter((bank) =>
-      bank.toLowerCase().includes(search),
-    );
+    return banks.filter((bank) => bank.toLowerCase().includes(search));
   }, [bankSearch]);
 
   const resetPreview = () => {
@@ -55,7 +51,9 @@ export default function BankImportModal({
     }
 
     if (isStatement && !accountId) {
-      setError("Choose the BudgetIQ account that should receive this statement.");
+      setError(
+        "Choose the KashMetrix account that should receive this statement.",
+      );
       return;
     }
 
@@ -80,9 +78,9 @@ export default function BankImportModal({
     } catch (err) {
       setError(
         err.response?.data?.error ||
-        err.error ||
-        err.message ||
-        "Unable to preview this import.",
+          err.error ||
+          err.message ||
+          "Unable to preview this import.",
       );
     } finally {
       setBusy(false);
@@ -129,7 +127,8 @@ export default function BankImportModal({
       const result = await confirmImport(preview.importId);
 
       setMessage(
-        `${result.imported || 0} transaction(s) imported. ${result.skipped || 0
+        `${result.imported || 0} transaction(s) imported. ${
+          result.skipped || 0
         } skipped.`,
       );
 
@@ -139,9 +138,9 @@ export default function BankImportModal({
     } catch (err) {
       setError(
         err.response?.data?.error ||
-        err.error ||
-        err.message ||
-        "Unable to import transactions.",
+          err.error ||
+          err.message ||
+          "Unable to import transactions.",
       );
     } finally {
       setBusy(false);
@@ -174,7 +173,7 @@ export default function BankImportModal({
               }}
             >
               {isStatement
-                ? "Choose the issuing bank and an existing BudgetIQ account, then upload your statement."
+                ? "Choose the issuing bank and an existing KashMetrix account, then upload your statement."
                 : "Choose the issuing bank and paste transaction alerts you explicitly provide."}
             </p>
           </div>
@@ -222,7 +221,7 @@ export default function BankImportModal({
                 setBankSearch(event.target.value);
                 resetPreview();
               }}
-              placeholder="Search Nigerian banks..."
+              placeholder="Search banks..."
               autoComplete="off"
               style={{
                 width: "100%",
@@ -242,7 +241,9 @@ export default function BankImportModal({
               }}
             >
               <option value="">
-                {bankSearch.trim() ? "Select matching bank" : "Choose your bank"}
+                {bankSearch.trim()
+                  ? "Select matching bank"
+                  : "Choose your bank"}
               </option>
 
               {filteredBanks.map((bank) => (
@@ -417,7 +418,8 @@ export default function BankImportModal({
             <div style={{ marginTop: 20 }}>
               <h3 style={{ marginBottom: 12 }}>
                 Review import:{" "}
-                {preview.count || preview.transactions?.length || 0} transaction(s)
+                {preview.count || preview.transactions?.length || 0}{" "}
+                transaction(s)
               </h3>
 
               <div
@@ -428,68 +430,70 @@ export default function BankImportModal({
                   overflowY: "auto",
                 }}
               >
-                {(preview.transactions || []).slice(0, 30).map((item, index) => (
-                  <div
-                    key={`${item.occurred_on || item.date}-${index}`}
-                    className="facet-card"
-                    style={{ padding: 12 }}
-                  >
-                    <strong style={{ fontSize: 13 }}>
-                      {item.type
-                        ? `${item.type === "expense" ? "Debit (Expense)" : "Credit (Income)"} · `
-                        : ""}
-                      {item.amount} · {item.occurred_on || item.date}
-                    </strong>
-
-                    {!isStatement && item.needsReview && (
-                      <div style={{ marginTop: 10 }}>
-                        <label
-                          style={{
-                            display: "block",
-                            fontSize: 14,
-                            fontWeight: 700,
-                            marginBottom: 7,
-                            color: "var(--ink)",
-                          }}
-                        >
-                          Transaction type
-                        </label>
-
-                        <select
-                          className="bank-import-type-select"
-                          value={typeSelections[index] || ""}
-                          onChange={(event) =>
-                            setTypeSelections((current) => ({
-                              ...current,
-                              [index]: event.target.value,
-                            }))
-                          }
-                          style={{
-                            width: "100%",
-                            fontSize: 15,
-                            fontWeight: 600,
-                            padding: "10px 12px",
-                            borderRadius: 8,
-                          }}
-                        >
-                          <option value="">Select transaction type</option>
-                          <option value="expense">Debit (Expense)</option>
-                          <option value="income">Credit (Income)</option>
-                        </select>
-                      </div>
-                    )}
-
+                {(preview.transactions || [])
+                  .slice(0, 30)
+                  .map((item, index) => (
                     <div
-                      style={{
-                        color: "var(--ink-soft)",
-                        fontSize: 12,
-                        marginTop: 4,
-                      }}
+                      key={`${item.occurred_on || item.date}-${index}`}
+                      className="facet-card"
+                      style={{ padding: 12 }}
                     >
-                      {item.description}
+                      <strong style={{ fontSize: 13 }}>
+                        {item.type
+                          ? `${item.type === "expense" ? "Debit (Expense)" : "Credit (Income)"} · `
+                          : ""}
+                        {item.amount} · {item.occurred_on || item.date}
+                      </strong>
+
+                      {!isStatement && item.needsReview && (
+                        <div style={{ marginTop: 10 }}>
+                          <label
+                            style={{
+                              display: "block",
+                              fontSize: 14,
+                              fontWeight: 700,
+                              marginBottom: 7,
+                              color: "var(--ink)",
+                            }}
+                          >
+                            Transaction type
+                          </label>
+
+                          <select
+                            className="bank-import-type-select"
+                            value={typeSelections[index] || ""}
+                            onChange={(event) =>
+                              setTypeSelections((current) => ({
+                                ...current,
+                                [index]: event.target.value,
+                              }))
+                            }
+                            style={{
+                              width: "100%",
+                              fontSize: 15,
+                              fontWeight: 600,
+                              padding: "10px 12px",
+                              borderRadius: 8,
+                            }}
+                          >
+                            <option value="">Select transaction type</option>
+                            <option value="expense">Debit (Expense)</option>
+                            <option value="income">Credit (Income)</option>
+                          </select>
+                        </div>
+                      )}
+
+                      <div
+                        style={{
+                          color: "var(--ink-soft)",
+                          fontSize: 12,
+                          marginTop: 4,
+                        }}
+                      >
+                        {item.description}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
 
               {!!preview.warnings?.length && (

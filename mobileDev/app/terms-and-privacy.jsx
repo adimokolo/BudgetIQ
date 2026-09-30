@@ -15,40 +15,39 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 
 const LEGAL_DETAILS = {
-  operatorName: "BudgetIQ",
+  operatorName: "KashMetrix",
   businessAddress: "Lagos, Nigeria",
-  supportEmail: "support@budgetiq.app",
-  privacyEmail: "privacy@budgetiq.app",
-  website: "https://budgetiq.app",
+  supportEmail: "enquiry@kashmetrix.com",
+  website: "https://kashmetrix.com",
 };
 
 const TERMS_SECTIONS = [
   {
     title: "Introduction",
     paragraphs: [
-      `These Terms of Service form a binding agreement between you and ${LEGAL_DETAILS.operatorName}, trading as BudgetIQ (“BudgetIQ”, “we”, “us” or “our”).`,
+      `These Terms of Service form a binding agreement between you and ${LEGAL_DETAILS.operatorName}, trading as KashMetrix (“KashMetrix”, “we”, “us” or “our”).`,
 
-      "By creating an account, selecting acceptance or using the BudgetIQ mobile application, web application, websites, APIs or related services, you agree to these Terms and our Privacy Policy.",
+      "By creating an account, selecting acceptance or using the KashMetrix mobile application, web application, websites, APIs or related services, you agree to these Terms and our Privacy Policy.",
 
-      "If you do not agree to these Terms, you must not create an account or use BudgetIQ.",
+      "If you do not agree to these Terms, you must not create an account or use KashMetrix.",
     ],
   },
 
   {
     title: "1. Eligibility and authority",
     paragraphs: [
-      "You must be at least 18 years old and legally capable of entering into a contract to use BudgetIQ.",
+      "You must be at least 18 years old and legally capable of entering into a contract to use KashMetrix.",
 
-      "If you use BudgetIQ for an organisation, you confirm that you have authority to bind that organisation.",
+      "If you use KashMetrix for an organisation, you confirm that you have authority to bind that organisation.",
 
-      "BudgetIQ is designed primarily for users in Nigeria, although services are also accessible around the world.",
+      "KashMetrix is designed primarily for users in Nigeria, although services are also accessible around the world.",
     ],
   },
 
   {
-    title: "2. BudgetIQ services",
+    title: "2. KashMetrix services",
     paragraphs: [
-      "BudgetIQ provides tools for personal financial organisation. Depending on the version available to you, the services may include:",
+      "KashMetrix provides tools for personal financial organisation. Depending on the version available to you, the services may include:",
     ],
     bullets: [
       "Account registration, email verification, login, password recovery, profile management and account deletion.",
@@ -56,16 +55,16 @@ const TERMS_SECTIONS = [
       "Monthly budgets, spending progress, dashboard summaries, notifications, forecasts, reports and exports.",
       "Display and conversion of amounts in more than 70 currencies using reference exchange rates.",
       "Optional connection to eligible bank accounts through an approved financial-data provider.",
-      "Features may differ between the mobile and web applications. Both applications uses same BudgetIQ account, backend and database across platforms.",
+      "Features may differ between the mobile and web applications. Both applications use same KashMetrix account, backend and database across platforms.",
     ],
   },
 
   {
-    title: "3. BudgetIQ is not a financial institution",
+    title: "3. KashMetrix is not a financial institution",
     paragraphs: [
-      "BudgetIQ is a financial-information and budgeting tool. Unless expressly stated in a separate written agreement, BudgetIQ is not a bank, deposit-taking institution, payment service provider, lender, insurer, broker, accountant, tax adviser or investment adviser.",
+      "KashMetrix is a financial-information and budgeting tool. Unless expressly stated in a separate written agreement, KashMetrix is not a bank, deposit-taking institution, payment service provider, lender, insurer, broker, accountant, tax adviser or investment adviser.",
 
-      "BudgetIQ does not hold or move your money and does not guarantee savings, investment returns, credit approval or financial outcomes.",
+      "KashMetrix does not hold or move your money and does not guarantee savings, investment returns, credit approval or financial outcomes.",
 
       "Budgets, forecasts, categories, currency conversions, alerts and summaries are informational estimates. You remain responsible for reviewing original bank records and obtaining qualified advice before making financial, tax, legal, credit or investment decisions.",
     ],
@@ -89,7 +88,7 @@ const TERMS_SECTIONS = [
     paragraphs: [
       "You retain ownership of transaction descriptions, amounts, categories, account information, notes, profile images and other content you submit.",
 
-      "You grant BudgetIQ a limited, worldwide, non-exclusive licence to host, reproduce, organise, calculate, display, transmit, back up and process that content only as needed to operate, secure, support and improve the service and comply with applicable law.",
+      "You grant KashMetrix a limited, worldwide, non-exclusive licence to host, reproduce, organise, calculate, display, transmit, back up and process that content only as needed to operate, secure, support and improve the service and comply with applicable law.",
 
       "You confirm that you have the right to provide the information and that it does not violate another person’s rights.",
 
@@ -100,15 +99,15 @@ const TERMS_SECTIONS = [
   {
     title: "6. Bank synchronization",
     paragraphs: [
-      "If bank synchronization is available and you choose to use it, you authorise BudgetIQ and the identified financial-data provider to request and receive permitted account information from your selected financial institution.",
+      "If bank synchronization is available and you choose to use it, you authorise KashMetrix and the identified financial-data provider to request and receive permitted account information from your selected financial institution.",
 
       "The connection may provide account identity, balances and transaction history.",
 
-      "BudgetIQ will not ask you to send your bank password, card PIN or one-time bank authentication code through an ordinary BudgetIQ form, email or support message.",
+      "KashMetrix will not ask you to send your bank password, card PIN or one-time bank authentication code through an ordinary KashMetrix form, email or support message.",
 
       "Your bank and the financial-data provider may apply separate terms and privacy notices.",
 
-      "Bank connections may fail, be delayed, omit information, duplicate records or become unavailable. You must compare BudgetIQ information with your bank’s official records.",
+      "Bank connections may fail, be delayed, omit information, duplicate records or become unavailable. You must compare KashMetrix information with your bank’s official records.",
 
       "You may disconnect a linked account through available settings or by contacting us. Information already imported may remain until it is deleted under our retention rules.",
     ],
@@ -126,7 +125,7 @@ const TERMS_SECTIONS = [
   {
     title: "8. Notifications and communications",
     paragraphs: [
-      "BudgetIQ may send service messages by email or through the application, including verification codes, password-reset messages, security notices, budget alerts, account notices and material updates.",
+      "KashMetrix may send service messages by email or through the application, including verification codes, password-reset messages, security notices, budget alerts, account notices and material updates.",
 
       "These operational messages are part of the service.",
 
@@ -140,11 +139,11 @@ const TERMS_SECTIONS = [
     title: "9. Acceptable use",
     paragraphs: ["You must not:"],
     bullets: [
-      "Use BudgetIQ unlawfully, fraudulently or to violate another person’s privacy or intellectual-property rights.",
+      "Use KashMetrix unlawfully, fraudulently or to violate another person’s privacy or intellectual-property rights.",
       "Submit malware, attack the service, test vulnerabilities without written permission, bypass access controls or interfere with another user.",
-      "Scrape, copy, resell, reverse engineer or create derivative services from BudgetIQ except where applicable law permits.",
+      "Scrape, copy, resell, reverse engineer or create derivative services from KashMetrix except where applicable law permits.",
       "Use another person’s account or financial information without authority.",
-      "Misrepresent BudgetIQ output as an official bank statement, audited record or professional financial advice.",
+      "Misrepresent KashMetrix output as an official bank statement, audited record or professional financial advice.",
       "Use automated methods that place an unreasonable load on the service.",
     ],
   },
@@ -152,9 +151,9 @@ const TERMS_SECTIONS = [
   {
     title: "10. Intellectual property",
     paragraphs: [
-      "BudgetIQ and its licensors own the service, software, interface, branding, documentation and other materials, excluding content provided by users.",
+      "KashMetrix and its licensors own the service, software, interface, branding, documentation and other materials, excluding content provided by users.",
 
-      "Subject to these Terms, we grant you a personal, limited, revocable, non-exclusive and non-transferable licence to use BudgetIQ for lawful personal financial management.",
+      "Subject to these Terms, we grant you a personal, limited, revocable, non-exclusive and non-transferable licence to use KashMetrix for lawful personal financial management.",
 
       "Feedback you voluntarily provide may be used without restriction or payment, provided we do not identify you publicly without permission.",
     ],
@@ -163,7 +162,7 @@ const TERMS_SECTIONS = [
   {
     title: "11. Third-party services",
     paragraphs: [
-      "BudgetIQ may rely on hosting, database, email, currency-rate, file-storage, application-distribution and bank-connection providers.",
+      "KashMetrix may rely on hosting, database, email, currency-rate, file-storage, application-distribution and bank-connection providers.",
 
       "Third-party services may be unavailable or governed by separate terms.",
 
@@ -187,7 +186,7 @@ const TERMS_SECTIONS = [
   {
     title: "13. Suspension and termination",
     paragraphs: [
-      `You may stop using BudgetIQ and request account deletion through the available settings or by contacting ${LEGAL_DETAILS.supportEmail}.`,
+      `You may stop using KashMetrix and request account deletion through the available settings or by contacting ${LEGAL_DETAILS.supportEmail}.`,
 
       "We may restrict or suspend access when reasonably necessary to protect users or systems, investigate suspected misuse, comply with law, address non-payment if paid plans are introduced or enforce these Terms.",
 
@@ -209,11 +208,11 @@ const TERMS_SECTIONS = [
   {
     title: "15. Limitation of liability",
     paragraphs: [
-      "To the extent permitted by law, BudgetIQ and its operator will not be liable for indirect, incidental, special, punitive or consequential loss, or for loss of profits, opportunities, goodwill or data arising from use of the service.",
+      "To the extent permitted by law, KashMetrix and its operator will not be liable for indirect, incidental, special, punitive or consequential loss, or for loss of profits, opportunities, goodwill or data arising from use of the service.",
 
       "We are not responsible for losses caused solely by inaccurate user entries, decisions made without checking source records, the acts of a financial institution or a third-party outage beyond our reasonable control.",
 
-      "Our total liability arising from the service during the 12 months before the event giving rise to a claim will not exceed the greater of the amount you paid BudgetIQ during that period or NGN 50,000.",
+      "Our total liability arising from the service during the 12 months before the event giving rise to a claim will not exceed the greater of the amount you paid KashMetrix during that period or NGN 50,000.",
 
       "This limit does not apply where prohibited by law, including liability that cannot be limited for fraud, wilful misconduct, death, personal injury or violation of mandatory data-protection or consumer rights.",
     ],
@@ -222,9 +221,9 @@ const TERMS_SECTIONS = [
   {
     title: "16. Indemnity",
     paragraphs: [
-      "To the extent permitted by law, you will reimburse BudgetIQ for reasonable losses and costs arising from your unlawful use of the service, your material breach of these Terms or your infringement of another person’s rights.",
+      "To the extent permitted by law, you will reimburse KashMetrix for reasonable losses and costs arising from your unlawful use of the service, your material breach of these Terms or your infringement of another person’s rights.",
 
-      "This clause does not require you to indemnify BudgetIQ for its own negligence, unlawful conduct or breach.",
+      "This clause does not require you to indemnify KashMetrix for its own negligence, unlawful conduct or breach.",
     ],
   },
 
@@ -235,7 +234,7 @@ const TERMS_SECTIONS = [
 
       "We will publish the revised Terms and change the effective date.",
 
-      "We will provide reasonable advance notice of material changes through BudgetIQ or by email where practicable.",
+      "We will provide reasonable advance notice of material changes through KashMetrix or by email where practicable.",
 
       "If a change requires consent under applicable law, we will request it.",
     ],
@@ -246,7 +245,7 @@ const TERMS_SECTIONS = [
     paragraphs: [
       "These Terms are governed by the laws of the Federal Republic of Nigeria, without limiting any mandatory rights you have under another applicable law.",
 
-      `Before filing a claim, you and BudgetIQ should first try to resolve the dispute in good faith by sending written notice to ${LEGAL_DETAILS.supportEmail}.`,
+      `Before filing a claim, you and KashMetrix should first try to resolve the dispute in good faith by sending written notice to ${LEGAL_DETAILS.supportEmail}.`,
 
       "If the dispute is not resolved, either party may bring it before a court of competent jurisdiction in Nigeria.",
 
@@ -263,7 +262,7 @@ const TERMS_SECTIONS = [
 
       "You may not transfer your agreement without our consent. We may transfer it as part of a merger, reorganisation, financing or sale, subject to applicable law and the Privacy Policy.",
 
-      "These Terms, the Privacy Policy and any feature-specific terms form the entire agreement concerning BudgetIQ.",
+      "These Terms, the Privacy Policy and any feature-specific terms form the entire agreement concerning KashMetrix.",
     ],
   },
 
@@ -283,7 +282,7 @@ const PRIVACY_SECTIONS = [
   {
     title: "Introduction",
     paragraphs: [
-      `This Privacy Policy explains how ${LEGAL_DETAILS.operatorName}, trading as BudgetIQ, collects, uses, stores, shares and protects personal data when you use BudgetIQ.`,
+      `This Privacy Policy explains how ${LEGAL_DETAILS.operatorName}, trading as KashMetrix, collects, uses, stores, shares and protects personal data when you use KashMetrix.`,
 
       "This Policy is intended to support compliance with the Nigeria Data Protection Act 2023 and other applicable privacy laws.",
     ],
@@ -292,7 +291,7 @@ const PRIVACY_SECTIONS = [
   {
     title: "1. Who controls your personal data",
     paragraphs: [
-      `${LEGAL_DETAILS.operatorName} is the data controller for personal data processed through BudgetIQ, except where a third party acts as an independent controller under its own privacy notice.`,
+      `${LEGAL_DETAILS.operatorName} is the data controller for personal data processed through KashMetrix, except where a third party acts as an independent controller under its own privacy notice.`,
 
       `You may contact the privacy team at ${LEGAL_DETAILS.privacyEmail}.`,
 
@@ -303,7 +302,7 @@ const PRIVACY_SECTIONS = [
   {
     title: "2. Personal data we collect",
     paragraphs: [
-      "Depending on the features you use, BudgetIQ may collect the following information:",
+      "Depending on the features you use, KashMetrix may collect the following information:",
     ],
     bullets: [
       "Identity and account information, including your full name, username, email address, preferred currency, verification status, profile image and account dates.",
@@ -313,14 +312,14 @@ const PRIVACY_SECTIONS = [
       "Bank-connection information, including provider connection identifiers, institution details, account details, balances, transaction history and synchronization status.",
       "Technical information, including IP address, device and application information, request logs, timestamps, error logs and security logs.",
       "Communications, including support requests, verification emails, password-reset emails and notification-delivery records.",
-      "BudgetIQ does not need your bank password, card PIN or full card security code. Do not send this information to us.",
+      "KashMetrix does not need your bank password, card PIN or full card security code. Do not send this information to us.",
     ],
   },
 
   {
     title: "3. How we use personal data",
     bullets: [
-      "Create, verify, secure and manage your BudgetIQ account.",
+      "Create, verify, secure and manage your KashMetrix account.",
       "Store and display transactions, accounts, balances, categories, budgets and profile information.",
       "Calculate totals, spending progress, net position, forecasts, currency displays, reports and exports.",
       "Connect and synchronize eligible bank information when you request it.",
@@ -352,7 +351,7 @@ const PRIVACY_SECTIONS = [
   {
     title: "5. Automated calculations and forecasts",
     paragraphs: [
-      "BudgetIQ may automatically categorise, total, compare, convert or forecast information based on your records.",
+      "KashMetrix may automatically categorise, total, compare, convert or forecast information based on your records.",
 
       "These functions provide budgeting assistance and do not make decisions that produce legal or similarly significant effects about you.",
 
@@ -363,12 +362,12 @@ const PRIVACY_SECTIONS = [
   {
     title: "6. How we share personal data",
     paragraphs: [
-      "BudgetIQ does not sell personal data.",
+      "KashMetrix does not sell personal data.",
 
       "We may share the minimum information necessary with the following recipients:",
     ],
     bullets: [
-      "Infrastructure and database providers that host BudgetIQ.",
+      "Infrastructure and database providers that host KashMetrix.",
       "Email providers that deliver verification, password-reset, security and notification messages.",
       "File-storage providers used for profile images or exported records.",
       "Reference currency-rate providers when a currency conversion is requested.",
@@ -407,7 +406,7 @@ const PRIVACY_SECTIONS = [
   {
     title: "9. Security",
     paragraphs: [
-      "BudgetIQ uses technical and organisational measures intended to protect personal data.",
+      "KashMetrix uses technical and organisational measures intended to protect personal data.",
 
       "Security controls include password hashing, hashed verification and password-reset secrets, authenticated API routes, user-scoped database queries, environment-based secret management, transport security in production and access controls.",
 
@@ -451,14 +450,14 @@ const PRIVACY_SECTIONS = [
 
       "Deletion removes or anonymises active account data, subject to applicable retention exceptions.",
 
-      "Disconnecting a bank account stops future synchronization but does not automatically delete information previously imported into BudgetIQ.",
+      "Disconnecting a bank account stops future synchronization but does not automatically delete information previously imported into KashMetrix.",
     ],
   },
 
   {
     title: "12. Children",
     paragraphs: [
-      "BudgetIQ is intended for adults aged 18 and over.",
+      "KashMetrix is intended for adults aged 18 and over.",
 
       "We do not knowingly offer accounts to children or intentionally collect children’s personal data.",
 
@@ -471,7 +470,7 @@ const PRIVACY_SECTIONS = [
     paragraphs: [
       "You cannot opt out of communications required for account security and operation, such as verification and password-reset emails.",
 
-      "You may control optional notifications through available BudgetIQ settings.",
+      "You may control optional notifications through available KashMetrix settings.",
 
       "If marketing communications are introduced, each message will provide an appropriate method to unsubscribe.",
     ],
@@ -480,22 +479,22 @@ const PRIVACY_SECTIONS = [
   {
     title: "14. Cookies and local storage",
     paragraphs: [
-      "The BudgetIQ web application may use strictly necessary cookies or browser storage for authentication, security, preferences and session continuity.",
+      "The KashMetrix web application may use strictly necessary cookies or browser storage for authentication, security, preferences and session continuity.",
 
       "The mobile application may store authentication tokens and preferences on your device.",
 
-      "If BudgetIQ introduces non-essential analytics or advertising technologies, we will update this Policy and provide any consent controls required by law.",
+      "If KashMetrix introduces non-essential analytics or advertising technologies, we will update this Policy and provide any consent controls required by law.",
     ],
   },
 
   {
     title: "15. Third-party links and services",
     paragraphs: [
-      "BudgetIQ may link to a bank, application store or other third party.",
+      "KashMetrix may link to a bank, application store or other third party.",
 
       "Their privacy practices are governed by their own privacy notices. Review those notices before providing personal information.",
 
-      "BudgetIQ is not responsible for processing performed independently by another data controller.",
+      "KashMetrix is not responsible for processing performed independently by another data controller.",
     ],
   },
 
@@ -651,7 +650,7 @@ export default function TermsAndPrivacyScreen() {
             },
           ]}
         >
-          BudgetIQ {screenTitle}
+          KashMetrix {screenTitle}
         </Text>
 
         <Text

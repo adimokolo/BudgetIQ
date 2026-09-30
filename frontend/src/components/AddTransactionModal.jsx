@@ -482,9 +482,7 @@ export default function AddTransactionModal({
     type: editingTransaction?.type ?? EMPTY_FORM.type,
     description: editingTransaction?.description ?? "",
     categoryId:
-      editingTransaction?.category_id ??
-      editingTransaction?.categoryId ??
-      "",
+      editingTransaction?.category_id ?? editingTransaction?.categoryId ?? "",
     accountId:
       editingTransaction?.account_id ??
       editingTransaction?.accountId ??
@@ -558,7 +556,10 @@ export default function AddTransactionModal({
       };
 
       if (editingTransaction?.id) {
-        await apiClient.patch(`/transactions/${editingTransaction.id}`, payload);
+        await apiClient.patch(
+          `/transactions/${editingTransaction.id}`,
+          payload,
+        );
       } else {
         await apiClient.post("/transactions", payload);
       }
@@ -635,7 +636,6 @@ export default function AddTransactionModal({
             />
           </div>
 
-          {/* Amount with calculator */}
           <div className="field" style={{ position: "relative" }}>
             <label>Amount</label>
             <div
@@ -843,8 +843,9 @@ export default function AddTransactionModal({
                   <button
                     key={category.id}
                     type="button"
-                    className={`category-picker-chip${isSelected ? " category-picker-chip--selected" : ""
-                      }`}
+                    className={`category-picker-chip${
+                      isSelected ? " category-picker-chip--selected" : ""
+                    }`}
                     onClick={() => {
                       setForm((current) => ({
                         ...current,
