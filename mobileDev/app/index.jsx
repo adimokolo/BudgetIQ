@@ -308,6 +308,11 @@ export default function LoginScreen() {
             </Link>
           </View>
         </View>
+
+        {/* Footer */}
+        <Text style={styles.footerText}>
+          KashMetrix ©️ 2026 B&P DevRights. All rights reserved.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -535,5 +540,13 @@ const createStyles = (colors) =>
       fontFamily: "Inter_600SemiBold",
       color: colors.primary,
       textDecorationLine: "underline",
+    },
+
+    footerText: {
+      fontSize: 10,
+      fontFamily: "Inter_400Regular",
+      color: colors.textFaint,
+      textAlign: "center",
+      marginTop: 24,
     },
   });

@@ -18,6 +18,7 @@ const LEGAL_DETAILS = {
   operatorName: "KashMetrix",
   businessAddress: "Lagos, Nigeria",
   supportEmail: "enquiry@kashmetrix.com",
+  privacyEmail: "enquiry@kashmetrix.com",
   website: "https://kashmetrix.com",
 };
 
@@ -653,15 +654,6 @@ export default function TermsAndPrivacyScreen() {
           KashMetrix {screenTitle}
         </Text>
 
-        <Text
-          style={[
-            styles.effectiveDate,
-            {
-              color: colors.textMuted,
-            },
-          ]}
-        ></Text>
-
         {sections.map((section, sectionIndex) => (
           <View key={`${activeTab}-${sectionIndex}`} style={styles.section}>
             <Text
@@ -741,6 +733,11 @@ export default function TermsAndPrivacyScreen() {
           If you have questions about these policies, contact{" "}
           {LEGAL_DETAILS.supportEmail}.
         </Text>
+
+        {/* Footer */}
+        <Text style={[styles.copyrightText, { color: colors.textFaint }]}>
+          KashMetrix © 2026 B&P DevRights. All rights reserved.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -810,7 +807,7 @@ function createStyles(colors) {
       fontSize: 23,
       lineHeight: 32,
       fontWeight: "700",
-      marginBottom: 3,
+      marginBottom: 12,
     },
 
     section: {
@@ -856,6 +853,12 @@ function createStyles(colors) {
       lineHeight: 15,
       paddingTop: 15,
       borderTopWidth: 1,
+    },
+
+    copyrightText: {
+      fontSize: 10,
+      textAlign: "center",
+      marginTop: 24,
     },
   });
 }

@@ -229,6 +229,11 @@ export default function ResetPasswordScreen() {
             </TouchableOpacity>
           </Link>
         </View>
+
+        {/* Footer */}
+        <Text style={styles.footerText}>
+          KashMetrix © 2026 B&P DevRights. All rights reserved.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -316,6 +321,7 @@ const createStyles = (colors) =>
       alignSelf: "flex-start",
       marginBottom: 6,
     },
+
     passwordContainer: {
       width: "100%",
       flexDirection: "row",
@@ -378,5 +384,13 @@ const createStyles = (colors) =>
       color: colors.primary,
       textDecorationLine: "underline",
       marginTop: 18,
+    },
+
+    footerText: {
+      fontSize: 10,
+      fontFamily: "Inter_400Regular",
+      color: colors.textFaint,
+      textAlign: "center",
+      marginTop: 24,
     },
   });

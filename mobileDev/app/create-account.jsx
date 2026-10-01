@@ -433,6 +433,11 @@ export default function SignupScreen() {
             </Link>
           </View>
         </View>
+
+        {/* Footer */}
+        <Text style={styles.footerText}>
+          KashMetrix ©️ 2026 B&P DevRights. All rights reserved.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -766,5 +771,13 @@ const createStyles = (colors) =>
       fontFamily: "Inter_600SemiBold",
       textDecorationLine: "underline",
       color: colors.primary,
+    },
+
+    footerText: {
+      fontSize: 10,
+      fontFamily: "Inter_400Regular",
+      color: colors.textFaint,
+      textAlign: "center",
+      marginTop: 24,
     },
   });
