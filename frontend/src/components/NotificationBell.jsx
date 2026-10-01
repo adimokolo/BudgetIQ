@@ -94,6 +94,16 @@ export default function NotificationBell() {
     }
   };
 
+  const clearAll = async () => {
+    try {
+      await apiClient.delete("/notifications");
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch {
+      load();
+    }
+  };
+
   return (
     <div className="notification-menu" ref={panelRef}>
       <button
@@ -117,10 +127,25 @@ export default function NotificationBell() {
         >
           <div className="notification-panel-head">
             <h3 style={{ fontSize: 15 }}>Notifications</h3>
-            {unreadCount > 0 && (
-              <button className="notification-mark-all" onClick={markAllRead}>
-                Mark all read
-              </button>
+
+            {notifications.length > 0 && (
+              <div className="notification-panel-actions">
+                {unreadCount > 0 && (
+                  <button
+                    className="notification-mark-all"
+                    onClick={markAllRead}
+                  >
+                    Mark all read
+                  </button>
+                )}
+
+                <button
+                  className="notification-clear-all"
+                  onClick={clearAll}
+                >
+                  Clear all
+                </button>
+              </div>
             )}
           </div>
 
