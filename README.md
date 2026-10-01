@@ -594,7 +594,7 @@ PDF generation uses `jsPDF` and `jsPDF-AutoTable`.
 
 # Design System
 
-BudgetIQ uses a custom design system called **Crystal Clear**.
+KashMetrix uses a custom design system called **Crystal Clear**.
 
 Its visual language includes:
 
@@ -611,7 +611,7 @@ Primary typography includes:
 - **Inter** — interface/body text
 - **JetBrains Mono** — financial/numeric information
 
-The BudgetIQ branding is shared across the web and mobile applications.
+The KashMetrix branding is shared across the web and mobile applications.
 
 ---
 
@@ -629,7 +629,7 @@ It can be imported into Postman for API development and endpoint testing.
 
 # Development Status
 
-BudgetIQ is under active development.
+KashMetrix is under active development.
 
 ### Implemented / Active
 
@@ -666,7 +666,7 @@ BudgetIQ is under active development.
 
 # Security Notes
 
-BudgetIQ handles authentication and financial information, so production deployments should follow appropriate security practices.
+KashMetrix handles authentication and financial information, so production deployments should follow appropriate security practices.
 
 In particular:
 
