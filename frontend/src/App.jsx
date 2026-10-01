@@ -1,26 +1,28 @@
-import { Routes, Route } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import VerifyOtp from './pages/VerifyOtp';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import Dashboard from './pages/Dashboard';
-import Transactions from './pages/Transactions';
-import TransactionChart from './pages/TransactionChart';
-import Categories from './pages/Categories';
-import Budgets from './pages/Budgets';
-import Sidebar from './components/Sidebar';
-import ProfileMenu from './components/ProfileMenu';
-import NotificationBell from './components/NotificationBell';
-import FloatingAddButton from './components/FloatingAddButton';
-import ProtectedRoute from './components/ProtectedRoute';
-import Accounts from './pages/Accounts';
-import Settings from './pages/Settings';
-import AdminUsers from './pages/AdminUsers';
-import AdminRoute from './components/AdminRoute';
-import AdminLayout from './components/AdminLayout';
-import AdminOverview from './pages/AdminOverview';
-import AdminManagement from './pages/AdminManagement';
+import { Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import VerifyOtp from "./pages/VerifyOtp";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import Dashboard from "./pages/Dashboard";
+import Transactions from "./pages/Transactions";
+import TransactionChart from "./pages/TransactionChart";
+import Categories from "./pages/Categories";
+import Budgets from "./pages/Budgets";
+import Sidebar from "./components/Sidebar";
+import ProfileMenu from "./components/ProfileMenu";
+import NotificationBell from "./components/NotificationBell";
+import FloatingAddButton from "./components/FloatingAddButton";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Accounts from "./pages/Accounts";
+import Settings from "./pages/Settings";
+import AdminUsers from "./pages/AdminUsers";
+import AdminRoute from "./components/AdminRoute";
+import AdminLayout from "./components/AdminLayout";
+import AppFooter from "./components/AppFooter";
+import AuthLayout from "./components/AuthLayout";
+import AdminOverview from "./pages/AdminOverview";
+import AdminManagement from "./pages/AdminManagement";
 import AdminAudit from "./pages/AdminAudit";
 
 function AppLayout({ children }) {
@@ -33,6 +35,7 @@ function AppLayout({ children }) {
           <ProfileMenu />
         </header>
         <main className="app-main">{children}</main>
+        <AppFooter />
       </div>
       <FloatingAddButton />
     </div>
@@ -42,11 +45,46 @@ function AppLayout({ children }) {
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/verify-otp" element={<VerifyOtp />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route
+        path="/login"
+        element={
+          <AuthLayout>
+            <Login />
+          </AuthLayout>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <AuthLayout>
+            <Register />
+          </AuthLayout>
+        }
+      />
+      <Route
+        path="/verify-otp"
+        element={
+          <AuthLayout>
+            <VerifyOtp />
+          </AuthLayout>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <AuthLayout>
+            <ForgotPassword />
+          </AuthLayout>
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          <AuthLayout>
+            <ResetPassword />
+          </AuthLayout>
+        }
+      />
       <Route path="/accounts" element={<Accounts />} />
 
       <Route
@@ -122,7 +160,6 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-
 
       <Route
         path="/admin/users"
