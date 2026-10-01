@@ -1,6 +1,6 @@
-# BudgetIQ — Smart Expense Tracker
+# KashMetrix — Smart Expense Tracker
 
-BudgetIQ is a full-stack personal finance and expense-tracking application designed to help users record income and expenses, organise transactions, manage accounts and budgets, monitor spending patterns, and gain clearer insight into their finances.
+KashMetrix is a full-stack personal finance and expense-tracking application designed to help users record income and expenses, organise transactions, manage accounts and budgets, monitor spending patterns, and gain clearer insight into their finances.
 
 The project currently includes a **React web application**, a **Node.js/Express REST API**, and an **Expo/React Native mobile application** under active development.
 
@@ -91,7 +91,7 @@ Built by **Adim Barnabas Okolo** and **Pedro Olatunde** as a portfolio and produ
 - Reusable modal system
 - Scrollable transaction/converter forms
 - Searchable selectors
-- Updated BudgetIQ branding shared with the mobile project
+- Updated KashMetrix branding shared with the mobile project
 - Custom **Crystal Clear** visual design system
 
 ---
@@ -114,8 +114,8 @@ Built by **Adim Barnabas Okolo** and **Pedro Olatunde** as a portfolio and produ
 | Mobile | Expo 54, React Native, Expo Router |
 | Mobile Language | JavaScript / TypeScript ecosystem |
 | Containerisation | Docker |
-| Planned Cloud Infrastructure | AWS |
-| Planned Production Database | Amazon RDS for PostgreSQL |
+| Cloud Infrastructure | AWS |
+| Production Database | Amazon RDS for PostgreSQL |
 
 ---
 
@@ -201,7 +201,7 @@ Create a PostgreSQL database:
 createdb budgetiq
 ```
 
-Load the BudgetIQ schema:
+Load the KashMetrix schema:
 
 ```bash
 psql -U <PGUSER> -d budgetiq -f backend/schema.sql
@@ -209,7 +209,7 @@ psql -U <PGUSER> -d budgetiq -f backend/schema.sql
 
 For local development, PostgreSQL can run directly on the development machine.
 
-The production infrastructure is planned to use **Amazon RDS for PostgreSQL**.
+The production environment uses **Amazon RDS for PostgreSQL**.
 
 ---
 
@@ -271,7 +271,7 @@ npm run migrate
 
 ## 4. Backend Environment Variables
 
-BudgetIQ currently references the following backend environment variables.
+KashMetrix currently references the following backend environment variables.
 
 ### Application
 
@@ -370,7 +370,7 @@ npm run preview
 
 # Authentication Flow
 
-BudgetIQ requires email verification before normal login.
+KashMetrix requires email verification before normal login.
 
 ### Registration
 
@@ -426,13 +426,13 @@ Completes a valid password reset.
 
 OTP verification codes expire after **10 minutes**, while password-reset links expire after **30 minutes**.
 
-When SMTP is not configured for local development, BudgetIQ prints OTP codes and password-reset links to the **backend terminal**, allowing the complete authentication flow to be tested without an email provider.
+When SMTP is not configured for local development, KashMetrix prints OTP codes and password-reset links to the **backend terminal**, allowing the complete authentication flow to be tested without an email provider.
 
 Production deployments should configure a supported SMTP/email provider.
 
 # Mobile Application
 
-BudgetIQ also contains a mobile application in:
+KashMetrix also contains a mobile application in:
 
 ```text
 mobileDev/
@@ -489,15 +489,15 @@ Lint the mobile application with:
 npm run lint
 ```
 
-The web and mobile applications share the BudgetIQ product identity and are being developed toward a consistent user experience.
+The web and mobile applications share the KashMetrix product identity and are being developed toward a consistent user experience.
 
 ---
 
 # Docker
 
-Backend Docker support is currently being developed.
+The KashMetrix backend is containerised with Docker and deployed to Amazon EC2.
 
-A backend `Dockerfile` is present and currently uses:
+The backend `Dockerfile` uses:
 
 ```text
 node:24-alpine
@@ -509,6 +509,7 @@ The container:
 - exposes port `5000`
 - starts `src/server.js`
 - includes an HTTP health check against `/api/health`
+- receives production configuration through environment variables
 
 Example backend image build:
 
@@ -517,52 +518,55 @@ cd backend
 docker build -t budgetiq-backend .
 ```
 
-Docker deployment should currently be considered **work in progress**.
+Production backend deployments are automated through GitHub Actions. The deployment workflow builds and deploys the backend Docker image to Amazon EC2, verifies container and API health, automatically rolls back to the previous image if deployment health checks fail, and removes obsolete backend images after a successful deployment.
 
-The complete Docker environment, including Docker Compose and final integration between application services, is still being completed.
+The `budgetiq-backend` image name is retained as an internal technical identifier.
 
 ---
 
 # AWS Infrastructure
 
-AWS deployment is the next infrastructure phase of BudgetIQ and is **not yet considered complete**.
+KashMetrix is deployed on AWS using a production architecture that separates the frontend, backend API, and database services.
 
-The planned production architecture includes:
+The current production architecture includes:
 
 ```text
 Users
    │
    ▼
-BudgetIQ Web / Mobile
+Amazon CloudFront
    │
-   ▼
-Backend API
+   ├── Web Application → Amazon S3
    │
-   ▼
-Amazon RDS for PostgreSQL
+   └── /api/* → Backend API on Amazon EC2
+                         │
+                         ▼
+                 Amazon RDS for PostgreSQL
 ```
 
-The infrastructure phase is expected to include:
+Current infrastructure includes:
 
-- AWS environment configuration
-- Backend deployment infrastructure
-- Network and security configuration
-- Amazon RDS PostgreSQL provisioning
-- Secure database connectivity
-- Environment/secrets configuration
-- Production Docker deployment
-- Docker Compose where appropriate
-- Production health checks
-- HTTPS/reverse-proxy configuration where required
-- Deployment automation / CI/CD
+- Amazon S3 for production frontend hosting
+- Amazon CloudFront for frontend delivery and `/api/*` routing
+- HTTPS using AWS Certificate Manager
+- Dockerised Node.js/Express backend deployed on Amazon EC2
+- Amazon RDS for PostgreSQL
+- Environment-based production configuration and secrets
+- Network and security-group configuration
+- Backend container health checks
+- API health verification after deployment
+- Automated backend rollback when deployment health checks fail
+- Automated cleanup of obsolete backend Docker images
+- GitHub Actions CI/CD for build validation and production deployment
+- AWS OIDC authentication for GitHub Actions deployment access
 
-This section will be updated as infrastructure components are implemented and validated.
+The production infrastructure continues to be refined as KashMetrix evolves.
 
 ---
 
 # Bank Integration
 
-BudgetIQ includes configuration points for **Mono** integration through:
+KashMetrix includes configuration points for **Mono** integration through:
 
 ```env
 MONO_SEC_KEY
@@ -578,7 +582,7 @@ Bank integration functionality should be treated according to the capabilities e
 
 # Transaction Exports
 
-BudgetIQ supports exporting transaction information for external use.
+KashMetrix supports exporting transaction information for external use.
 
 Current web export functionality includes:
 
@@ -635,7 +639,7 @@ KashMetrix is under active development.
 
 - Web frontend
 - REST API
-- PostgreSQL data layer
+- PostgreSQL data layer with Amazon RDS in production
 - Authentication and email verification
 - Password recovery
 - Accounts
@@ -649,18 +653,17 @@ KashMetrix is under active development.
 - Transaction exports
 - Notifications
 - Mobile application development
-- Initial backend Dockerfile
+- Dockerised backend deployment on Amazon EC2
+- Amazon S3 and CloudFront frontend deployment
+- HTTPS using AWS Certificate Manager
+- Production networking and security configuration
+- GitHub Actions CI/CD with AWS OIDC authentication
+- Automated backend health verification, rollback, and Docker image cleanup
 
 ### In Progress / Upcoming
 
-- Complete backend Docker deployment
-- Docker Compose
-- AWS infrastructure setup
-- Amazon RDS PostgreSQL provisioning and integration
-- Production networking and security configuration
-- Production deployment configuration
-- CI/CD and deployment automation
 - Further web/mobile feature alignment
+- Continued production infrastructure refinement
 
 ---
 
@@ -685,9 +688,9 @@ In particular:
 
 # Contributors
 
-**Adim Barnabas Okolo**  
-**Pedro Olatunde**  
-**Murtala Adedapo**
+**Adim Barnabas Okolo**
+
+**Pedro Olatunde**
 
 ---
 
