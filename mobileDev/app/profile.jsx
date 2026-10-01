@@ -953,6 +953,11 @@ export default function Profile() {
                 {loggingOut ? "Logging out..." : "Logout"}
               </Text>
             </TouchableOpacity>
+
+            {/* Footer */}
+            <Text style={[styles.footerText, { color: colors.textFaint }]}>
+              KashMetrix ©️ 2026 B&P DevRights. All rights reserved.
+            </Text>
           </>
         )}
       />
@@ -1645,6 +1650,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 32,
     marginTop: 10,
     lineHeight: 16,
+  },
+
+  footerText: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    marginTop: 24,
   },
 
   modalOverlay: {

@@ -228,6 +228,11 @@ export default function VerifyOtpScreen() {
             </TouchableOpacity>
           </Link>
         </View>
+
+        {/* Footer */}
+        <Text style={styles.footerText}>
+          KashMetrix © 2026 B&P DevRights. All rights reserved.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -306,6 +311,7 @@ const createStyles = (colors) =>
       color: colors.text,
       alignSelf: "flex-start",
     },
+
     subtext: {
       fontSize: 10,
       fontFamily: "Inter_400Regular",
@@ -356,6 +362,7 @@ const createStyles = (colors) =>
       marginBottom: 16,
       textAlign: "center",
     },
+
     verifyButton: {
       width: "100%",
       minHeight: 48,
@@ -366,6 +373,7 @@ const createStyles = (colors) =>
       justifyContent: "center",
       marginTop: 25,
     },
+
     buttonDisabled: {
       opacity: 0.7,
     },
@@ -382,20 +390,24 @@ const createStyles = (colors) =>
       fontSize: 13,
       fontFamily: "Inter_600SemiBold",
     },
+
     resendRow: {
       flexDirection: "row",
       marginTop: 18,
     },
+
     resendText: {
       fontSize: 11,
       fontFamily: "Inter_400Regular",
       color: colors.textMuted,
     },
+
     resendLink: {
       fontSize: 10,
       fontFamily: "Inter_600SemiBold",
       color: colors.primary,
     },
+
     resendDisabled: {
       opacity: 0.5,
     },
@@ -406,5 +418,13 @@ const createStyles = (colors) =>
       color: colors.primary,
       textDecorationLine: "underline",
       marginTop: 10,
+    },
+
+    footerText: {
+      fontSize: 10,
+      fontFamily: "Inter_400Regular",
+      color: colors.textFaint,
+      textAlign: "center",
+      marginTop: 24,
     },
   });
