@@ -6,6 +6,7 @@ import AccountModal from "../components/AccountModal";
 import BankImportModal from "../components/BankImportModal";
 import logoMark from "../assets/logo-mark.png";
 import { formatCurrency } from "../utils/currency";
+import AppFooter from "../components/AppFooter";
 
 const LINKS = [
   { to: "/", label: "Dashboard", icon: "◆", end: true },
@@ -74,9 +75,9 @@ export default function Accounts() {
       {/* ── Sidebar ── */}
       <aside className="sidebar">
         <div className="brand">
-          <img src={logoMark} alt="BudgetIQ" className="brand-mark" />
+          <img src={logoMark} alt="KashMetrix" className="brand-mark" />
           <span>
-            <span className="brand-name">Kashmetrix</span>
+            <span className="brand-name">KashMetrix</span>
             <span className="brand-tagline">
               Track smarter, Understand more.
             </span>
@@ -103,98 +104,109 @@ export default function Accounts() {
         </nav>
       </aside>
 
-      <main style={{ flex: 1, padding: "32px 36px", overflowY: "auto" }}>
-        <div className="page-header" style={{ marginBottom: 28 }}>
-          <div>
-            <h1>Accounts</h1>
-            <p
-              style={{
-                color: "var(--ink-soft)",
-                fontSize: 14,
-                marginTop: 4,
-              }}
-            >
-              Manage your wallets and linked bank accounts.
-            </p>
-          </div>
-
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <button
-              className="btn btn--primary"
-              onClick={() => setShowAddChooser(true)}
-            >
-              + Add Account
-            </button>
-
-            <div
-              className="facet-card"
-              style={{
-                padding: "8px 14px",
-                minWidth: 140,
-                textAlign: "right",
-                flexShrink: 0,
-              }}
-            >
-              <div
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <main style={{ flex: 1, padding: "32px 36px", overflowY: "auto" }}>
+          <div className="page-header" style={{ marginBottom: 28 }}>
+            <div>
+              <h1>Accounts</h1>
+              <p
                 style={{
-                  fontSize: 11,
-                  color: "var(--ink-faint)",
+                  color: "var(--ink-soft)",
+                  fontSize: 14,
+                  marginTop: 4,
                 }}
               >
-                Total balance
-              </div>
+                Manage your wallets and linked bank accounts.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <button
+                className="btn btn--primary"
+                onClick={() => setShowAddChooser(true)}
+              >
+                + Add Account
+              </button>
 
               <div
-                className="stat-value"
+                className="facet-card"
                 style={{
-                  fontSize: "clamp(11px, 1.2vw, 14px)",
-                  marginTop: 2,
-                  whiteSpace: "nowrap",
+                  padding: "8px 14px",
+                  minWidth: 140,
+                  textAlign: "right",
+                  flexShrink: 0,
                 }}
               >
-                {loading ? "—" : formatCurrency(totalBalance, totalCurrency)}
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--ink-faint)",
+                  }}
+                >
+                  Total balance
+                </div>
+
+                <div
+                  className="stat-value"
+                  style={{
+                    fontSize: "clamp(11px, 1.2vw, 14px)",
+                    marginTop: 2,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {loading ? "—" : formatCurrency(totalBalance, totalCurrency)}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {error && (
-          <p className="error-text" style={{ marginBottom: 16 }}>
-            {error}
-          </p>
-        )}
-
-        {loading ? (
-          <p style={{ color: "var(--ink-soft)" }}>Loading accounts...</p>
-        ) : accounts.length === 0 ? (
-          <div
-            className="facet-card"
-            style={{ padding: 32, textAlign: "center" }}
-          >
-            <p style={{ color: "var(--ink-soft)", marginBottom: 16 }}>
-              No accounts yet — add one to get started.
+          {error && (
+            <p className="error-text" style={{ marginBottom: 16 }}>
+              {error}
             </p>
+          )}
 
-            <button
-              className="btn btn--primary"
-              onClick={() => setShowAddChooser(true)}
+          {loading ? (
+            <p style={{ color: "var(--ink-soft)" }}>Loading accounts...</p>
+          ) : accounts.length === 0 ? (
+            <div
+              className="facet-card"
+              style={{ padding: 32, textAlign: "center" }}
             >
-              + Add your first account
-            </button>
-          </div>
-        ) : (
-          <div className="accounts-grid">
-            {accounts.map((account) => (
-              <AccountCard
-                key={account.id}
-                account={account}
-                onEdit={() => handleEdit(account)}
-                onDelete={() => handleDelete(account.id)}
-              />
-            ))}
-          </div>
-        )}
-      </main>
+              <p style={{ color: "var(--ink-soft)", marginBottom: 16 }}>
+                No accounts yet — add one to get started.
+              </p>
+
+              <button
+                className="btn btn--primary"
+                onClick={() => setShowAddChooser(true)}
+              >
+                + Add your first account
+              </button>
+            </div>
+          ) : (
+            <div className="accounts-grid">
+              {accounts.map((account) => (
+                <AccountCard
+                  key={account.id}
+                  account={account}
+                  onEdit={() => handleEdit(account)}
+                  onDelete={() => handleDelete(account.id)}
+                />
+              ))}
+            </div>
+          )}
+        </main>
+
+        <AppFooter />
+      </div>
 
       {showAddChooser && (
         <div className="modal-backdrop">
