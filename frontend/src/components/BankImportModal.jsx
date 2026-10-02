@@ -15,6 +15,7 @@ export default function BankImportModal({
 }) {
   const [bankName, setBankName] = useState("");
   const [bankSearch, setBankSearch] = useState("");
+  const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
   const [accountId, setAccountId] = useState("");
   const [emailText, setEmailText] = useState("");
   const [file, setFile] = useState(null);
@@ -219,6 +220,7 @@ export default function BankImportModal({
               value={bankSearch}
               onChange={(event) => {
                 setBankSearch(event.target.value);
+                setBankName("");
                 resetPreview();
               }}
               placeholder="Search banks..."
@@ -229,29 +231,124 @@ export default function BankImportModal({
               }}
             />
 
-            <select
-              value={bankName}
-              onChange={(event) => {
-                setBankName(event.target.value);
-                resetPreview();
-              }}
-              style={{
-                width: "100%",
-                marginBottom: 18,
-              }}
-            >
-              <option value="">
-                {bankSearch.trim()
-                  ? "Select matching bank"
-                  : "Choose your bank"}
-              </option>
+            {bankSearch.trim() && !bankName && (
+              <div
+                style={{
+                  maxHeight: 180,
+                  overflowY: "auto",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  background: "var(--surface)",
+                  marginBottom: 18,
+                }}
+              >
+                {filteredBanks.length > 0 ? (
+                  filteredBanks.map((bank) => (
+                    <button
+                      key={bank}
+                      type="button"
+                      onClick={() => {
+                        setBankName(bank);
+                        setBankSearch(bank);
+                        setBankDropdownOpen(false);
+                        resetPreview();
+                      }}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        padding: "10px 12px",
+                        border: "none",
+                        borderBottom: "1px solid var(--border)",
+                        background: "transparent",
+                        color: "var(--ink)",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        fontSize: 13,
+                      }}
+                    >
+                      {bank}
+                    </button>
+                  ))
+                ) : (
+                  <div
+                    style={{
+                      padding: "10px 12px",
+                      color: "var(--ink-soft)",
+                      fontSize: 13,
+                    }}
+                  >
+                    No matching banks found.
+                  </div>
+                )}
+              </div>
+            )}
 
-              {filteredBanks.map((bank) => (
-                <option key={bank} value={bank}>
-                  {bank}
-                </option>
-              ))}
-            </select>
+            <div style={{ marginBottom: 18 }}>
+              <button
+                type="button"
+                onClick={() => setBankDropdownOpen((open) => !open)}
+                aria-expanded={bankDropdownOpen}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 12px",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  background: "var(--surface)",
+                  color: bankName ? "var(--ink)" : "var(--ink-soft)",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  textAlign: "left",
+                }}
+              >
+                <span>{bankName || "Choose your bank"}</span>
+                <span aria-hidden="true">
+                  {bankDropdownOpen ? "▴" : "▾"}
+                </span>
+              </button>
+
+              {bankDropdownOpen && (
+                <div
+                  style={{
+                    maxHeight: 180,
+                    overflowY: "auto",
+                    border: "1px solid var(--border)",
+                    borderTop: "none",
+                    borderRadius: "0 0 8px 8px",
+                    background: "var(--surface)",
+                  }}
+                >
+                  {NIGERIAN_BANKS.map((bank) => (
+                    <button
+                      key={bank.name}
+                      type="button"
+                      onClick={() => {
+                        setBankName(bank.name);
+                        setBankSearch(bank.name);
+                        setBankDropdownOpen(false);
+                        resetPreview();
+                      }}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        padding: "10px 12px",
+                        border: "none",
+                        borderBottom: "1px solid var(--border)",
+                        background: "transparent",
+                        color: "var(--ink)",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        fontSize: 13,
+                      }}
+                    >
+                      {bank.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {bankName && (
               <div
