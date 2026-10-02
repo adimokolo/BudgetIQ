@@ -12,8 +12,32 @@ permissions:
   id-token: write
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect changed application paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
+
   frontend:
     name: Frontend Build
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
 
     defaults:
@@ -49,6 +73,8 @@ jobs:
 
   backend:
     name: Backend Docker Build
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -77,8 +103,12 @@ jobs:
   deploy-backend:
     name: Deploy Backend to EC2
     runs-on: ubuntu-latest
-    needs: backend
-    if: github.event_name == 'push'
+    needs: [changes, backend]
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      needs.changes.outputs.backend == 'true' &&
+      needs.backend.result == 'success'
 
     env:
       AWS_REGION: eu-central-1
@@ -278,8 +308,12 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend to S3
     runs-on: ubuntu-latest
-    needs: frontend
-    if: github.event_name == 'push'
+    needs: [changes, frontend]
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      needs.changes.outputs.frontend == 'true' &&
+      needs.frontend.result == 'success'
 
     env:
       AWS_REGION: eu-central-1
