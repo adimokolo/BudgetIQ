@@ -124,6 +124,7 @@ Built by **Adim Barnabas Okolo** and **Pedro Olatunde** as a portfolio and produ
 ```text
 BudgetIQ/
 ├── backend/
+│   ├── migrations
 │   ├── src/
 │   │   ├── config/
 │   │   ├── controllers/
@@ -142,10 +143,13 @@ BudgetIQ/
 │   │   ├── api/
 │   │   ├── assets/
 │   │   ├── components/
+│   │   ├── config
 │   │   ├── context/
 │   │   ├── pages/
 │   │   ├── services/
 │   │   ├── styles/
+│   │   ├── app.jsx
+│   │   ├── main.jsx
 │   │   └── utils/
 │   ├── index.html
 │   ├── vite.config.js
@@ -155,7 +159,14 @@ BudgetIQ/
 ├── mobileDev/
 │   ├── assets/
 │   ├── app/
+│   ├── components
+│   ├── config
+│   ├── contexts
+│   ├── services
+│   ├── utils
+│   ├── .env
 │   ├── package.json
+│   ├── package-lock.json
 │   ├── app.json
 │   └── tsconfig.json
 │
