@@ -48,7 +48,7 @@ export default function Register() {
               id="fullName"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Adim Barnabas Okolo"
+              placeholder="Enter your full name"
               required
             />
           </div>
