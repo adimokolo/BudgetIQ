@@ -68,7 +68,7 @@ const dateValue = (value) => {
   }
 
   const namedMonth = text.match(
-    /^(\d{1,2})[-\s]([A-Za-z]{3,9})[-\s](\d{4})(?:\D|$)/,
+    /^(\d{1,2})[-\s]([A-Za-z]{3,9})[-\s](\d{2,4})(?:\D|$)/,
   );
   if (namedMonth) {
     const months = {
@@ -99,8 +99,16 @@ const dateValue = (value) => {
     };
     const month = months[namedMonth[2].toLowerCase()];
     if (month) {
+      const year = Number(namedMonth[3]);
+      const fullYear =
+        namedMonth[3].length === 2
+          ? year >= 70
+            ? 1900 + year
+            : 2000 + year
+          : year;
+
       return validDate(
-        `${namedMonth[3]}-${String(month).padStart(2, "0")}-${namedMonth[1].padStart(2, "0")}`,
+        `${fullYear}-${String(month).padStart(2, "0")}-${namedMonth[1].padStart(2, "0")}`,
       );
     }
   }
@@ -534,9 +542,19 @@ router.post("/email/preview", async (req, res, next) => {
 
       // Accept NGN5,700.00, ₦5,700.00 and N5,700.00,
       // with or without a space after the currency marker.
-      const amountMatch = block.match(
+      const currencyAmountMatch = block.match(
         /(?:NGN|₦|N(?=\s*\d))\s*([\d,]+(?:\.\d{1,2})?)/i,
       );
+
+      // Some bank alerts (for example Wema) omit the currency marker and
+      // place the transaction direction immediately after the amount:
+      // 3,300.00 CR or 3,300.00 DR.
+      // Require CR/DR so unrelated numbers are not treated as amounts.
+      const directionAmountMatch = block.match(
+        /\b([\d,]+(?:\.\d{1,2})?)\s+(?:CR|DR)\b/i,
+      );
+
+      const amountMatch = currencyAmountMatch || directionAmountMatch;
       // Accept numeric dates such as:
       // 2026-09-23, 2026/09/23, 23/09/2026 and 23-09-2026.
       const numericDateMatch = block.match(
@@ -548,6 +566,12 @@ router.post("/email/preview", async (req, res, next) => {
       // Sep 24th, 2026 17:36:20
       const namedDateMatch = block.match(
         /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/i,
+      );
+
+      // Accept day-first month-name dates used by some bank alerts:
+      // 02-Oct-26, 02-Oct-2026, 02 Oct 26 and 02 Oct 2026.
+      const dayFirstNamedDateMatch = block.match(
+        /\b(\d{1,2})[-\s](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-\s](\d{2}|\d{4})\b/i,
       );
 
       let date = null;
@@ -574,7 +598,10 @@ router.post("/email/preview", async (req, res, next) => {
         const day = namedDateMatch[2].padStart(2, "0");
 
         date = dateValue(`${namedDateMatch[3]}-${month}-${day}`);
+      } else if (dayFirstNamedDateMatch) {
+        date = dateValue(dayFirstNamedDateMatch[0]);
       }
+
 
       const amount = amountMatch ? money(amountMatch[1]) : null;
 
