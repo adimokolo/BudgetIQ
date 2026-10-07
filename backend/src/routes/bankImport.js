@@ -228,6 +228,47 @@ function pdfMoney(value) {
   return money(text);
 }
 
+
+const PDF_MONEY_SOURCE = String.raw`(?:\d{1,3}(?:,\d{3})*|\d+)\.\d{2}`;
+
+const PDF_DEBIT_CREDIT_BALANCE_PATTERN = new RegExp(
+  `^(\\d{1,2}\\/\\d{1,2}\\/\\d{4})` +
+    `(\\d{1,2}\\/\\d{1,2}\\/\\d{4})` +
+    `(--|${PDF_MONEY_SOURCE})` +
+    `(--|${PDF_MONEY_SOURCE})` +
+    `\\s*(${PDF_MONEY_SOURCE})`,
+);
+
+const PDF_EMPTY_SLOT_AMOUNT_PATTERN = new RegExp(
+  `^(--|${PDF_MONEY_SOURCE})(--|${PDF_MONEY_SOURCE})(${PDF_MONEY_SOURCE})(.*)$`,
+);
+
+function parsePdfDebitCreditBalanceLine(line) {
+  const match = String(line || "").trim().match(PDF_DEBIT_CREDIT_BALANCE_PATTERN);
+  if (!match) return null;
+
+  return {
+    transactionDate: match[1],
+    valueDate: match[2],
+    debit: match[3],
+    credit: match[4],
+    balance: match[5],
+    remainder: String(line).trim().slice(match[0].length),
+  };
+}
+
+function parsePdfEmptySlotAmountLine(line) {
+  const match = String(line || "").trim().match(PDF_EMPTY_SLOT_AMOUNT_PATTERN);
+  if (!match) return null;
+
+  return {
+    debit: match[1],
+    credit: match[2],
+    balance: match[3],
+    remainder: match[4],
+  };
+}
+
 function parsePdfTransactionBlock(block) {
   const compact = String(block || "")
     .replace(/\s+/g, " ")
@@ -267,14 +308,258 @@ function parsePdfTransactionBlock(block) {
   return normalize({ date, debit, credit, description });
 }
 
-function parsePdfTransactions(text) {
+function parsePdfStructuredRows(text) {
   const lines = String(text || "")
     .split(/\r?\n/)
     .map((line) => line.replace(/\s+/g, " ").trim())
     .filter(Boolean);
-  const startsWithDate = new RegExp(`^${PDF_DATE_SOURCE}(?:\\s|$)`, "i");
+
+  const rows = [];
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+
+    // Structure A:
+    // transaction date + value date + debit + credit + balance
+    // may be flattened into one line without column separators.
+    const debitCreditBalance = parsePdfDebitCreditBalanceLine(line);
+
+    if (debitCreditBalance) {
+      const descriptionLines = [];
+
+      // Anything remaining after the balance may contain a session ID,
+      // reference or narration. Preserve textual content where useful.
+      if (
+        debitCreditBalance.remainder &&
+        /[A-Za-z]/.test(debitCreditBalance.remainder)
+      ) {
+        descriptionLines.push(debitCreditBalance.remainder);
+      }
+
+      // Narration commonly continues on following lines until the next
+      // transaction row.
+      for (let j = i + 1; j < lines.length; j += 1) {
+        if (parsePdfDebitCreditBalanceLine(lines[j])) break;
+
+        // Stop if another recognisable statement transaction begins.
+        if (new RegExp(`^${PDF_DATE_SOURCE}`, "i").test(lines[j])) break;
+
+        // Do not absorb PDF page metadata into the final transaction
+        // narration. Some statements place a contact/footer line immediately
+        // before their "Page: X of Y" marker.
+        if (/^Page:\s*\d+\s+of\s+\d+\b/i.test(lines[j])) break;
+
+        if (
+          j + 1 < lines.length &&
+          /^Page:\s*\d+\s+of\s+\d+\b/i.test(lines[j + 1])
+        ) {
+          break;
+        }
+
+        descriptionLines.push(lines[j]);
+      }
+
+      const row = normalize({
+        date: debitCreditBalance.transactionDate,
+        debit:
+          debitCreditBalance.debit === "--"
+            ? 0
+            : debitCreditBalance.debit,
+        credit:
+          debitCreditBalance.credit === "--"
+            ? 0
+            : debitCreditBalance.credit,
+        description:
+          descriptionLines.join(" ").trim() || "Imported bank transaction",
+      });
+
+      if (row) rows.push(row);
+      continue;
+    }
+
+    // Structure B:
+    // transaction date/time + value date on one line,
+    // followed by description lines and a separate
+    // debit + credit + balance line.
+    const dateMatches = [
+      ...line.matchAll(new RegExp(PDF_DATE_SOURCE, "gi")),
+    ];
+
+    if (!dateMatches.length) continue;
+
+    const transactionDate = dateMatches[0][0];
+    const descriptionLines = [];
+    let amountRow = null;
+
+    for (let j = i + 1; j < lines.length; j += 1) {
+      // Do not cross into the next transaction.
+      if (new RegExp(`^${PDF_DATE_SOURCE}`, "i").test(lines[j])) break;
+
+      const candidate = parsePdfEmptySlotAmountLine(lines[j]);
+
+      if (candidate) {
+        amountRow = candidate;
+        break;
+      }
+
+      descriptionLines.push(lines[j]);
+    }
+
+    if (!amountRow) continue;
+
+    const row = normalize({
+      date: transactionDate,
+      debit: amountRow.debit === "--" ? 0 : amountRow.debit,
+      credit: amountRow.credit === "--" ? 0 : amountRow.credit,
+      description:
+        descriptionLines.join(" ").trim() || "Imported bank transaction",
+    });
+
+    if (row) rows.push(row);
+  }
+
+  return rows;
+}
+
+function transactionFingerprint(row) {
+  return [
+    row.date,
+    row.type,
+    Number(row.amount).toFixed(2),
+  ].join("|");
+}
+
+function sameTransactionDataset(left, right) {
+  if (!left.length || left.length !== right.length) return false;
+
+  const leftKeys = left.map(transactionFingerprint).sort();
+  const rightKeys = right.map(transactionFingerprint).sort();
+
+  return leftKeys.every((key, index) => key === rightKeys[index]);
+}
+
+const PDF_TABLE_HEADER_PATTERN =
+  /(?:Trans\.?\s*Time.*Value\s*Date.*Description|Trans\s*Date.*Value\s*Date.*Debit.*Credit.*Balance)/i;
+
+function pdfLines(text) {
+  return String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+function pdfTransactionTables(text) {
+  const lines = pdfLines(text);
+
+  const tableHeaders = lines
+    .map((line, index) => ({ line, index }))
+    .filter(({ line }) => PDF_TABLE_HEADER_PATTERN.test(line));
+
+  return {
+    lines,
+    tableHeaders,
+    tableRows: tableHeaders
+      .map(({ index }, headerIndex) => {
+        const nextIndex =
+          tableHeaders[headerIndex + 1]?.index ?? lines.length;
+
+        return parsePdfStructuredRows(
+          lines.slice(index, nextIndex).join("\n"),
+        );
+      })
+      .filter((rows) => rows.length),
+  };
+}
+
+function pdfTransactionTableCount(text) {
+  return pdfTransactionTables(text).tableHeaders.length;
+}
+
+function hasMachineReadablePdfTransactions(text) {
+  const { lines, tableHeaders } = pdfTransactionTables(text);
+
+  // Require both a recognisable transaction-table header and at least one
+  // machine-readable transaction row. This prevents readable headings alone
+  // from disabling OCR for genuinely scanned transaction tables.
+  if (!tableHeaders.length) return false;
+
+  return lines.some((line) => {
+    if (parsePdfDebitCreditBalanceLine(line)) return true;
+
+    const dates = [
+      ...line.matchAll(new RegExp(PDF_DATE_SOURCE, "gi")),
+    ];
+
+    return dates.length > 0;
+  });
+}
+
+function hasDistinctPdfTransactionTables(text) {
+  const { tableRows } = pdfTransactionTables(text);
+
+  if (tableRows.length < 2) return false;
+
+  return !tableRows
+    .slice(1)
+    .every((rows) => sameTransactionDataset(tableRows[0], rows));
+}
+
+function parsePdfTransactions(text) {
+  const { lines, tableRows } = pdfTransactionTables(text);
+
+  /*
+   * Some machine-readable statements repeat a complete transaction table
+   * on every PDF page. Others contain multiple genuine account tables in
+   * one document. Parse table regions separately so those two cases are
+   * not silently treated the same way.
+   */
+  if (tableRows.length) {
+      /*
+       * If every detected table is the same complete dataset, it is a
+       * repeated-page representation of one statement. Import it once.
+       */
+      if (
+        tableRows.length > 1 &&
+        tableRows.slice(1).every((rows) =>
+          sameTransactionDataset(tableRows[0], rows),
+        )
+      ) {
+        return tableRows[0];
+      }
+
+      /*
+       * A single transaction table is unambiguous.
+       */
+      if (tableRows.length === 1) {
+        return tableRows[0];
+      }
+
+      /*
+       * Multiple different transaction tables can represent separate
+       * accounts in the same PDF. Do not silently merge them into the
+       * KashMetrix account selected for this import.
+       *
+       * Return no rows here so the preview route can reject the statement
+       * rather than corrupting account-level analytics.
+       */
+    return [];
+  }
+
+  const structuredRows = parsePdfStructuredRows(text);
+
+  if (structuredRows.length) {
+    return structuredRows;
+  }
+
+  // Fallback for statement layouts already supported by the original parser.
+  const startsWithDate = new RegExp(
+    `^${PDF_DATE_SOURCE}(?:\\s|$)`,
+    "i",
+  );
+
   const blocks = [];
   let current = "";
+
   for (const line of lines) {
     if (startsWithDate.test(line)) {
       if (current) blocks.push(current);
@@ -283,9 +568,12 @@ function parsePdfTransactions(text) {
       current += ` ${line}`;
     }
   }
+
   if (current) blocks.push(current);
+
   return blocks.map(parsePdfTransactionBlock).filter(Boolean);
 }
+
 async function verifyAccount(req, res, source) {
   if (source === "email") {
     if (!String(req.body.bankName || "").trim()) {
@@ -387,9 +675,28 @@ router.post(
         try {
           let rows = parsePdfTransactions(text);
 
-          // A PDF may contain readable headings while its transaction table is
-          // scanned. In that case pdf-parse returns plenty of text, but no
-          // usable rows. Run OCR whenever normal parsing finds zero rows.
+          // OCR is only appropriate when the transaction table itself is not
+          // machine-readable. A machine-readable statement that produces zero
+          // rows represents a structural/import validation issue, not an OCR
+          // problem.
+          if (!rows.length && hasMachineReadablePdfTransactions(text)) {
+            if (hasDistinctPdfTransactionTables(text)) {
+              return fail(
+                res,
+                422,
+                "This PDF contains multiple distinct transaction-table sections that cannot be safely combined. Please upload a statement for one account only.",
+              );
+            }
+
+            return fail(
+              res,
+              422,
+              "This PDF contains machine-readable transaction data, but its statement layout is not yet supported. No data was imported.",
+            );
+          }
+
+          // If no usable machine-readable transaction table was found, try
+          // OCR for a genuinely scanned/image-based statement.
           if (!rows.length) {
             tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "budgetiq-ocr-"));
 
@@ -822,3 +1129,13 @@ router.post("/:id/confirm", async (req, res, next) => {
   }
 });
 module.exports = router;
+module.exports._test = {
+  parsePdfTransactions,
+  parsePdfTransactionBlock,
+  parsePdfDebitCreditBalanceLine,
+  parsePdfEmptySlotAmountLine,
+  parsePdfStructuredRows,
+  pdfTransactionTableCount,
+  hasMachineReadablePdfTransactions,
+  hasDistinctPdfTransactionTables,
+};
