@@ -233,10 +233,10 @@ const PDF_MONEY_SOURCE = String.raw`(?:\d{1,3}(?:,\d{3})*|\d+)\.\d{2}`;
 
 const PDF_DEBIT_CREDIT_BALANCE_PATTERN = new RegExp(
   `^(\\d{1,2}\\/\\d{1,2}\\/\\d{4})` +
-    `(\\d{1,2}\\/\\d{1,2}\\/\\d{4})` +
-    `(--|${PDF_MONEY_SOURCE})` +
-    `(--|${PDF_MONEY_SOURCE})` +
-    `\\s*(${PDF_MONEY_SOURCE})`,
+  `(\\d{1,2}\\/\\d{1,2}\\/\\d{4})` +
+  `(--|${PDF_MONEY_SOURCE})` +
+  `(--|${PDF_MONEY_SOURCE})` +
+  `\\s*(${PDF_MONEY_SOURCE})`,
 );
 
 const PDF_EMPTY_SLOT_AMOUNT_PATTERN = new RegExp(
@@ -266,6 +266,31 @@ function parsePdfEmptySlotAmountLine(line) {
     credit: match[2],
     balance: match[3],
     remainder: match[4],
+  };
+}
+
+function parsePdfAmountBalanceLine(line) {
+  const text = String(line || "").trim();
+
+  /*
+   * Some statement PDFs omit the empty debit/credit column entirely,
+   * leaving only transaction amount + resulting balance concatenated.
+   *
+   * Example shape:
+   *   0.15222.04
+   *
+   * Do not infer transaction direction here. That is only safe when
+   * subsequent parsing can reconcile the amount against running balances.
+   */
+  const match = text.match(
+    new RegExp(`^(${PDF_MONEY_SOURCE})(${PDF_MONEY_SOURCE})$`),
+  );
+
+  if (!match) return null;
+
+  return {
+    amount: pdfMoney(match[1]),
+    balance: pdfMoney(match[2]),
   };
 }
 
@@ -421,6 +446,138 @@ function parsePdfStructuredRows(text) {
   return rows;
 }
 
+function parsePdfRunningBalanceRows(text) {
+  const lines = String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  const candidates = [];
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    const dateMatches = [
+      ...line.matchAll(new RegExp(PDF_DATE_SOURCE, "gi")),
+    ];
+
+    // This structure requires transaction date + value date.
+    if (dateMatches.length < 2) continue;
+
+    const transactionDate = dateMatches[0][0];
+    const afterDates = line
+      .slice(dateMatches[1].index + dateMatches[1][0].length)
+      .trim();
+
+    /*
+     * Some statements place the opening balance on the same flattened
+     * line as the two dates. Use it only as the running-balance baseline;
+     * it is not an importable transaction.
+     */
+    if (/^Opening\s+Balance/i.test(afterDates)) {
+      const openingTail = afterDates
+        .replace(/^Opening\s+Balance/i, "")
+        .trim();
+
+      const openingMatch = openingTail.match(
+        new RegExp(
+          `^0\\.00(?:0\\.00)(${PDF_MONEY_SOURCE})$`,
+        ),
+      );
+
+      if (openingMatch) {
+        const balance = pdfMoney(openingMatch[1]);
+
+        if (balance != null) {
+          candidates.push({
+            date: transactionDate,
+            amount: 0,
+            balance,
+            description: "Opening Balance",
+            baseline: true,
+          });
+        }
+      }
+
+      continue;
+    }
+
+    const descriptionLines = [];
+    if (afterDates) descriptionLines.push(afterDates);
+
+    let amountBalance = null;
+
+    for (let j = i + 1; j < lines.length; j += 1) {
+      const nextDateMatches = [
+        ...lines[j].matchAll(new RegExp(PDF_DATE_SOURCE, "gi")),
+      ];
+
+      // A new row in this structure starts with transaction date + value date.
+      // A single date may legitimately be part of a multiline narration.
+      if (nextDateMatches.length >= 2) break;
+
+      const candidate = parsePdfAmountBalanceLine(lines[j]);
+
+      if (candidate) {
+        amountBalance = candidate;
+        break;
+      }
+
+      descriptionLines.push(lines[j]);
+    }
+
+    if (!amountBalance) continue;
+
+    candidates.push({
+      date: transactionDate,
+      amount: amountBalance.amount,
+      balance: amountBalance.balance,
+      description:
+        descriptionLines.join(" ").trim() || "Imported bank transaction",
+      baseline: false,
+    });
+  }
+
+  /*
+   * Direction is accepted only when the transaction amount reconciles
+   * exactly with the change in running balance.
+   */
+  const rows = [];
+
+  for (let i = 1; i < candidates.length; i += 1) {
+    const previous = candidates[i - 1];
+    const current = candidates[i];
+
+    if (current.baseline) continue;
+
+    const increase = Number(
+      (current.balance - previous.balance).toFixed(2),
+    );
+    const amount = Number(current.amount.toFixed(2));
+
+    let debit = 0;
+    let credit = 0;
+
+    if (increase === amount) {
+      credit = amount;
+    } else if (increase === -amount) {
+      debit = amount;
+    } else {
+      continue;
+    }
+
+    const row = normalize({
+      date: current.date,
+      debit,
+      credit,
+      description: current.description,
+    });
+
+    if (row) rows.push(row);
+  }
+
+  return rows;
+}
+
 function transactionFingerprint(row) {
   return [
     row.date,
@@ -439,7 +596,7 @@ function sameTransactionDataset(left, right) {
 }
 
 const PDF_TABLE_HEADER_PATTERN =
-  /(?:Trans\.?\s*Time.*Value\s*Date.*Description|Trans\s*Date.*Value\s*Date.*Debit.*Credit.*Balance)/i;
+  /(?:Trans\.?\s*Time.*Value\s*Date.*Description|Trans\s*Date.*Value\s*Date.*Debit.*Credit.*Balance|Debit\s*Credit\s*Balance)/i;
 
 function pdfLines(text) {
   return String(text || "")
@@ -463,9 +620,17 @@ function pdfTransactionTables(text) {
         const nextIndex =
           tableHeaders[headerIndex + 1]?.index ?? lines.length;
 
-        return parsePdfStructuredRows(
-          lines.slice(index, nextIndex).join("\n"),
-        );
+        const tableText = lines
+          .slice(index, nextIndex)
+          .join("\n");
+
+        const structuredRows = parsePdfStructuredRows(tableText);
+
+        if (structuredRows.length) {
+          return structuredRows;
+        }
+
+        return parsePdfRunningBalanceRows(tableText);
       })
       .filter((rows) => rows.length),
   };
@@ -514,34 +679,34 @@ function parsePdfTransactions(text) {
    * not silently treated the same way.
    */
   if (tableRows.length) {
-      /*
-       * If every detected table is the same complete dataset, it is a
-       * repeated-page representation of one statement. Import it once.
-       */
-      if (
-        tableRows.length > 1 &&
-        tableRows.slice(1).every((rows) =>
-          sameTransactionDataset(tableRows[0], rows),
-        )
-      ) {
-        return tableRows[0];
-      }
+    /*
+     * If every detected table is the same complete dataset, it is a
+     * repeated-page representation of one statement. Import it once.
+     */
+    if (
+      tableRows.length > 1 &&
+      tableRows.slice(1).every((rows) =>
+        sameTransactionDataset(tableRows[0], rows),
+      )
+    ) {
+      return tableRows[0];
+    }
 
-      /*
-       * A single transaction table is unambiguous.
-       */
-      if (tableRows.length === 1) {
-        return tableRows[0];
-      }
+    /*
+     * A single transaction table is unambiguous.
+     */
+    if (tableRows.length === 1) {
+      return tableRows[0];
+    }
 
-      /*
-       * Multiple different transaction tables can represent separate
-       * accounts in the same PDF. Do not silently merge them into the
-       * KashMetrix account selected for this import.
-       *
-       * Return no rows here so the preview route can reject the statement
-       * rather than corrupting account-level analytics.
-       */
+    /*
+     * Multiple different transaction tables can represent separate
+     * accounts in the same PDF. Do not silently merge them into the
+     * KashMetrix account selected for this import.
+     *
+     * Return no rows here so the preview route can reject the statement
+     * rather than corrupting account-level analytics.
+     */
     return [];
   }
 
@@ -1134,7 +1299,9 @@ module.exports._test = {
   parsePdfTransactionBlock,
   parsePdfDebitCreditBalanceLine,
   parsePdfEmptySlotAmountLine,
+  parsePdfAmountBalanceLine,
   parsePdfStructuredRows,
+  parsePdfRunningBalanceRows,
   pdfTransactionTableCount,
   hasMachineReadablePdfTransactions,
   hasDistinctPdfTransactionTables,
