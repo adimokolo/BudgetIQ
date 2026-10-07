@@ -849,7 +849,7 @@ router.post(
               return fail(
                 res,
                 422,
-                "This PDF contains multiple distinct transaction-table sections that cannot be safely combined. Please upload a statement for one account only.",
+                "This statement contains multiple transaction sections, including movements between balances, that KashMetrix cannot safely classify yet. To avoid affecting your income and expense totals, this statement cannot currently be imported automatically.",
               );
             }
 
