@@ -1,0 +1,44 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 400] /Rotate 90 /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 541 >>
+stream
+BT /F1 10 Tf 40 260 Td (Date) Tj ET
+BT /F1 10 Tf 150 260 Td (Description) Tj ET
+BT /F1 10 Tf 320 260 Td (Debit) Tj ET
+BT /F1 10 Tf 390 260 Td (Credit) Tj ET
+BT /F1 10 Tf 460 260 Td (Balance) Tj ET
+BT /F1 10 Tf 40 230 Td (01-Jan-2026) Tj ET
+BT /F1 10 Tf 150 230 Td (Synthetic purchase) Tj ET
+BT /F1 10 Tf 320 230 Td (100.00) Tj ET
+BT /F1 10 Tf 460 230 Td (900.00) Tj ET
+BT /F1 10 Tf 40 200 Td (02-Jan-2026) Tj ET
+BT /F1 10 Tf 150 200 Td (Synthetic deposit) Tj ET
+BT /F1 10 Tf 390 200 Td (200.00) Tj ET
+BT /F1 10 Tf 460 200 Td (1100.00) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000252 00000 n 
+0000000843 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+913
+%%EOF

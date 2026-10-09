@@ -11,6 +11,17 @@ const {
   validatePdfTransactionDate,
   assessImportSafety,
 } = require("./pdfLayout");
+const { extractGtbankPdf } = require("./gtbankPdfAdapter");
+
+function isGtbankStatement(pages) {
+  const firstPageText = (pages[0]?.rows || [])
+    .flatMap(row => row.items.map(item => item.text))
+    .join(" ")
+    .toLowerCase();
+
+  return /guaranty\s*trust\s*bank|gtbank|gtco/.test(firstPageText) &&
+    /originating\s*branch/.test(firstPageText);
+}
 
 function toAmount(value) {
   if (value == null || String(value).trim() === "") return 0;
@@ -75,8 +86,23 @@ function convertCandidate(candidate) {
 }
 
 async function prepareValidatedPdfImport(buffer) {
-  const pages = await extractPdfLayout(buffer);
-  const candidates = extractPdfRowCandidates(pages);
+  const standardPages = await extractPdfLayout(buffer);
+  const gtbank = isGtbankStatement(standardPages)
+    ? await extractGtbankPdf(buffer)
+    : null;
+
+  const pages = gtbank ? gtbank.pages : standardPages;
+  const candidates = gtbank
+    ? gtbank.candidates
+    : extractPdfRowCandidates(pages);
+
+  if (gtbank && gtbank.incompleteRowCount !== 0) {
+    return {
+      approved: false,
+      reason: "Incomplete GTBank transaction extraction",
+    };
+  }
+
   const repeated = inspectRepeatedPageSequences(candidates);
 
   // Never silently discard repeated transaction pages.
