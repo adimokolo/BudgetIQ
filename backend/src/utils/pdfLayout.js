@@ -169,14 +169,14 @@ module.exports.buildPdfColumnRegions = buildPdfColumnRegions;
  * Candidates are NOT approved transactions: dates, amounts,
  * completeness and running balances must still be validated.
  */
-function extractPdfRowCandidates(pages) {
+function extractPdfRowCandidates(pages, columnDetector = detectPdfColumns) {
   const candidates = [];
 
   for (const page of pages) {
     let regions = null;
 
     for (const row of page.rows) {
-      const columns = detectPdfColumns(row);
+      const columns = columnDetector(row);
       const names = new Set(columns.map(c => c.column));
 
       if (

@@ -3,7 +3,11 @@
 const { layout, interpreters, validation } = require("./ufe");
 
 const { extractPdfLayout } = layout;
-const { extractPdfRowCandidates, extractGtbankPdf } = interpreters;
+const {
+  extractPdfRowCandidates,
+  extractUfeRowCandidates,
+  extractGtbankPdf,
+} = interpreters;
 const {
   cleanPdfRowCandidates,
   inspectRepeatedPageSequences,
@@ -93,9 +97,13 @@ async function prepareValidatedPdfImport(buffer) {
     : null;
 
   const pages = gtbank ? gtbank.pages : standardPages;
-  const candidates = gtbank
+  const legacyCandidates = gtbank
     ? gtbank.candidates
     : extractPdfRowCandidates(pages);
+
+  const candidates = gtbank || legacyCandidates.length
+    ? legacyCandidates
+    : extractUfeRowCandidates(pages);
 
   if (gtbank && gtbank.incompleteRowCount !== 0) {
     return {
