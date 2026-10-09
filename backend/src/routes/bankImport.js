@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const XLSX = require("xlsx");
 const pdfParse = require("pdf-parse");
+const { prepareValidatedPdfImport } = require("../utils/pdfImportAdapter");
 const crypto = require("crypto");
 const fs = require("fs/promises");
 const os = require("os");
@@ -834,127 +835,19 @@ router.post(
           );
         }
 
-        let text = String(pdf.text || "").trim();
-        let tempDir = null;
+        // Every PDF must pass the validated financial import pathway.
+        // Unsupported, scanned, ambiguous or unreconciled PDFs fail closed.
+        const validated = await prepareValidatedPdfImport(req.file.buffer);
 
-        try {
-          let rows = parsePdfTransactions(text);
-
-          // OCR is only appropriate when the transaction table itself is not
-          // machine-readable. A machine-readable statement that produces zero
-          // rows represents a structural/import validation issue, not an OCR
-          // problem.
-          if (!rows.length && hasMachineReadablePdfTransactions(text)) {
-            if (hasDistinctPdfTransactionTables(text)) {
-              return fail(
-                res,
-                422,
-                "This statement contains multiple transaction sections, including movements between balances, that KashMetrix cannot safely classify yet. To avoid affecting your income and expense totals, this statement cannot currently be imported automatically.",
-              );
-            }
-
-            return fail(
-              res,
-              422,
-              "This PDF contains machine-readable transaction data, but its statement layout is not yet supported. No data was imported.",
-            );
-          }
-
-          // If no usable machine-readable transaction table was found, try
-          // OCR for a genuinely scanned/image-based statement.
-          if (!rows.length) {
-            tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "budgetiq-ocr-"));
-
-            const pdfPath = path.join(tempDir, "statement.pdf");
-            const imagePrefix = path.join(tempDir, "page");
-
-            await fs.writeFile(pdfPath, req.file.buffer);
-
-            try {
-              await execFileAsync("pdftoppm", [
-                "-r",
-                "300",
-                "-png",
-                pdfPath,
-                imagePrefix,
-              ]);
-            } catch (error) {
-              if (error.code === "ENOENT") {
-                return fail(
-                  res,
-                  503,
-                  "PDF OCR is not installed on the backend. Install Poppler so the pdftoppm command is available, then restart the backend.",
-                );
-              }
-              throw error;
-            }
-
-            const files = await fs.readdir(tempDir);
-
-            const pageImages = files
-              .filter((file) => /^page-\d+\.png$/.test(file))
-              .sort((a, b) => {
-                const pageA = Number(a.match(/\d+/)[0]);
-                const pageB = Number(b.match(/\d+/)[0]);
-                return pageA - pageB;
-              });
-
-            if (!pageImages.length) {
-              return fail(
-                res,
-                422,
-                "The PDF could not be converted into readable pages. No data was imported.",
-              );
-            }
-
-            const ocrPages = [];
-
-            for (const pageImage of pageImages) {
-              const imagePath = path.join(tempDir, pageImage);
-
-              let stdout;
-              try {
-                ({ stdout } = await execFileAsync(
-                  "tesseract",
-                  [imagePath, "stdout", "--psm", "6", "-l", "eng"],
-                  { maxBuffer: 10 * 1024 * 1024 },
-                ));
-              } catch (error) {
-                if (error.code === "ENOENT") {
-                  return fail(
-                    res,
-                    503,
-                    "PDF OCR is not installed on the backend. Install Tesseract OCR so the tesseract command is available, then restart the backend.",
-                  );
-                }
-                throw error;
-              }
-
-              ocrPages.push(stdout);
-            }
-
-            text = ocrPages.join("\n");
-            rows = parsePdfTransactions(text);
-          }
-
-          if (!rows.length) {
-            return fail(
-              res,
-              422,
-              "No transaction rows could be read safely from this PDF. No data was imported.",
-            );
-          }
-
-          if (rows.length > 2000) {
-            return fail(res, 413, "Import at most 2,000 rows at a time.");
-          }
-
-          return stage(req, res, "statement", rows);
-        } finally {
-          if (tempDir) {
-            await fs.rm(tempDir, { recursive: true, force: true });
-          }
+        if (!validated.approved) {
+          return fail(
+            res,
+            422,
+            "This PDF could not pass financial validation or its layout is unsupported. No data was imported."
+          );
         }
+
+        return stage(req, res, "statement", validated.rows);
       }
       const workbook = XLSX.read(req.file.buffer, {
         type: "buffer",
