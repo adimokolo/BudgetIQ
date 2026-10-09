@@ -14,9 +14,20 @@ function assessExtractionCompleteness(pages, candidates) {
       const dates = (row.items || [])
         .filter(item => DATE.test(String(item.text || "").trim()));
 
-      // Only assess rows containing two distinct date fields.
-      // This deliberately avoids treating narrative lines as transactions.
-      if (dates.length !== 2) continue;
+      // Two-date transaction rows are strong completeness evidence.
+      // A single-date row is also considered when it contains at least
+      // two separate monetary-looking fields, reducing false positives
+      // from ordinary narrative lines.
+      const monetaryFields = (row.items || []).filter(item => {
+        const text = String(item.text || "").trim();
+        return /^(?:₦\s*)?(?:\d+(?:\.\d{2})?|\d{1,3}(?:,\d{3})+\.\d{2})$/.test(text);
+      });
+
+      const transactionLike =
+        dates.length === 2 ||
+        (dates.length === 1 && monetaryFields.length >= 2);
+
+      if (!transactionLike) continue;
 
       const key = `${page.pageNumber}:${row.y}`;
 

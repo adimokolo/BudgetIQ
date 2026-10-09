@@ -64,3 +64,42 @@ test("UFE ignores ordinary narrative rows", () => {
     0
   );
 });
+
+
+test("UFE detects omitted single-date transaction rows", () => {
+  const pages = [{
+    pageNumber: 1,
+    rows: [{
+      y: 100,
+      items: [
+        { text: "01-Jan-2026" },
+        { text: "Synthetic purchase" },
+        { text: "100.00" },
+        { text: "900.00" },
+      ],
+    }],
+  }];
+
+  const result = assessExtractionCompleteness(pages, []);
+
+  assert.equal(result.complete, false);
+  assert.equal(result.unmatchedCount, 1);
+});
+
+test("UFE ignores single-date narrative rows without monetary evidence", () => {
+  const pages = [{
+    pageNumber: 1,
+    rows: [{
+      y: 100,
+      items: [
+        { text: "01-Jan-2026" },
+        { text: "Statement generated for customer" },
+      ],
+    }],
+  }];
+
+  const result = assessExtractionCompleteness(pages, []);
+
+  assert.equal(result.complete, true);
+  assert.equal(result.unmatchedCount, 0);
+});
