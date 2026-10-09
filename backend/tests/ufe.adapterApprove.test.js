@@ -69,6 +69,7 @@ function makePdf(customLines) {
   return Buffer.from(pdf);
 }
 
+
 test("UFE approves a fully reconciled synthetic statement", async () => {
   const buffer = makePdf([
     ["Date", "Description", "Debit (NGN)", "Credit (NGN)", "Balance (NGN)"],
