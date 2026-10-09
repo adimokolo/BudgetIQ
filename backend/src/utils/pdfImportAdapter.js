@@ -101,19 +101,66 @@ async function prepareValidatedPdfImport(buffer) {
     ? gtbank.candidates
     : extractPdfRowCandidates(pages);
 
-  const usingUfeFallback = !gtbank && legacyCandidates.length === 0;
-  const candidates = usingUfeFallback
-    ? extractUfeRowCandidates(pages)
-    : legacyCandidates;
+  const { assessExtractionCompleteness } = require("./ufe/validation/completeness");
 
-  if (usingUfeFallback) {
-    const { assessExtractionCompleteness } = require("./ufe/validation/completeness");
-    const completeness = assessExtractionCompleteness(pages, candidates);
+  let candidates = legacyCandidates;
 
-    if (!completeness.complete) {
+  if (!gtbank) {
+    const enhancedCandidates = extractUfeRowCandidates(pages);
+    const { selectUfeCandidates } = require("./ufe/interpreters");
+
+    const selection = selectUfeCandidates(
+      legacyCandidates,
+      enhancedCandidates
+    );
+
+    if (selection.source === "ufe") {
+      const completeness = assessExtractionCompleteness(
+        pages,
+        enhancedCandidates
+      );
+
+      if (completeness.complete) {
+        const repeatedCheck = inspectRepeatedPageSequences(
+          enhancedCandidates
+        );
+
+        if (repeatedCheck.valid) {
+          const enhancedCleaned = cleanPdfRowCandidates(
+            enhancedCandidates
+          );
+          const enhancedLedger = validatePdfLedger(enhancedCleaned);
+          const enhancedSummary = extractPdfStatementSummary(pages);
+          const enhancedReconciliation = enhancedSummary.valid
+            ? validatePdfStatementSummary(
+                enhancedLedger,
+                enhancedSummary.summary
+              )
+            : { valid: false };
+
+          const enhancedDatesValid = enhancedCleaned
+            .map(convertCandidate)
+            .every(Boolean);
+
+          const enhancedSafety = assessImportSafety({
+            ledgerValid: enhancedLedger.valid,
+            summaryValid: enhancedReconciliation.valid,
+            datesValid: enhancedDatesValid,
+            repeatedPagesValid: repeatedCheck.valid,
+            transactionCount: enhancedCleaned.length,
+          });
+
+          if (enhancedSafety.approved) {
+            candidates = enhancedCandidates;
+          }
+        }
+      }
+    }
+
+    if (legacyCandidates.length === 0 && candidates.length === 0) {
       return {
         approved: false,
-        reason: "Incomplete UFE transaction extraction",
+        reason: "No validated PDF transactions extracted",
       };
     }
   }

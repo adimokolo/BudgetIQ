@@ -6,6 +6,7 @@
 const { extractPdfRowCandidates } = require("../../pdfLayout");
 const { extractGtbankPdf } = require("../../gtbankPdfAdapter");
 const { detectUfeColumns } = require("./columnHeaders");
+const { selectUfeCandidates } = require("./selectCandidates");
 
 function extractUfeRowCandidates(pages) {
   return extractPdfRowCandidates(pages, detectUfeColumns);
@@ -16,4 +17,5 @@ module.exports = {
   extractGtbankPdf,
   detectUfeColumns,
   extractUfeRowCandidates,
+  selectUfeCandidates,
 };
