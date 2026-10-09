@@ -1,3 +1,5 @@
 node_modules/
 .env
 dist/
+# Private bank statement regression samples
+/backend/tests/private/
