@@ -1,8 +1,10 @@
 "use strict";
 
+const { layout, interpreters, validation } = require("./ufe");
+
+const { extractPdfLayout } = layout;
+const { extractPdfRowCandidates, extractGtbankPdf } = interpreters;
 const {
-  extractPdfLayout,
-  extractPdfRowCandidates,
   cleanPdfRowCandidates,
   inspectRepeatedPageSequences,
   validatePdfLedger,
@@ -10,8 +12,7 @@ const {
   validatePdfStatementSummary,
   validatePdfTransactionDate,
   assessImportSafety,
-} = require("./pdfLayout");
-const { extractGtbankPdf } = require("./gtbankPdfAdapter");
+} = validation;
 
 function isGtbankStatement(pages) {
   const firstPageText = (pages[0]?.rows || [])
