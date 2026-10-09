@@ -101,9 +101,22 @@ async function prepareValidatedPdfImport(buffer) {
     ? gtbank.candidates
     : extractPdfRowCandidates(pages);
 
-  const candidates = gtbank || legacyCandidates.length
-    ? legacyCandidates
-    : extractUfeRowCandidates(pages);
+  const usingUfeFallback = !gtbank && legacyCandidates.length === 0;
+  const candidates = usingUfeFallback
+    ? extractUfeRowCandidates(pages)
+    : legacyCandidates;
+
+  if (usingUfeFallback) {
+    const { assessExtractionCompleteness } = require("./ufe/validation/completeness");
+    const completeness = assessExtractionCompleteness(pages, candidates);
+
+    if (!completeness.complete) {
+      return {
+        approved: false,
+        reason: "Incomplete UFE transaction extraction",
+      };
+    }
+  }
 
   if (gtbank && gtbank.incompleteRowCount !== 0) {
     return {
