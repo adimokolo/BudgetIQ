@@ -10,8 +10,8 @@ const {
 } = require("../src/utils/ufe/interpreters");
 const { validatePdfLedger } = require("../src/utils/ufe/validation");
 
-function makePdf() {
-  const lines = [
+function makePdf(customLines) {
+  const lines = customLines || [
     ["Date", "Description", "Debit (NGN)", "Credit (NGN)", "Balance (NGN)"],
     ["01-Jan-2026", "Synthetic purchase", "100.00", "", "900.00"],
     ["02-Jan-2026", "Synthetic transfer", "50.00", "", "825.00"],
@@ -25,7 +25,9 @@ function makePdf() {
       if (!value) return;
 
       const escaped = value.replace(/[\\()]/g, "\\$&");
-      const y = 750 - rowIndex * 30;
+      const y = 750 - (
+        rowIndex >= 3 ? rowIndex * 30 + 70 : rowIndex * 30
+      );
 
       operations.push(
         `1 0 0 1 ${xs[columnIndex]} ${y} Tm (${escaped}) Tj`
@@ -67,24 +69,38 @@ function makePdf() {
   return Buffer.from(pdf);
 }
 
-test("UFE extracts synthetic rows but rejects invalid ledger", async () => {
-  const buffer = makePdf();
-  const pages = await extractPdfLayout(buffer);
+test("UFE approves a fully reconciled synthetic statement", async () => {
+  const buffer = makePdf([
+    ["Date", "Description", "Debit (NGN)", "Credit (NGN)", "Balance (NGN)"],
+    ["01-Jan-2026", "Synthetic purchase", "100.00", "", "900.00"],
+    ["02-Jan-2026", "Synthetic transfer", "50.00", "", "850.00"],
+    ["Opening Balance", "1000.00"],
+    ["Closing Balance", "850.00"],
+    ["Total Debit", "150.00"],
+    ["Total Credit", "0.00"],
+  ]);
 
+  const pages = await extractPdfLayout(buffer);
   const legacy = extractPdfRowCandidates(pages);
   const enhanced = extractUfeRowCandidates(pages);
 
   assert.equal(legacy.length, 0);
   assert.equal(enhanced.length, 2);
-  assert.equal(enhanced[0].debit, "100.00");
-  assert.equal(enhanced[0].balance, "900.00");
-  assert.equal(enhanced[1].debit, "50.00");
-  assert.equal(enhanced[1].balance, "825.00");
 
   const ledger = validatePdfLedger(enhanced);
-  assert.equal(ledger.valid, false);
+  assert.equal(
+    ledger.valid,
+    true,
+    `Synthetic ledger rejected: ${ledger.reason || "unknown"}`
+  );
 
   const result = await prepareValidatedPdfImport(buffer);
 
-  assert.equal(result.approved, false);
+  assert.equal(
+    result.approved,
+    true,
+    `Adapter rejected: ${result.reason || "unknown"}`
+  );
+  assert.equal(result.rows.length, 2);
+  assert.deepEqual(result.rows.map(row => row.amount), [100, 50]);
 });
