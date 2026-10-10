@@ -1,8 +1,19 @@
 "use strict";
 
+const { layout, interpreters, validation } = require("./ufe");
 const {
-  extractPdfLayout,
+  isZenithStatement,
+  extractZenithCandidates,
+  extractZenithSummary,
+} = require("./ufe/interpreters/zenithPdfAdapter");
+
+const { extractPdfLayout } = layout;
+const {
   extractPdfRowCandidates,
+  extractUfeRowCandidates,
+  extractGtbankPdf,
+} = interpreters;
+const {
   cleanPdfRowCandidates,
   inspectRepeatedPageSequences,
   validatePdfLedger,
@@ -10,7 +21,17 @@ const {
   validatePdfStatementSummary,
   validatePdfTransactionDate,
   assessImportSafety,
-} = require("./pdfLayout");
+} = validation;
+
+function isGtbankStatement(pages) {
+  const firstPageText = (pages[0]?.rows || [])
+    .flatMap(row => row.items.map(item => item.text))
+    .join(" ")
+    .toLowerCase();
+
+  return /guaranty\s*trust\s*bank|gtbank|gtco/.test(firstPageText) &&
+    /originating\s*branch/.test(firstPageText);
+}
 
 function toAmount(value) {
   if (value == null || String(value).trim() === "") return 0;
@@ -75,21 +96,114 @@ function convertCandidate(candidate) {
 }
 
 async function prepareValidatedPdfImport(buffer) {
-  const pages = await extractPdfLayout(buffer);
-  const candidates = extractPdfRowCandidates(pages);
-  const repeated = inspectRepeatedPageSequences(candidates);
+  const standardPages = await extractPdfLayout(buffer);
+  const gtbank = isGtbankStatement(standardPages)
+    ? await extractGtbankPdf(buffer)
+    : null;
 
-  // Never silently discard repeated transaction pages.
+  const pages = gtbank ? gtbank.pages : standardPages;
+  const isZenith = !gtbank && isZenithStatement(pages);
+  const zenithCandidates = isZenith
+    ? extractZenithCandidates(pages)
+    : null;
+
+  if (isZenith && !zenithCandidates) {
+    return {
+      approved: false,
+      reason: "Zenith statement could not pass financial validation",
+    };
+  }
+
+  const legacyCandidates = gtbank
+    ? gtbank.candidates
+    : extractPdfRowCandidates(pages);
+
+  const { assessExtractionCompleteness } = require("./ufe/validation/completeness");
+
+  let candidates = zenithCandidates || legacyCandidates;
+
+  if (!gtbank && !zenithCandidates) {
+    const enhancedCandidates = extractUfeRowCandidates(pages);
+    const { selectUfeCandidates } = require("./ufe/interpreters");
+
+    const selection = selectUfeCandidates(
+      legacyCandidates,
+      enhancedCandidates
+    );
+
+    if (selection.source === "ufe") {
+      const completeness = assessExtractionCompleteness(
+        pages,
+        enhancedCandidates
+      );
+
+      if (completeness.complete) {
+        const repeatedCheck = inspectRepeatedPageSequences(
+          cleanPdfRowCandidates(enhancedCandidates)
+        );
+
+        if (repeatedCheck.valid) {
+          const enhancedCleaned = cleanPdfRowCandidates(
+            enhancedCandidates
+          );
+          const enhancedLedger = validatePdfLedger(enhancedCleaned);
+          const enhancedSummary = extractPdfStatementSummary(pages);
+          const enhancedReconciliation = enhancedSummary.valid
+            ? validatePdfStatementSummary(
+                enhancedLedger,
+                enhancedSummary.summary
+              )
+            : { valid: false };
+
+          const enhancedDatesValid = enhancedCleaned
+            .map(convertCandidate)
+            .every(Boolean);
+
+          const enhancedSafety = assessImportSafety({
+            ledgerValid: enhancedLedger.valid,
+            summaryValid: enhancedReconciliation.valid,
+            datesValid: enhancedDatesValid,
+            repeatedPagesValid: repeatedCheck.valid,
+            transactionCount: enhancedCleaned.length,
+          });
+
+          if (enhancedSafety.approved) {
+            candidates = enhancedCandidates;
+          }
+        }
+      }
+    }
+
+    if (legacyCandidates.length === 0 && candidates.length === 0) {
+      return {
+        approved: false,
+        reason: "No validated PDF transactions extracted",
+      };
+    }
+  }
+
+  if (gtbank && gtbank.incompleteRowCount !== 0) {
+    return {
+      approved: false,
+      reason: "Incomplete GTBank transaction extraction",
+    };
+  }
+
+  const cleaned = cleanPdfRowCandidates(candidates);
+  const repeated = inspectRepeatedPageSequences(cleaned);
+
+  // Exact duplicate page sequences are removed by the cleaner.
+  // Validate the remaining sequence; do not relax ledger checks.
   if (!repeated.valid) {
     return {
       approved: false,
       reason: "Unverified repeated transaction page sequence",
     };
   }
-
-  const cleaned = cleanPdfRowCandidates(candidates);
   const ledger = validatePdfLedger(cleaned);
-  const summary = extractPdfStatementSummary(pages);
+  const summary = isZenith
+    ? extractZenithSummary(pages)
+    : extractPdfStatementSummary(pages);
   const reconciliation = summary.valid
     ? validatePdfStatementSummary(ledger, summary.summary)
     : { valid: false, reason: "Ambiguous statement summary" };
