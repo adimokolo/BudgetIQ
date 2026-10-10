@@ -172,8 +172,10 @@ module.exports.buildPdfColumnRegions = buildPdfColumnRegions;
 function extractPdfRowCandidates(pages, columnDetector = detectPdfColumns) {
   const candidates = [];
 
+  let previousRegions = null;
+
   for (const page of pages) {
-    let regions = null;
+    let regions = previousRegions;
 
     for (const row of page.rows) {
       const columns = columnDetector(row);
@@ -185,6 +187,7 @@ function extractPdfRowCandidates(pages, columnDetector = detectPdfColumns) {
         names.has("credit")
       ) {
         regions = buildPdfColumnRegions(columns);
+        previousRegions = regions;
         continue;
       }
 
