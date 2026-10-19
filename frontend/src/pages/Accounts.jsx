@@ -1,20 +1,9 @@
 import { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
 import { getAccounts, deleteAccount } from "../services/accounts";
 import AccountCard from "../components/AccountCard";
 import AccountModal from "../components/AccountModal";
 import BankImportModal from "../components/BankImportModal";
-import logoMark from "../assets/logo-mark.png";
 import { formatCurrency } from "../utils/currency";
-import AppFooter from "../components/AppFooter";
-
-const LINKS = [
-  { to: "/", label: "Dashboard", icon: "◆", end: true },
-  { to: "/transactions", label: "Transactions", icon: "↕" },
-  { to: "/categories", label: "Categories", icon: "▤" },
-  { to: "/budgets", label: "Budgets", icon: "◈" },
-  { to: "/accounts", label: "Accounts", icon: "🏦" },
-];
 
 export default function Accounts() {
   const [accounts, setAccounts] = useState([]);
@@ -71,48 +60,7 @@ export default function Accounts() {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      {/* ── Sidebar ── */}
-      <aside className="sidebar">
-        <div className="brand">
-          <img src={logoMark} alt="KashMetrix" className="brand-mark" />
-          <span>
-            <span className="brand-name">KashMetrix</span>
-            <span className="brand-tagline">
-              Track smarter. Understand more.
-            </span>
-          </span>
-        </div>
-
-        <nav>
-          <ul className="nav-list">
-            {LINKS.map((link) => (
-              <li key={link.to}>
-                <NavLink
-                  to={link.to}
-                  end={link.end}
-                  className={({ isActive }) =>
-                    `nav-link${isActive ? " active" : ""}`
-                  }
-                >
-                  <span className="nav-icon">{link.icon}</span>
-                  {link.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
-
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <main style={{ flex: 1, padding: "32px 36px", overflowY: "auto" }}>
+    <div className="accounts-page">
           <div className="page-header" style={{ marginBottom: 28 }}>
             <div>
               <h1>Accounts</h1>
@@ -203,10 +151,7 @@ export default function Accounts() {
               ))}
             </div>
           )}
-        </main>
 
-        <AppFooter />
-      </div>
 
       {showAddChooser && (
         <div className="modal-backdrop">
