@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import logoMark from '../assets/logo-mark.png';
 
 const LINKS = [
+  { to: '/home', label: 'Home', icon: '⌂', end: true },
   { to: '/', label: 'Dashboard', icon: '◆', end: true },
   { to: '/transactions', label: 'Transactions', icon: '↕' },
   { to: '/categories', label: 'Categories', icon: '▤' },
@@ -16,7 +17,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="mobile-nav-header">
-        <Link className="brand" to="/home" aria-label="KashMetrix public homepage">
+        <Link className="brand" to="/home" style={{ textDecoration: "none" }} aria-label="KashMetrix public homepage">
           <img src={logoMark} alt="" className="brand-mark" />
           <span>
             <span className="brand-name">KashMetrix</span>
