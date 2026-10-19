@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import logoMark from '../assets/logo-mark.png';
 
 const LINKS = [
@@ -16,7 +16,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="mobile-nav-header">
-        <div className="brand">
+        <Link className="brand" to="/home" aria-label="KashMetrix public homepage">
           <img src={logoMark} alt="" className="brand-mark" />
           <span>
             <span className="brand-name">KashMetrix</span>
@@ -24,7 +24,7 @@ export default function Sidebar() {
               Track smarter. Understand more.
             </span>
           </span>
-        </div>
+        </Link>
 
         <button
           type="button"

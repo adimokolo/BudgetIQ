@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 import logoMark from "../assets/logo-mark.png";
 import dashboard from "../assets/homepage/01_Dashboard_Laptop_1920x1080.jpg";
 import charts from "../assets/homepage/02_Transaction_Charts_Laptop_1920x1080.jpg";
@@ -55,6 +56,7 @@ const features = [
 export default function Home() {
   const [active, setActive] = useState(0);
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const slide = slides[active];
 
   return (
@@ -75,8 +77,14 @@ export default function Home() {
           >
             <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
           </button>
-          <Link to="/login" className="public-login">Log In</Link>
-          <Link to="/register" className="public-button">Create Account</Link>
+          {user ? (
+            <Link to="/" className="public-button">Go to Dashboard</Link>
+          ) : (
+            <>
+              <Link to="/login" className="public-login">Log In</Link>
+              <Link to="/register" className="public-button">Create Account</Link>
+            </>
+          )}
         </nav>
       </header>
 
@@ -95,12 +103,20 @@ export default function Home() {
             </p>
 
             <div className="public-hero-actions">
-              <Link to="/register" className="public-button">
-                Get Started
-              </Link>
-              <Link to="/login" className="public-secondary">
-                Already have an account? Log in
-              </Link>
+              {user ? (
+                <Link to="/" className="public-button">
+                  Go to Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link to="/register" className="public-button">
+                    Get Started
+                  </Link>
+                  <Link to="/login" className="public-secondary">
+                    Already have an account? Log in
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
@@ -187,8 +203,8 @@ export default function Home() {
         <section className="public-cta">
           <h2>Ready to understand your money better?</h2>
           <p>Start building a clearer picture of your finances with KashMetrix.</p>
-          <Link to="/register" className="public-button">
-            Create Your Account
+          <Link to={user ? "/" : "/register"} className="public-button">
+            {user ? "Go to Dashboard" : "Create Your Account"}
           </Link>
         </section>
       </main>
