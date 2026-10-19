@@ -85,7 +85,16 @@ export default function App() {
           </AuthLayout>
         }
       />
-      <Route path="/accounts" element={<Accounts />} />
+      <Route
+        path="/accounts"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Accounts />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/"
