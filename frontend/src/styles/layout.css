@@ -116,7 +116,7 @@
 .nav-link.active {
   background: var(--surface-strong);
   color: var(--ink);
-  box-shadow: inset 2px 0 0 0 var(--prism-2);
+  box-shadow: inset 2px 0 0 0 var(--brand-mid);
 }
 
 .nav-icon {
@@ -2781,4 +2781,14 @@
     width: 52px;
     height: 52px;
   }
+}
+
+
+/* KashMetrix sidebar icon colour */
+.sidebar-nav .nav-icon {
+  color: var(--brand-mid);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }

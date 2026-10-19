@@ -1,14 +1,15 @@
+import { House, LayoutDashboard, ArrowLeftRight, ListFilter, Wallet, Landmark } from 'lucide-react';
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import logoMark from '../assets/logo-mark.png';
 
 const LINKS = [
-  { to: '/home', label: 'Home', icon: '⌂', end: true },
-  { to: '/', label: 'Dashboard', icon: '◆', end: true },
-  { to: '/transactions', label: 'Transactions', icon: '↕' },
-  { to: '/categories', label: 'Categories', icon: '▤' },
-  { to: '/budgets', label: 'Budgets', icon: '◈' },
-  { to: '/accounts', label: 'Accounts', icon: '🏦' },
+  { to: '/home', label: 'Home', icon: House, end: true },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
+  { to: '/categories', label: 'Categories', icon: ListFilter },
+  { to: '/budgets', label: 'Budgets', icon: Wallet },
+  { to: '/accounts', label: 'Accounts', icon: Landmark },
 ];
 
 export default function Sidebar() {
@@ -56,7 +57,7 @@ export default function Sidebar() {
                 }
               >
                 <span className="nav-icon" aria-hidden="true">
-                  {link.icon}
+                  {<link.icon size={18} strokeWidth={1.9} />}
                 </span>
                 {link.label}
               </NavLink>
