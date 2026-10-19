@@ -6,7 +6,7 @@ export default function ProtectedRoute({ children }) {
   const hasToken = Boolean(localStorage.getItem('budgetiq_token'));
 
   if (!user && !hasToken) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/home" replace />;
   }
   return children;
 }
