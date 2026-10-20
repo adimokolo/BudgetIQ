@@ -9,6 +9,7 @@ import converter from "../assets/homepage/currency-converter.png";
 import transactions from "../assets/homepage/03_Transactions_Laptop_1920x1080.jpg";
 import categories from "../assets/homepage/04_Categories_Laptop_1920x1080.jpg";
 import budgets from "../assets/homepage/05_Budgets_Laptop_1920x1080.jpg";
+import PublicSocialLinks from "../components/PublicSocialLinks";
 import "../styles/home.css";
 
 const slides = [
@@ -77,6 +78,7 @@ export default function Home() {
           >
             <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
           </button>
+          <PublicSocialLinks />
           {user ? (
             <Link to="/" className="public-button">Go to Dashboard</Link>
           ) : (
@@ -211,6 +213,7 @@ export default function Home() {
 
       <footer className="public-footer">
         <span>KashMetrix © 2026 <strong>B&amp;P DevRights</strong>. All rights reserved.</span>
+        <PublicSocialLinks footer />
         <span>Track smarter. Understand more.</span>
       </footer>
     </div>
