@@ -74,7 +74,7 @@ export default function Settings() {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/home", { replace: true });
   };
 
   const handleFileChange = async (e) => {
