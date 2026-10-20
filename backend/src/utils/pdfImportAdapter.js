@@ -47,9 +47,16 @@ function toAmount(value) {
 function convertDate(value) {
   const text = String(value || "").trim();
 
-  const named = /^(\d{2})-([A-Za-z]{3})-(\d{4})$/.exec(text);
+  // Normalise two-digit named years before existing strict validation.
+  // Supported interpretation: YY 00–99 maps to 2000–2099.
+  const shortNamed = /^(\d{2})-([A-Za-z]{3})-(\d{2})$/.exec(text);
+  const normalisedText = shortNamed
+    ? `${shortNamed[1]}-${shortNamed[2]}-20${shortNamed[3]}`
+    : text;
+
+  const named = /^(\d{2})-([A-Za-z]{3})-(\d{4})$/.exec(normalisedText);
   if (named) {
-    if (!validatePdfTransactionDate(text, "DD-MMM-YYYY")) return null;
+    if (!validatePdfTransactionDate(normalisedText, "DD-MMM-YYYY")) return null;
 
     const months = [
       "jan", "feb", "mar", "apr", "may", "jun",
