@@ -232,6 +232,57 @@ function extractPdfRowCandidates(pages, columnDetector = detectPdfColumns) {
       let transactionDate = (fields.date || []).join(" ").trim();
       let valueDate = (fields.valueDate || []).join(" ").trim();
 
+      // Recover two dates merged into the value-date column.
+      // This is a shared layout correction, not bank-specific handling.
+      if (!transactionDate && valueDate) {
+        const dateToken =
+          /\d{2}\s*-\s*[A-Za-z]{3}\s*-\s*\d{2,4}/g;
+
+        const matches = [...valueDate.matchAll(dateToken)]
+          .map(match => match[0]);
+
+        const remainder = valueDate.replace(dateToken, "").trim();
+
+        const normalise = value =>
+          value.replace(/\s*-\s*/g, "-").trim();
+
+        const isValid = value => {
+          const match =
+            /^(\d{2})-([A-Za-z]{3})-(\d{2}|\d{4})$/
+              .exec(value);
+
+          if (!match) return false;
+
+          const months = [
+            "jan", "feb", "mar", "apr", "may", "jun",
+            "jul", "aug", "sep", "oct", "nov", "dec"
+          ];
+
+          const month = months.indexOf(match[2].toLowerCase());
+          const year = Number(
+            match[3].length === 2 ? `20${match[3]}` : match[3]
+          );
+          const day = Number(match[1]);
+
+          if (month < 0) return false;
+
+          const parsed = new Date(Date.UTC(year, month, day));
+
+          return parsed.getUTCFullYear() === year &&
+            parsed.getUTCMonth() === month &&
+            parsed.getUTCDate() === day;
+        };
+
+        if (
+          matches.length === 2 &&
+          remainder === "" &&
+          matches.every(value => isValid(normalise(value)))
+        ) {
+          transactionDate = normalise(matches[0]);
+          valueDate = normalise(matches[1]);
+        }
+      }
+
       // Fallback for PDFs whose date headers are not recognised.
       // Accept only two valid, separate dates preceding the first
       // monetary column on the same transaction row.
