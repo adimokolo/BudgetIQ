@@ -7,6 +7,7 @@ const ADMIN_LINKS = [
   { to: "/admin/users", label: "Users", icon: "♟" },
   { to: "/admin/admins", label: "Admin Management", icon: "♜" },
   { to: "/admin/audit", label: "Audit Log", icon: "▤" },
+  { to: "/admin/articles", label: "Articles", icon: "✎" },
 ];
 
 export default function AdminLayout({ children }) {

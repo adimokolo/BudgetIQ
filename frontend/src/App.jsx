@@ -25,6 +25,9 @@ import AuthLayout from "./components/AuthLayout";
 import AdminOverview from "./pages/AdminOverview";
 import AdminManagement from "./pages/AdminManagement";
 import AdminAudit from "./pages/AdminAudit";
+import AdminArticles from "./pages/AdminArticles";
+import MoneyInsights from "./pages/MoneyInsights";
+import MoneyInsightArticle from "./pages/MoneyInsightArticle";
 
 function AppLayout({ children }) {
   return (
@@ -47,6 +50,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/home" element={<Home />} />
+      <Route path="/money-insights" element={<MoneyInsights />} />
+      <Route path="/money-insights/:slug" element={<MoneyInsightArticle />} />
       <Route
         path="/login"
         element={
@@ -203,6 +208,18 @@ export default function App() {
             <AdminRoute>
               <AdminLayout>
                 <AdminAudit />
+              </AdminLayout>
+            </AdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/articles"
+        element={
+          <ProtectedRoute>
+            <AdminRoute>
+              <AdminLayout>
+                <AdminArticles />
               </AdminLayout>
             </AdminRoute>
           </ProtectedRoute>
