@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /home
+Allow: /money-insights
+Disallow: /api/
+Disallow: /admin
+Disallow: /accounts
+Disallow: /transactions
+Disallow: /categories
+Disallow: /budgets
+Disallow: /settings
+Sitemap: https://kashmetrix.com/sitemap.xml

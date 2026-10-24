@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
+import apiClient from "../api/client";
 import logoMark from "../assets/logo-mark.png";
 import dashboard from "../assets/homepage/01_Dashboard_Laptop_1920x1080.jpg";
 import charts from "../assets/homepage/02_Transaction_Charts_Laptop_1920x1080.jpg";
@@ -56,9 +57,38 @@ const features = [
 
 export default function Home() {
   const [active, setActive] = useState(0);
+  const [latestArticle, setLatestArticle] = useState(null);
+  const [articleLoading, setArticleLoading] = useState(true);
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const slide = slides[active];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    apiClient
+      .get("/articles")
+      .then(({ data }) => {
+        if (cancelled) return;
+
+        const articles = Array.isArray(data?.articles)
+          ? data.articles
+          : [];
+
+        // The public API returns published articles ordered newest first.
+        setLatestArticle(articles[0] || null);
+      })
+      .catch(() => {
+        if (!cancelled) setLatestArticle(null);
+      })
+      .finally(() => {
+        if (!cancelled) setArticleLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="public-home">
@@ -69,6 +99,10 @@ export default function Home() {
         </Link>
 
         <nav className="public-actions" aria-label="Account navigation">
+          <Link to="/money-insights" className="public-login">
+            Money Tips
+          </Link>
+
           <button
             type="button"
             className="public-theme-toggle"
@@ -78,13 +112,21 @@ export default function Home() {
           >
             <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
           </button>
+
           <PublicSocialLinks />
+
           {user ? (
-            <Link to="/" className="public-button">Go to Dashboard</Link>
+            <Link to="/" className="public-button">
+              Go to Dashboard
+            </Link>
           ) : (
             <>
-              <Link to="/login" className="public-login">Log In</Link>
-              <Link to="/register" className="public-button">Create Account</Link>
+              <Link to="/login" className="public-login">
+                Log In
+              </Link>
+              <Link to="/register" className="public-button">
+                Create Account
+              </Link>
             </>
           )}
         </nav>
@@ -154,7 +196,9 @@ export default function Home() {
                   type="button"
                   aria-label="Previous slide"
                   onClick={() =>
-                    setActive((index) => (index + slides.length - 1) % slides.length)
+                    setActive(
+                      (index) => (index + slides.length - 1) % slides.length
+                    )
                   }
                 >
                   ←
@@ -181,6 +225,46 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="public-money-tips" aria-labelledby="money-tips-title">
+          <div className="public-money-tips-heading">
+            <span className="public-eyebrow">MONEY TIPS</span>
+            <h2 id="money-tips-title">Practical insights for everyday money decisions.</h2>
+            <p className="public-money-tips-intro">
+              Explore approachable guidance to help you understand spending,
+              prepare for expenses and build better money habits.
+            </p>
+          </div>
+
+          {articleLoading ? (
+            <p className="public-money-tips-status" role="status">
+              Loading the latest Money Insight…
+            </p>
+          ) : latestArticle ? (
+            <article className="public-featured-article">
+              <span className="public-featured-label">LATEST MONEY INSIGHT</span>
+              <h3>{latestArticle.title}</h3>
+
+              {latestArticle.summary && <p>{latestArticle.summary}</p>}
+
+              <Link
+                className="public-featured-link"
+                to={`/money-insights/${encodeURIComponent(latestArticle.slug)}`}
+              >
+                Read more <span aria-hidden="true">→</span>
+              </Link>
+            </article>
+          ) : (
+            <p className="public-money-tips-status">
+              New Money Insights are on the way. Visit the library to explore
+              available articles.
+            </p>
+          )}
+
+          <Link to="/money-insights" className="public-money-tips-all">
+            Explore all Money Insights <span aria-hidden="true">→</span>
+          </Link>
         </section>
 
         <section className="public-features" aria-labelledby="features-title">
@@ -212,7 +296,9 @@ export default function Home() {
       </main>
 
       <footer className="public-footer">
-        <span>KashMetrix © 2026 <strong>B&amp;P DevRights</strong>. All rights reserved.</span>
+        <span>
+          KashMetrix © 2026 <strong>B&amp;P DevRights</strong>. All rights reserved.
+        </span>
         <PublicSocialLinks footer />
         <span>Track smarter. Understand more.</span>
       </footer>

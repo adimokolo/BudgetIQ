@@ -1,710 +1,139 @@
-# KashMetrix — Smart Expense Tracker
-
-KashMetrix is a full-stack personal finance and expense-tracking application designed to help users record income and expenses, organise transactions, manage accounts and budgets, monitor spending patterns, and gain clearer insight into their finances.
-
-The project currently includes a **React web application**, a **Node.js/Express REST API**, and an **Expo/React Native mobile application** under active development.
-
-Built by **Adim Barnabas Okolo** and **Pedro Olatunde** as a portfolio and production-oriented project.
-
----
-
-## Features
-
-### Authentication & User Management
-
-- JWT-based authentication
-- Secure password hashing with bcrypt
-- Email verification using a 6-digit OTP
-- OTP resend support
-- Forgot-password and password-reset flow
-- Protected frontend routes
-- User profile information
-- Profile/avatar upload
-- Persistent authenticated sessions
-- Light, dark, and system theme preferences
-
-### Accounts
-
-- Create and manage financial accounts
-- Associate transactions with accounts
-- Track account balances as transactions are recorded
-- Support account-specific currencies
-- Select accounts while recording converted transactions
-- Display the associated account in Transaction History
-
-### Transactions
-
-- Record income and expenses
-- Assign categories and accounts
-- Edit and delete transactions
-- Filter transaction history
-- Track transaction dates and descriptions
-- Quick-add transactions from the application interface
-- Account-linked balance updates
-- CSV transaction export
-- PDF transaction reports
-
-### Categories
-
-- Separate income and expense categories
-- Custom category colours
-- Visual category icons
-- Category-aware transaction and budget displays
-
-### Budgets
-
-- Create monthly budget limits
-- Category-specific or overall budgets
-- Live spending progress
-- Percentage-based budget tracking
-- Budget category icons
-- Budget threshold alerts
-- In-app budget notifications
-- Email alerts when applicable
-
-### Dashboard & Insights
-
-- Income and expense summaries
-- Spending visualisations
-- Income-vs-expense charts
-- Category breakdowns
-- Recent transaction activity
-- Monthly financial summaries
-- Next-month spending forecast based on recent spending data
-
-### Currency Support
-
-- Multiple supported currencies
-- User-selectable Base Currency
-- Searchable Base Currency picker
-- Currency conversion during transaction entry
-- Account-aware converted transactions
-- Currency amount rounding suitable for financial input fields
-
-> Changing the Base Currency changes how applicable amounts are displayed going forward. Existing transaction values are not automatically converted.
-
-### User Experience
-
-- Responsive web interface
-- Light and dark themes
-- Skeleton loading states
-- Reusable modal system
-- Scrollable transaction/converter forms
-- Searchable selectors
-- Updated KashMetrix branding shared with the mobile project
-- Custom **Crystal Clear** visual design system
-
----
-
-## Technology Stack
-
-| Layer | Technology |
-|---|---|
-| Web Frontend | React 18, Vite 5, React Router |
-| UI / Charts | Recharts, Lucide React |
-| HTTP Client | Axios |
-| PDF / Export | jsPDF, jsPDF-AutoTable |
-| Backend API | Node.js, Express |
-| Authentication | JWT, bcrypt |
-| Validation / Security | express-validator, Helmet |
-| Database | PostgreSQL |
-| Database Client | node-postgres (`pg`) |
-| Email | Nodemailer |
-| File Uploads | Multer |
-| Mobile | Expo 54, React Native, Expo Router |
-| Mobile Language | JavaScript / TypeScript ecosystem |
-| Containerisation | Docker |
-| Cloud Infrastructure | AWS |
-| Production Database | Amazon RDS for PostgreSQL |
-
----
-
-## Project Structure
-
-```text
-BudgetIQ/
-├── backend/
-│   ├── migrations
-│   ├── src/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── routes/
-│   │   ├── utils/
-│   │   └── server.js
-│   ├── schema.sql
-│   ├── .env.example
-│   ├── Dockerfile
-│   ├── package.json
-│   └── package-lock.json
-│
-├── frontend/
-│   ├── src/
-│   │   ├── api/
-│   │   ├── assets/
-│   │   ├── components/
-│   │   ├── config
-│   │   ├── context/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── styles/
-│   │   ├── app.jsx
-│   │   ├── main.jsx
-│   │   └── utils/
-│   ├── index.html
-│   ├── vite.config.js
-│   ├── package.json
-│   └── package-lock.json
-│
-├── mobileDev/
-│   ├── assets/
-│   ├── app/
-│   ├── components
-│   ├── config
-│   ├── contexts
-│   ├── services
-│   ├── utils
-│   ├── .env
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── app.json
-│   └── tsconfig.json
-│
-├── postman/
-│   └── BudgetIQ.postman_collection.json
-│
-├── .gitignore
-├── package.json
-└── README.md
-```
-
----
-
-# Local Development
-
-## Prerequisites
-
-For local development, install:
-
-- Node.js
-- npm
-- PostgreSQL
-- Git
-
-Docker is also required when working with the containerised deployment environment.
-
----
-
-## 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd BudgetIQ
-```
-
----
-
-## 2. PostgreSQL Database Setup
-
-Create a PostgreSQL database:
-
-```bash
-createdb budgetiq
-```
-
-Load the KashMetrix schema:
-
-```bash
-psql -U <PGUSER> -d budgetiq -f backend/schema.sql
-```
-
-For local development, PostgreSQL can run directly on the development machine.
-
-The production environment uses **Amazon RDS for PostgreSQL**.
-
----
-
-## 3. Backend Setup
-
-Move into the backend directory:
-
-```bash
-cd backend
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Create the local environment configuration:
-
-```bash
-cp .env.example .env
-```
-
-Configure the required values in `.env`.
-
-Start the backend in development mode:
-
-```bash
-npm run dev
-```
-
-The API runs on port `5000` by default.
-
-Health check:
-
-```text
-GET /api/health
-```
-
-For a standard local installation this is available at:
-
-```text
-http://localhost:5000/api/health
-```
-
-Production mode can be started with:
-
-```bash
-npm start
-```
-
-Database migrations can be run with:
-
-```bash
-npm run migrate
-```
-
----
-
-## 4. Backend Environment Variables
-
-KashMetrix currently references the following backend environment variables.
-
-### Application
-
-```env
-NODE_ENV=
-PORT=
-CLIENT_ORIGIN=
-```
-
-### Authentication
-
-```env
-JWT_SECRET=
-JWT_EXPIRES_IN=
-```
-
-### PostgreSQL
-
-```env
-PGHOST=
-PGPORT=
-PGDATABASE=
-PGUSER=
-PGPASSWORD=
-PGSSL=
-```
-
-### Email / SMTP
-
-```env
-EMAIL_FROM=
-SMTP_HOST=
-SMTP_PORT=
-SMTP_SECURE=
-SMTP_USER=
-SMTP_PASS=
-```
-
-### Mono Integration
-
-```env
-MONO_SEC_KEY=
-MONO_WEBHOOK_SEC=
-MONO_REDIRECT_URL=
-```
-
-Never commit production credentials, database passwords, JWT secrets, SMTP credentials, or API keys to Git.
-
-Use `.env.example` to document required configuration while keeping actual `.env` files private.
-
----
-
-## 5. Frontend Setup
-
-Open another terminal and move into the frontend:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The Vite development server runs at:
-
-```text
-http://localhost:5173
-```
-
-During local development, Vite proxies:
-
-```text
-/api
-```
-
-to:
-
-```text
-http://localhost:5000
-```
-
-The backend should therefore be running while developing the frontend.
-
-To create a production frontend build:
-
-```bash
-npm run build
-```
-
-To preview the production build locally:
-
-```bash
-npm run preview
-```
-
----
-
-# Authentication Flow
-
-KashMetrix requires email verification before normal login.
-
-### Registration
-
-```text
-POST /api/auth/register
-```
-
-Creates the account and initiates email verification.
-
-### OTP Verification
-
-```text
-POST /api/auth/verify-otp
-```
-
-Validates the verification code and completes the verification process.
-
-### Resend OTP
-
-```text
-POST /api/auth/resend-otp
-```
-
-Issues another verification code when required.
-
-### Login
-
-```text
-POST /api/auth/login
-```
-
-Authenticated users receive a JWT used for protected API requests.
-
-Unverified accounts are prevented from completing the normal login flow until email verification succeeds.
-
-### Forgot Password
-
-```text
-POST /api/auth/forgot-password
-```
-
-Initiates the password-reset process.
-
-### Reset Password
-
-```text
-POST /api/auth/reset-password
-```
-
-Completes a valid password reset.
-
-### Local Email Development
-
-OTP verification codes expire after **10 minutes**, while password-reset links expire after **30 minutes**.
-
-When SMTP is not configured for local development, KashMetrix prints OTP codes and password-reset links to the **backend terminal**, allowing the complete authentication flow to be tested without an email provider.
-
-Production deployments should configure a supported SMTP/email provider.
-
-# Mobile Application
-
-KashMetrix also contains a mobile application in:
-
-```text
-mobileDev/
-```
-
-The mobile project uses:
-
-- Expo 54
-- React Native
-- React 19
-- Expo Router
-- React Navigation
-- Axios
-- AsyncStorage
-- Expo Secure Store
-- Expo Image Picker
-- React Native Chart Kit
-- React Native SVG
-
-Install its dependencies with:
-
-```bash
-cd mobileDev
-npm install
-```
-
-Start Expo:
-
-```bash
-npm start
-```
-
-Android:
-
-```bash
-npm run android
-```
-
-iOS:
-
-```bash
-npm run ios
-```
-
-Expo web:
-
-```bash
-npm run web
-```
-
-Lint the mobile application with:
-
-```bash
-npm run lint
-```
-
-The web and mobile applications share the KashMetrix product identity and are being developed toward a consistent user experience.
-
----
-
-# Docker
-
-The KashMetrix backend is containerised with Docker and deployed to Amazon EC2.
-
-The backend `Dockerfile` uses:
-
-```text
-node:24-alpine
-```
-
-The container:
-
-- installs production dependencies
-- exposes port `5000`
-- starts `src/server.js`
-- includes an HTTP health check against `/api/health`
-- receives production configuration through environment variables
-
-Example backend image build:
-
-```bash
-cd backend
-docker build -t budgetiq-backend .
-```
-
-Production backend deployments are automated through GitHub Actions. The deployment workflow builds and deploys the backend Docker image to Amazon EC2, verifies container and API health, automatically rolls back to the previous image if deployment health checks fail, and removes obsolete backend images after a successful deployment.
-
-The `budgetiq-backend` image name is retained as an internal technical identifier.
-
----
-
-# AWS Infrastructure
-
-KashMetrix is deployed on AWS using a production architecture that separates the frontend, backend API, and database services.
-
-The current production architecture includes:
-
-```text
-Users
-   │
-   ▼
-Amazon CloudFront
-   │
-   ├── Web Application → Amazon S3
-   │
-   └── /api/* → Backend API on Amazon EC2
-                         │
-                         ▼
-                 Amazon RDS for PostgreSQL
-```
-
-Current infrastructure includes:
-
-- Amazon S3 for production frontend hosting
-- Amazon CloudFront for frontend delivery and `/api/*` routing
-- HTTPS using AWS Certificate Manager
-- Dockerised Node.js/Express backend deployed on Amazon EC2
-- Amazon RDS for PostgreSQL
-- Environment-based production configuration and secrets
-- Network and security-group configuration
-- Backend container health checks
-- API health verification after deployment
-- Automated backend rollback when deployment health checks fail
-- Automated cleanup of obsolete backend Docker images
-- GitHub Actions CI/CD for build validation and production deployment
-- AWS OIDC authentication for GitHub Actions deployment access
-
-The production infrastructure continues to be refined as KashMetrix evolves.
-
----
-
-# Bank Integration
-
-KashMetrix includes configuration points for **Mono** integration through:
-
-```env
-MONO_SEC_KEY
-MONO_WEBHOOK_SEC
-MONO_REDIRECT_URL
-```
-
-These values must be supplied securely through the runtime environment and must never be committed to source control.
-
-Bank integration functionality should be treated according to the capabilities enabled in the deployed environment.
-
----
-
-# Transaction Exports
-
-KashMetrix supports exporting transaction information for external use.
-
-Current web export functionality includes:
-
-- CSV transaction export
-- PDF transaction report
-- Income summary
-- Expense summary
-- Net summary
-
-PDF generation uses `jsPDF` and `jsPDF-AutoTable`.
-
----
-
-# Design System
-
-KashMetrix uses a custom design system called **Crystal Clear**.
-
-Its visual language includes:
-
-- frosted/glass surfaces
-- clipped **Facet Cards**
-- prism-gradient accents
-- light and dark modes
-- responsive layouts
-- structured financial data presentation
-
-Primary typography includes:
-
-- **Space Grotesk** — display/headings
-- **Inter** — interface/body text
-- **JetBrains Mono** — financial/numeric information
-
-The KashMetrix branding is shared across the web and mobile applications.
-
----
-
-# API Testing
-
-A Postman collection is included at:
-
-```text
-postman/BudgetIQ.postman_collection.json
-```
-
-It can be imported into Postman for API development and endpoint testing.
-
----
-
-# Development Status
-
-KashMetrix is under active development.
-
-### Implemented / Active
-
-- Web frontend
-- REST API
-- PostgreSQL data layer with Amazon RDS in production
-- Authentication and email verification
-- Password recovery
-- Accounts
-- Transactions
-- Categories
-- Budgets
-- Dashboard and charts
-- Spending forecasting
-- Currency support and conversion
-- Base Currency preference
-- Transaction exports
-- Notifications
-- Mobile application development
-- Dockerised backend deployment on Amazon EC2
-- Amazon S3 and CloudFront frontend deployment
-- HTTPS using AWS Certificate Manager
-- Production networking and security configuration
-- GitHub Actions CI/CD with AWS OIDC authentication
-- Automated backend health verification, rollback, and Docker image cleanup
-
-### In Progress / Upcoming
-
-- Further web/mobile feature alignment
-- Continued production infrastructure refinement
-
----
-
-# Security Notes
-
-KashMetrix handles authentication and financial information, so production deployments should follow appropriate security practices.
-
-In particular:
-
-- never commit `.env` files
-- never expose `JWT_SECRET`
-- never commit PostgreSQL passwords
-- never expose SMTP credentials
-- never expose Mono secret keys or webhook secrets
-- use encrypted connections for production databases
-- restrict database network access
-- configure CORS for the deployed frontend origin
-- use HTTPS in production
-- rotate compromised credentials immediately
-
----
-
-# Contributors
-
-**Adim Barnabas Okolo**
-
-**Pedro Olatunde**
-
----
-
-# License
-
-MIT — developed for portfolio and production-oriented use.
+# KashMetrix AdSense Content Readiness — Handoff
+
+## Safety rules
+- Preserve all uncommitted changes in this isolated worktree.
+- Do not reset, stash, clean, commit, push, deploy, run migrations, or enable ads without explicit user approval.
+- Do not modify the original `~/projects/BudgetIQ` worktree; it contains active UFE/OPay work.
+- Do not modify Expo/mobile files or trigger mobile builds.
+- Never print database passwords, full connection strings, or the AWS RDS endpoint.
+- Work one step at a time and prefer targeted, read-only commands.
+
+## Branch checkpoint
+- Product: KashMetrix
+- Slogan: TRACK SMARTER, UNDERSTAND MORE.
+- Original worktree: `~/projects/BudgetIQ`
+- Isolated worktree: `~/projects/BudgetIQ-adsense-readiness`
+- Branch: `Barnie/adsense-content-readiness`
+- HEAD at checkpoint: `bbff7b0` — Merge pull request #99 from adimokolo/release/fidelity-pdf-fix
+- Current changes are uncommitted and must be preserved.
+
+## Files changed or added
+
+Modified:
+- `backend/src/server.js`
+- `frontend/src/App.jsx`
+- `frontend/src/components/AdminLayout.jsx`
+- `frontend/src/pages/Home.jsx`
+- `frontend/src/styles/home.css`
+
+Added:
+- `backend/migrations/011_create_articles.sql`
+- `backend/src/controllers/articleController.js`
+- `backend/src/routes/articles.js`
+- `backups/`
+- `docs-adsense-cms-migration-note.md`
+- `frontend/public/robots.txt`
+- `frontend/public/sitemap.xml`
+- `frontend/src/pages/AdminArticles.jsx`
+- `frontend/src/pages/MoneyInsightArticle.jsx`
+- `frontend/src/pages/MoneyInsights.jsx`
+- `frontend/src/styles/moneyInsights.css`
+
+Original versions of three replaced frontend files were backed up in:
+`backups/article-editor-before-patch-20261022-184523/`
+
+## AdSense context
+The previous AdSense rejection said: “Google-served ads on screens without publisher-content.”
+
+The Vite/React frontend initially serves an empty `<div id="root"></div>` and article content is rendered client-side. A crawlable/static HTML approach for public article pages remains necessary before claiming AdSense readiness.
+
+Ads remain disabled:
+- `ENABLE_WEB_ADS=false`
+- `ADSENSE_CLIENT=""`
+- `ADSENSE_DASHBOARD_SLOT=""`
+
+Existing `frontend/public/ads.txt`:
+`google.com, pub-8683588639077779, DIRECT, f08c47fec0942fa0`
+
+Do not enable ads or request AdSense review without explicit approval.
+
+## CMS implementation
+The article API and admin editor are present in this worktree. Admin endpoints use authentication and admin authorization; public endpoints expose published articles only.
+
+The block editor stores a JSON envelope in the existing `articles.body` TEXT field:
+- Optional featured image with URL, alt text and caption
+- Paragraph
+- Heading
+- Subheading
+- List
+- Inline image
+
+Legacy plain-text/Markdown bodies remain supported. Images currently use HTTPS URLs only. File uploads are deferred until persistent storage is selected.
+
+“Understanding Your Monthly Spending” was vetted but has not been inserted or published. Preserve its approved wording; do not seed or publish it without approval.
+
+## Verification
+- `git diff --check` passed earlier.
+- Frontend build passed after the editor patch: `npm --prefix frontend run build` (`built in 6.91s`).
+- Browser/API end-to-end tests remain outstanding.
+- No commit, push, deployment, production migration or ad activation has occurred.
+
+## Database environments
+- Local development PostgreSQL runs directly inside WSL.
+- Remote production database is AWS RDS PostgreSQL.
+- `pg_isready` returned `/var/run/postgresql:5432 - accepting connections`.
+- Original Compose configuration lists only `backend` and `frontend`; it does not define PostgreSQL.
+- `backend/src/config/db.js` reads `PGHOST`, `PGPORT` (default 5432), `PGDATABASE`, and `PGUSER`.
+- The original `~/projects/BudgetIQ/backend/.env` contains these settings. Do not expose their values in chat.
+- A prior host classification reported `DOCKER_OR_LOCAL_NETWORK`; this was not conclusive proof of the actual target.
+- Verify the intended local database connection before using it. Never allow this test to write to AWS RDS.
+
+### Migration blocker
+- Do not run `npm run migrate`.
+- `backend/package.json` refers to `node src/utils/migrate.js`, but `backend/src/utils/migrate.js` is missing.
+- `backend/migrations/011_create_articles.sql` has not been applied.
+- No SQL has been run for this CMS work.
+- Restore/review the migration procedure and verify the local connection before applying the articles migration.
+
+## Docker isolation warnings
+The original helper is `~/projects/BudgetIQ/scripts/local-deploy.sh`. It builds and recreates containers and then invokes a cleanup script. Do not run it unchanged from the isolated worktree.
+
+The isolated `docker-compose.yml` currently uses:
+- Fixed container names: `budgetiq-backend`, `budgetiq-frontend`
+- Fixed network: `budgetiq-network`
+- Backend host port `5000`
+- Frontend host port `5173`
+
+These can conflict with the original project. A safe isolated test setup should remove fixed container names, use a unique network and unused host ports, and connect only to the verified local WSL database.
+
+Earlier `docker ps -a` output showed:
+- `budgetiq-frontend`: Exited (0)
+- `budgetiq-backend`: Exited (137)
+
+Those statuses were reported as approximately 45 hours old at the time of inspection.
+
+## Dependencies and deployment pipeline
+Frontend install reported 9 vulnerabilities: 4 moderate, 4 high, 1 critical. It also warned that install scripts for `core-js` and `esbuild` were not approved. Do not run `npm audit fix --force` without review.
+
+Existing `.github/workflows/cicd.yml`:
+- Runs for pushes to `main` and PRs targeting `main`
+- Frontend build uses `npm ci`, `VITE_API_URL=/api`, and `npm run build`
+- Deploy syncs `frontend-dist/` to `s3://budgetiq-frontend-prod/` with `--delete`
+- CloudFront invalidation ID: `E3HU962K15N32S`, path `/*`
+- AWS region: `eu-central-1`
+- Uses `secrets.AWS_ROLE_ARN`
+- Backend changes build/push a Docker image and replace the EC2 `budgetiq-backend` container
+
+Do not change CI/CD or production deployment without explicit approval.
+
+## Next steps
+1. Keep the current uncommitted work intact.
+2. Verify the local WSL PostgreSQL database/user and connection without displaying secrets or connecting to RDS.
+3. Review `docs-adsense-cms-migration-note.md` and address the missing migration runner before any migration.
+4. Prepare isolated Docker testing with unique container/network names and non-conflicting ports.
+5. Test public article list/detail, draft invisibility, admin authorization, slug conflicts, editor save/reload/rendering, and SEO metadata.
+6. Address crawlable public article HTML before claiming AdSense readiness.
+7. Keep all changes local until the user explicitly approves commit, push, migration or deployment.
+
+## Privacy
+Do not include database passwords, full connection strings, RDS endpoints, or private bank statements in this README or terminal output.
