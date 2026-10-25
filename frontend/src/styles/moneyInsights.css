@@ -217,3 +217,54 @@
     align-items: flex-start;
   }
 }
+
+
+/* Article readability: Word-style full justification and compact author byline. */
+.insights-article-body p {
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+}
+
+.insights-author {
+  margin: 18px 0 28px;
+  padding: 14px 18px;
+  border-left: 3px solid #1769d2;
+  border-radius: 0 8px 8px 0;
+  background: var(--insights-surface);
+  color: var(--insights-ink);
+}
+
+.insights-author-copy p {
+  margin: 0;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.insights-author-name {
+  color: var(--insights-ink, #172033);
+  font-weight: 750;
+}
+
+.insights-author-role {
+  color: var(--insights-secondary, #526177);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.insights-author-bio {
+  margin-top: 3px !important;
+  color: var(--insights-secondary, #526177);
+  font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .insights-article-body p {
+    text-align: justify;
+    hyphens: auto;
+  }
+
+  .insights-author {
+    padding: 12px 14px;
+  }
+}

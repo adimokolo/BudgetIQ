@@ -10,7 +10,7 @@ function parseContent(body) {
   try {
     const value = JSON.parse(body);
     if (value?.format === "kashmetrix-blocks-v1" && Array.isArray(value.blocks)) return value;
-  } catch {}
+  } catch { }
   const blocks = String(body || "").split(/\n\s*\n/).filter(Boolean).map((chunk) => {
     const t = chunk.trim();
     if (t.startsWith("### ")) return { type: "subheading", text: t.slice(4) };
@@ -26,10 +26,10 @@ function renderBlocks(blocks) {
     if (block.type === "subheading") return <h3 key={i}>{block.text}</h3>;
     if (block.type === "list") return <ul key={i}>{(block.items || []).filter(Boolean).map((item, j) => <li key={j}>{item}</li>)}</ul>;
     if (block.type === "image") return block.url ? <figure className="insights-inline-image" key={i}>
-      <img src={block.url} alt={block.alt || ""} loading="lazy" decoding="async"/>
+      <img src={block.url} alt={block.alt || ""} loading="lazy" decoding="async" />
       {block.caption && <figcaption>{block.caption}</figcaption>}
     </figure> : null;
-    return block.text ? <p key={i}>{block.text.split("\n").map((line, j) => <span key={j}>{j > 0 && <br/>}{line}</span>)}</p> : null;
+    return block.text ? <p key={i}>{block.text.split("\n").map((line, j) => <span key={j}>{j > 0 && <br />}{line}</span>)}</p> : null;
   });
 }
 
@@ -107,14 +107,22 @@ export default function MoneyInsightArticle() {
   const content = article ? parseContent(article.body) : null;
   const featured = content?.featuredImage;
   return <div className="insights-shell" data-theme={theme}>
-    <header className="insights-header"><Link to="/home" className="insights-brand"><img src={logoMark} alt=""/>KashMetrix</Link><nav><Link to="/money-insights">Money Insights</Link><Link to="/register" className="insights-cta">Get started</Link></nav><PublicSocialLinks /></header>
+    <header className="insights-header"><Link to="/home" className="insights-brand"><img src={logoMark} alt="" />KashMetrix</Link><nav><Link to="/money-insights">Money Insights</Link><Link to="/register" className="insights-cta">Get started</Link></nav><PublicSocialLinks /></header>
     <main className="insights-article-main"><Link className="insights-back" to="/money-insights">← All Money Insights</Link>
       {state === "loading" && <p role="status">Loading article…</p>}
       {state === "missing" && <section className="insights-empty"><h1>Article not found</h1><p>This article may have been unpublished or the address may be incorrect.</p><Link to="/money-insights">Browse Money Insights</Link></section>}
       {state === "ready" && article && <article>
         <p className="insights-eyebrow">MONEY INSIGHTS</p><h1>{article.title}</h1><p className="insights-article-summary">{article.summary}</p>
-        <p className="insights-card-meta">{article.published_at ? new Date(article.published_at).toLocaleDateString(undefined, {year:"numeric",month:"long",day:"numeric"}) : ""}</p>
-        {featured?.url && <figure className="insights-featured-image"><img src={featured.url} alt={featured.alt || ""}/>{featured.caption && <figcaption>{featured.caption}</figcaption>}</figure>}
+        <p className="insights-card-meta">{article.published_at ? new Date(article.published_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : ""}</p>
+        <section className="insights-author" aria-label="About the author">
+          <div className="insights-author-copy">
+            <p className="insights-author-name">By Adim Barnabas Okolo</p>
+            <p className="insights-author-role">DevOps / Cloud Engineer</p>
+            <p className="insights-author-bio">Apps &amp; Development Unit, ICT, LASUTH</p>
+            <p className="insights-author-bio">Co-founder, B&amp;P DevRights</p>
+          </div>
+        </section>
+        {featured?.url && <figure className="insights-featured-image"><img src={featured.url} alt={featured.alt || ""} />{featured.caption && <figcaption>{featured.caption}</figcaption>}</figure>}
         <div className="insights-article-body">{renderBlocks(content.blocks || [])}</div>
         <ArticleShare article={article} />
         <div className="insights-article-end"><p>Build a clearer picture of your money with KashMetrix.</p><Link className="insights-cta" to="/register">Get started</Link></div>
