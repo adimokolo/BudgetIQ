@@ -11,7 +11,7 @@ const emptyBlock = (type = "paragraph") => {
 const blank = {
   title: "", slug: "", summary: "", blocks: [emptyBlock()],
   featuredImage: { url: "", alt: "", caption: "" },
-  seo_title: "", meta_description: ""
+  seo_title: "", meta_description: "", author_name: "", author_role: "", author_organization: "", author_affiliation: ""
 };
 const slugify = (v) => v.toLowerCase().normalize("NFKD")
   .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-")
@@ -82,7 +82,9 @@ export default function AdminArticles() {
     setSelected(a);
     setForm({
       title: a.title, slug: a.slug, summary: a.summary, ...content,
-      seo_title: a.seo_title || "", meta_description: a.meta_description || ""
+      seo_title: a.seo_title || "", meta_description: a.meta_description || "",
+      author_name: a.author_name || "", author_role: a.author_role || "",
+      author_organization: a.author_organization || "", author_affiliation: a.author_affiliation || ""
     });
     setAutoSlug(false); setPreview(false); setNotice(""); setError("");
   };
@@ -101,7 +103,9 @@ export default function AdminArticles() {
       const payload = {
         title: form.title, slug: form.slug, summary: form.summary,
         body: encodeContent(form), seo_title: form.seo_title || form.title,
-        meta_description: form.meta_description || form.summary
+        meta_description: form.meta_description || form.summary,
+        author_name: form.author_name, author_role: form.author_role,
+        author_organization: form.author_organization, author_affiliation: form.author_affiliation
       };
       const { data } = selected
         ? await apiClient.put(`/articles/admin/${selected.id}`, payload)
@@ -124,6 +128,21 @@ export default function AdminArticles() {
       await refresh();
     } catch (e) { setError(e.response?.data?.error || "Could not change article status."); }
     finally { setSaving(false); }
+  };
+  const deleteDraft = async () => {
+    if (!selected || selected.status !== "draft") return;
+    if (!window.confirm(`Delete the draft "${selected.title}" permanently? This cannot be undone.`)) return;
+    setSaving(true); setError(""); setNotice("");
+    try {
+      await apiClient.delete(`/articles/admin/${selected.id}`);
+      fresh();
+      setNotice("Draft deleted successfully.");
+      await refresh();
+    } catch (e) {
+      setError(e.response?.data?.error || "Could not delete draft.");
+    } finally {
+      setSaving(false);
+    }
   };
   const updateFeatured = (key, value) => setForm(old => ({ ...old, featuredImage: { ...old.featuredImage, [key]: value } }));
   const updateListItem = (index, itemIndex, value) => setForm(old => ({
@@ -151,6 +170,12 @@ export default function AdminArticles() {
         <div className="admin-articles-editor-head"><h2>{selected ? "Edit article" : "New draft"}</h2><span className={`admin-article-status ${selected?.status || "draft"}`}>{selected?.status || "draft"}</span></div>
         {preview ? <div className="admin-article-preview">
           <p className="insights-eyebrow">PREVIEW</p><h1>{form.title || "Untitled article"}</h1><p>{form.summary}</p>
+          {(form.author_name || form.author_role || form.author_organization || form.author_affiliation) && <section className="insights-author" aria-label="About the author"><div className="insights-author-copy">
+            {form.author_name && <p className="insights-author-name">By {form.author_name}</p>}
+            {form.author_role && <p className="insights-author-role">{form.author_role}</p>}
+            {form.author_organization && <p className="insights-author-bio">{form.author_organization}</p>}
+            {form.author_affiliation && <p className="insights-author-bio">{form.author_affiliation}</p>}
+          </div></section>}
           {form.featuredImage.url && <figure className="insights-featured-image"><img src={form.featuredImage.url} alt={form.featuredImage.alt || ""}/>{form.featuredImage.caption && <figcaption>{form.featuredImage.caption}</figcaption>}</figure>}
           <BlockPreview blocks={form.blocks}/>
         </div> : <div className="admin-article-form">
@@ -186,11 +211,19 @@ export default function AdminArticles() {
             <button type="button" onClick={() => setForm(old => ({...old, blocks:[...old.blocks, emptyBlock("list")]}))}>List</button>
             <button type="button" onClick={() => setForm(old => ({...old, blocks:[...old.blocks, emptyBlock("image")]}))}>Image</button>
           </div>
+          <fieldset className="admin-image-fields"><legend>Optional author byline</legend>
+            <p><small>All fields are optional. Only completed fields appear on the public article. Leave all blank to hide the byline.</small></p>
+            <label>Author name<input value={form.author_name} maxLength={180} onChange={e => change("author_name", e.target.value)} placeholder="e.g. Jane Doe"/></label>
+            <label>Role or title<input value={form.author_role} maxLength={180} onChange={e => change("author_role", e.target.value)} placeholder="e.g. Finance Writer"/></label>
+            <label>Organization or department<input value={form.author_organization} maxLength={240} onChange={e => change("author_organization", e.target.value)} placeholder="e.g. Finance Department"/></label>
+            <label>Additional affiliation<input value={form.author_affiliation} maxLength={240} onChange={e => change("author_affiliation", e.target.value)} placeholder="e.g. Professional Member"/></label>
+          </fieldset>
           <label>SEO title<input value={form.seo_title} maxLength={180} onChange={e => change("seo_title", e.target.value)} placeholder={form.title || "Search result title"}/></label>
           <label>Meta description<textarea value={form.meta_description} maxLength={320} rows={2} onChange={e => change("meta_description", e.target.value)} placeholder={form.summary || "Search-result description"}/></label>
         </div>}
         <div className="admin-articles-actions"><button type="button" onClick={() => setPreview(v => !v)}>{preview ? "Back to editor" : "Preview"}</button>
           <button type="button" className="insights-cta" disabled={saving || preview} onClick={save}>{saving ? "Saving…" : selected ? "Save changes" : "Save draft"}</button>
+          {selected?.status === "draft" && <button type="button" disabled={saving || preview} onClick={deleteDraft}>Delete draft</button>}
           {selected?.status === "published" ? <button type="button" disabled={saving} onClick={() => status("draft")}>Unpublish</button> : <button type="button" disabled={saving || preview || !selected} onClick={() => status("published")}>Publish</button>}
         </div>
       </section>

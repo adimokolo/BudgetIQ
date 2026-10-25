@@ -114,14 +114,14 @@ export default function MoneyInsightArticle() {
       {state === "ready" && article && <article>
         <p className="insights-eyebrow">MONEY INSIGHTS</p><h1>{article.title}</h1><p className="insights-article-summary">{article.summary}</p>
         <p className="insights-card-meta">{article.published_at ? new Date(article.published_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : ""}</p>
-        <section className="insights-author" aria-label="About the author">
+        {(article.author_name || article.author_role || article.author_organization || article.author_affiliation) && <section className="insights-author" aria-label="About the author">
           <div className="insights-author-copy">
-            <p className="insights-author-name">By Adim Barnabas Okolo</p>
-            <p className="insights-author-role">DevOps / Cloud Engineer</p>
-            <p className="insights-author-bio">Apps &amp; Development Unit, ICT, LASUTH</p>
-            <p className="insights-author-bio">Co-founder, B&amp;P DevRights</p>
+            {article.author_name && <p className="insights-author-name">By {article.author_name}</p>}
+            {article.author_role && <p className="insights-author-role">{article.author_role}</p>}
+            {article.author_organization && <p className="insights-author-bio">{article.author_organization}</p>}
+            {article.author_affiliation && <p className="insights-author-bio">{article.author_affiliation}</p>}
           </div>
-        </section>
+        </section>}
         {featured?.url && <figure className="insights-featured-image"><img src={featured.url} alt={featured.alt || ""} />{featured.caption && <figcaption>{featured.caption}</figcaption>}</figure>}
         <div className="insights-article-body">{renderBlocks(content.blocks || [])}</div>
         <ArticleShare article={article} />

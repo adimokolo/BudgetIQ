@@ -8,6 +8,7 @@ router.get("/admin/:id",requireAuth,requireAdmin,c.getAdmin);
 router.post("/admin",requireAuth,requireAdmin,c.create);
 router.put("/admin/:id",requireAuth,requireAdmin,c.update);
 router.patch("/admin/:id/status",requireAuth,requireAdmin,c.setStatus);
+router.delete("/admin/:id",requireAuth,requireAdmin,c.deleteDraft);
 router.get("/",c.listPublished);
 router.get("/:slug",c.getPublished);
 module.exports=router;
