@@ -286,6 +286,84 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="cofounders-section" aria-labelledby="cofounders-title">
+          <div className="cofounders-heading">
+            <p className="cofounders-eyebrow">THE PEOPLE BEHIND KASHMETRIX</p>
+            <h2 id="cofounders-title">Meet the Brains Behind KashMetrix</h2>
+            <p>
+              Get to know the people helping bring KashMetrix to life.
+            </p>
+          </div>
+
+          <div className="cofounders-grid">
+            <article className="cofounder-card">
+              <a
+                className="cofounder-photo-link"
+                href="https://adimokolo-devops.netlify.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="View Adim Okolo's profile"
+              >
+                <img
+                  className="cofounder-photo"
+                  src="/images/cofounders/Adim%20Profile%20Pic.png"
+                  alt="Adim Okolo"
+                  loading="lazy"
+                />
+              </a>
+              <div className="cofounder-details">
+                <h3>Adim Okolo</h3>
+                <p className="cofounder-role">Co-founder &amp; DevOps Engineer</p>
+                <p>
+                  Focuses on the platform’s infrastructure, delivery, and
+                  reliability to help KashMetrix grow with confidence.
+                </p>
+                <a
+                  className="cofounder-profile-link"
+                  href="https://adimokolo-devops.netlify.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View profile <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+            </article>
+
+            <article className="cofounder-card">
+              <a
+                className="cofounder-photo-link"
+                href="https://pedroolatunde-mobiledev.netlify.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="View Pedro Olatunde's profile"
+              >
+                <img
+                  className="cofounder-photo"
+                  src="/images/cofounders/Pedro%20Profile%20Pic.jpeg"
+                  alt="Pedro Olatunde"
+                  loading="lazy"
+                />
+              </a>
+              <div className="cofounder-details">
+                <h3>Pedro Olatunde</h3>
+                <p className="cofounder-role">Co-founder &amp; Mobile Developer</p>
+                <p>
+                  Focuses on mobile development, helping make KashMetrix’s
+                  personal-finance tools accessible on the go.
+                </p>
+                <a
+                  className="cofounder-profile-link"
+                  href="https://pedroolatunde-mobiledev.netlify.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View profile <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <section className="public-cta">
           <h2>Ready to understand your money better?</h2>
           <p>Start building a clearer picture of your finances with KashMetrix.</p>
