@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
+import Download from "./pages/Download";
 import Register from "./pages/Register";
 import VerifyOtp from "./pages/VerifyOtp";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -50,6 +51,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/home" element={<Home />} />
+      <Route path="/download" element={<Download />} />
       <Route path="/money-insights" element={<MoneyInsights />} />
       <Route path="/money-insights/:slug" element={<MoneyInsightArticle />} />
       <Route

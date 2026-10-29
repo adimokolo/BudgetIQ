@@ -1,0 +1,355 @@
+.download-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      ellipse at 12% 18%,
+      color-mix(in srgb, var(--home-accent) 10%, transparent),
+      transparent 36rem
+    ),
+    radial-gradient(
+      ellipse at 88% 42%,
+      color-mix(in srgb, var(--home-accent) 7%, transparent),
+      transparent 32rem
+    ),
+    var(--home-bg);
+}
+
+.download-header,
+.download-main,
+.download-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.download-header {
+  width: 100%;
+  max-width: 1360px;
+}
+
+.download-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.download-main {
+  width: min(100% - 40px, 1120px);
+  margin: 0 auto;
+  padding: clamp(54px, 8vw, 104px) 0 76px;
+  flex: 1;
+}
+
+.download-intro {
+  position: relative;
+  max-width: 760px;
+  margin: 0 auto 48px;
+  text-align: center;
+}
+
+.download-intro::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: min(70vw, 560px);
+  height: 210px;
+  left: 50%;
+  top: -55px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--home-accent) 8%, transparent);
+  filter: blur(52px);
+  pointer-events: none;
+}
+
+.download-intro .public-eyebrow {
+  display: inline-block;
+  padding: 9px 13px;
+  border: 1px solid var(--home-divider);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--home-surface) 78%, transparent);
+  color: var(--home-accent);
+}
+
+.download-intro h1 {
+  margin: 18px 0 17px;
+  font-size: clamp(2.2rem, 5.2vw, 4.15rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.047em;
+}
+
+.download-intro .download-intro-support {
+  margin: 0 auto;
+  color: var(--home-secondary);
+  font-size: clamp(1.05rem, 1.7vw, 1.2rem);
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.download-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 auto;
+}
+
+.download-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  min-width: 0;
+  min-height: 230px;
+  padding: 26px 24px;
+  overflow: hidden;
+  color: var(--home-ink);
+  background: var(--home-surface);
+  border: 1px solid var(--home-divider);
+  border-radius: 20px;
+  text-decoration: none;
+  box-shadow: var(--home-shadow);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.download-option::after {
+  content: "";
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  right: -48px;
+  bottom: -55px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--home-accent) 8%, transparent);
+  pointer-events: none;
+}
+
+a.download-option:hover {
+  transform: translateY(-5px);
+  border-color: var(--home-accent);
+  box-shadow: 0 20px 42px rgba(22, 35, 52, 0.12);
+}
+
+.download-option:focus-visible {
+  outline: 3px solid var(--home-accent);
+  outline-offset: 4px;
+}
+
+.download-option-primary {
+  color: #fff;
+  background: var(--home-accent);
+  border-color: var(--home-accent);
+}
+
+.download-option-primary::after {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+a.download-option-primary:hover {
+  color: #fff;
+  background: var(--home-accent-hover);
+}
+
+.download-option-icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  flex: 0 0 62px;
+  width: 62px;
+  height: 62px;
+  border-radius: 17px;
+  background: var(--home-muted);
+  color: var(--home-accent);
+  font-size: 1.85rem;
+}
+
+.download-option-primary .download-option-icon {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.17);
+}
+
+.download-option-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  width: 100%;
+}
+
+.download-option-copy small {
+  color: var(--home-secondary);
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.075em;
+  line-height: 1.4;
+}
+
+.download-option-primary .download-option-copy small {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.download-option-copy strong {
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  font-weight: 750;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.download-option-arrow {
+  position: absolute;
+  z-index: 1;
+  top: 25px;
+  right: 24px;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.download-option-disabled {
+  cursor: default;
+  background: color-mix(in srgb, var(--home-surface) 82%, var(--home-muted));
+}
+
+.download-option-disabled .download-option-icon {
+  color: var(--home-secondary);
+}
+
+.download-coming-soon {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  color: var(--home-secondary);
+  background: var(--home-muted);
+  border: 1px solid var(--home-divider);
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.download-footer {
+  gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .download-main {
+    width: min(100% - 36px, 700px);
+  }
+
+  .download-options {
+    grid-template-columns: 1fr;
+    max-width: 560px;
+  }
+
+  .download-option {
+    flex-direction: row;
+    align-items: center;
+    gap: 18px;
+    min-height: 120px;
+    padding: 22px;
+  }
+
+  .download-option-copy {
+    gap: 6px;
+  }
+
+  .download-option-copy strong {
+    font-size: 1.1rem;
+  }
+
+  .download-option-arrow {
+    top: 50%;
+    right: 22px;
+    transform: translateY(-50%);
+  }
+
+  .download-option-primary .download-option-copy {
+    padding-right: 24px;
+  }
+
+  .download-header {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .download-header-actions {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .download-header-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .download-main {
+    width: min(100% - 28px, 560px);
+    padding-top: 48px;
+    padding-bottom: 54px;
+  }
+
+  .download-intro {
+    margin-bottom: 34px;
+  }
+
+  .download-intro h1 {
+    font-size: clamp(2rem, 9vw, 3rem);
+  }
+
+  .download-intro .download-intro-support {
+    font-size: 1rem;
+  }
+
+  .download-option {
+    min-height: 108px;
+    padding: 18px;
+    gap: 15px;
+    border-radius: 16px;
+  }
+
+  .download-option-icon {
+    flex-basis: 50px;
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    font-size: 1.55rem;
+  }
+
+  .download-option-copy small {
+    font-size: 0.64rem;
+  }
+
+  .download-option-copy strong {
+    font-size: 1rem;
+  }
+
+  .download-option-arrow {
+    right: 17px;
+  }
+
+  .download-footer {
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .download-option {
+    transition: none;
+  }
+
+  a.download-option:hover {
+    transform: none;
+  }
+}
